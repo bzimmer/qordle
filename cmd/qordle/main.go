@@ -34,6 +34,10 @@ func flags() []cli.Flag {
 			Usage: "letters not in the word",
 		},
 		&cli.StringFlag{
+			Name:  "pattern",
+			Usage: "match against a known pattern (all letters green, use '.' for all unknown letters)",
+		},
+		&cli.StringFlag{
 			Name:  "dictionary",
 			Usage: "dictionary of possible words",
 			Value: "/usr/share/dict/words",
@@ -95,6 +99,9 @@ func main() {
 		},
 		Action: func(c *cli.Context) error {
 			fns := []qordle.SolveFunc{qordle.Lower(), qordle.Length(5)}
+			if c.IsSet("pattern") {
+				fns = append(fns, qordle.Pattern(c.String("pattern")))
+			}
 			if c.IsSet("begins") {
 				fns = append(fns, qordle.Begins(c.String("begins")))
 			}
