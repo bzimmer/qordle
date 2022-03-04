@@ -6,7 +6,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/armon/go-metrics"
 	"github.com/bzimmer/qordle"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -50,7 +49,7 @@ func flags() []cli.Flag {
 	}
 }
 
-func initLogging(c *cli.Context) {
+func initLogging(c *cli.Context) error {
 	level := zerolog.InfoLevel
 	if c.Bool("debug") {
 		level = zerolog.DebugLevel
@@ -66,6 +65,7 @@ func initLogging(c *cli.Context) {
 			TimeFormat: time.RFC3339,
 		},
 	)
+	return nil
 }
 
 func main() {
@@ -81,27 +81,7 @@ func main() {
 			}
 			log.Error().Stack().Err(err).Msg(c.App.Name)
 		},
-		Before: func(c *cli.Context) error {
-			initLogging(c)
-
-			cfg := metrics.DefaultConfig(c.App.Name)
-			cfg.EnableRuntimeMetrics = false
-			cfg.TimerGranularity = time.Second
-			sink := metrics.NewInmemSink(time.Hour*24, time.Hour*24)
-			metric, err := metrics.New(cfg, sink)
-			if err != nil {
-				return err
-			}
-
-			c.App.Metadata = map[string]interface{}{
-				qordle.RuntimeKey: &qordle.Runtime{
-					Sink:    sink,
-					Metrics: metric,
-				},
-			}
-
-			return nil
-		},
+		Before: initLogging,
 		Action: func(c *cli.Context) error {
 			fns := []qordle.SolveFunc{qordle.Lower(), qordle.Length(c.Int("length"))}
 			if c.IsSet("pattern") {
