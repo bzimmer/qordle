@@ -17,6 +17,11 @@ import (
 
 func flags() []cli.Flag {
 	return []cli.Flag{
+		&cli.IntFlag{
+			Name:  "length",
+			Usage: "word length",
+			Value: 5,
+		},
 		&cli.StringFlag{
 			Name:  "begins",
 			Usage: "word begins with",
@@ -98,7 +103,7 @@ func main() {
 			return nil
 		},
 		Action: func(c *cli.Context) error {
-			fns := []qordle.SolveFunc{qordle.Lower(), qordle.Length(5)}
+			fns := []qordle.SolveFunc{qordle.Lower(), qordle.Length(c.Int("length"))}
 			if c.IsSet("pattern") {
 				fns = append(fns, qordle.Pattern(c.String("pattern")))
 			}
