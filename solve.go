@@ -1,6 +1,7 @@
 package qordle
 
 import (
+	"regexp"
 	"strings"
 	"unicode"
 )
@@ -59,5 +60,12 @@ func Hits(hits string) SolveFunc {
 			}
 		}
 		return true
+	}
+}
+
+func Pattern(pattern string) SolveFunc {
+	re := regexp.MustCompile(pattern)
+	return func(word string) bool {
+		return re.MatchString(word)
 	}
 }
