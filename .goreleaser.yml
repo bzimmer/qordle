@@ -8,7 +8,7 @@ builds:
       - linux
       - windows
       - darwin
-    main: ./cmd/ma
+    main: ./cmd/qordle
     ldflags:
       - -s -w -X {{.ModulePath}}.buildVersion={{.Version}} -X {{.ModulePath}}.buildCommit={{.ShortCommit}} -X {{.ModulePath}}.buildTime={{.Date}} -X {{.ModulePath}}.buildBuilder=goreleaser
 archives:
