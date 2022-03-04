@@ -1,0 +1,84 @@
+# https://taskfile.dev
+
+version: '3'
+
+dotenv: [".clean.env"]
+
+vars:
+  CWD:
+    sh: git rev-parse --show-toplevel
+  APP:
+    sh: basename $PWD
+  PKG:
+    github.com/bzimmer/{{.APP}}
+  DIST:
+    "{{.CWD}}/dist"
+  COMMIT:
+    sh: git rev-parse --short HEAD
+  LDFLAGS:
+    -ldflags "-X {{.PKG}}.buildCommit={{.COMMIT}} -X {{.PKG}}.buildTime="{{now | date "2006-01-02T15:04:05Z07:00"}}""
+
+tasks:
+  default:
+    cmds:
+      - task: build
+
+  dist:
+    desc: Create dist directory
+    cmds:
+      - mkdir -p {{.DIST}}
+
+  test:
+    desc: Run tests
+    deps: [dist]
+    cmds:
+      # https://github.com/golang/go/issues/49138
+      - MallocNanoZone=0 go test {{.CLI_ARGS}} -race -count=1 -covermode atomic -coverprofile {{.DIST}}/coverage.txt {{.PKG}}
+
+  test-integration:
+    desc: Run integration tests
+    deps: [build]
+    cmds:
+      # https://github.com/golang/go/issues/49138
+      - MallocNanoZone=0 go test {{.CLI_ARGS}} --tags=integration -race -count=1 -covermode atomic {{.PKG}}
+
+  cover:
+    desc: Visualize test coverage
+    deps: [test]
+    cmds:
+      - go tool cover -html={{.DIST}}/coverage.txt
+
+  clean:
+    desc: Remove build artifacts
+    cmds:
+      - rm -rf {{.DIST}}
+
+  build:
+    desc: Build all cmds
+    deps: [dist]
+    cmds:
+      - go build {{.LDFLAGS}} -o {{.DIST}}/{{.APP}} cmd/{{.APP}}/*.go
+
+  lint:
+    desc: Runs golint
+    cmds:
+      - golangci-lint -v run
+
+  snapshot:
+    desc: Build a snapshot
+    deps: [test, lint]
+    cmds:
+      - goreleaser --debug release --snapshot --rm-dist
+
+  manual:
+    desc: Generate the user manual
+    deps: [build]
+    cmds:
+      - mkdir -p docs
+      - dist/{{.APP}} manual docs/templates > docs/manual.md
+
+  install:
+    desc: Install binary
+    deps: [snapshot]
+    cmds:
+      - cp {{.DIST}}/{{.APP}}_{{OS}}_{{ARCH}}/{{.APP}} $GOPATH/bin
