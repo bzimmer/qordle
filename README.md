@@ -1,0 +1,2 @@
+# qordle
+Simple wordle solver
