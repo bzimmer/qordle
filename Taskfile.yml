@@ -80,5 +80,8 @@ tasks:
   install:
     desc: Install binary
     deps: [snapshot]
+    vars:
+      BINARY: $GOPATH/bin/{{.APP}}
     cmds:
-      - cp {{.DIST}}/{{.APP}}_{{OS}}_{{ARCH}}/{{.APP}} $GOPATH/bin
+      - rm {{.BINARY}}
+      - cp {{.DIST}}/{{.APP}}_{{OS}}_{{ARCH}}/{{.APP}} {{.BINARY}}
