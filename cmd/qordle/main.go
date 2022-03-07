@@ -83,9 +83,13 @@ func main() {
 		},
 		Before: initLogging,
 		Action: func(c *cli.Context) error {
-			fns := []qordle.SolveFunc{qordle.Lower(), qordle.Length(c.Int("length"))}
+			fns := []qordle.FilterFunc{qordle.Lower(), qordle.Length(c.Int("length"))}
 			if c.IsSet("pattern") {
-				fns = append(fns, qordle.Pattern(c.String("pattern")))
+				f, err := qordle.Pattern(c.String("pattern"))
+				if err != nil {
+					return err
+				}
+				fns = append(fns, f)
 			}
 			if c.IsSet("begins") {
 				fns = append(fns, qordle.Begins(c.String("begins")))
