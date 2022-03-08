@@ -22,14 +22,6 @@ func flags() []cli.Flag {
 			Value: 5,
 		},
 		&cli.StringFlag{
-			Name:  "begins",
-			Usage: "word begins with",
-		},
-		&cli.StringFlag{
-			Name:  "ends",
-			Usage: "word ends with",
-		},
-		&cli.StringFlag{
 			Name:  "hits",
 			Usage: "letters in the word",
 		},
@@ -46,6 +38,11 @@ func flags() []cli.Flag {
 			Usage: "dictionary of possible words",
 			Value: "/usr/share/dict/words",
 		},
+		&cli.BoolFlag{
+			Name:  "debug",
+			Usage: "enable debug log level",
+			Value: false,
+		},
 	}
 }
 
@@ -61,7 +58,7 @@ func initLogging(c *cli.Context) error {
 	log.Logger = log.Output(
 		zerolog.ConsoleWriter{
 			Out:        c.App.ErrWriter,
-			NoColor:    c.Bool("monochrome"),
+			NoColor:    false,
 			TimeFormat: time.RFC3339,
 		},
 	)
@@ -84,26 +81,28 @@ func main() {
 		Before: initLogging,
 		Action: func(c *cli.Context) error {
 			fns := []qordle.FilterFunc{qordle.Lower(), qordle.Length(c.Int("length"))}
-			if c.IsSet("pattern") {
-				f, err := qordle.Pattern(c.String("pattern"))
+			switch c.NArg() {
+			case 0:
+				if c.IsSet("pattern") {
+					f, err := qordle.Pattern(c.String("pattern"))
+					if err != nil {
+						return err
+					}
+					fns = append(fns, f)
+				}
+				if c.IsSet("hits") {
+					fns = append(fns, qordle.Hits(c.String("hits")))
+				}
+				if c.IsSet("misses") {
+					fns = append(fns, qordle.Misses(c.String("misses")))
+				}
+			default:
+				fs, err := qordle.Guesses(c.Args().Slice()...)
 				if err != nil {
 					return err
 				}
-				fns = append(fns, f)
+				fns = append(fns, fs)
 			}
-			if c.IsSet("begins") {
-				fns = append(fns, qordle.Begins(c.String("begins")))
-			}
-			if c.IsSet("ends") {
-				fns = append(fns, qordle.Ends(c.String("ends")))
-			}
-			if c.IsSet("hits") {
-				fns = append(fns, qordle.Hits(c.String("hits")))
-			}
-			if c.IsSet("misses") {
-				fns = append(fns, qordle.Misses(c.String("misses")))
-			}
-
 			dictionary, err := qordle.DictionaryFs(afero.NewOsFs(), c.String("dictionary"))
 			if err != nil {
 				return err

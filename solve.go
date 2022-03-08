@@ -1,9 +1,12 @@
 package qordle
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 	"unicode"
+
+	"github.com/rs/zerolog/log"
 )
 
 type FilterFunc func(string) bool
@@ -34,18 +37,6 @@ func Length(length int) FilterFunc {
 	}
 }
 
-func Begins(prefix string) FilterFunc {
-	return func(word string) bool {
-		return strings.HasPrefix(word, prefix)
-	}
-}
-
-func Ends(suffix string) FilterFunc {
-	return func(word string) bool {
-		return strings.HasSuffix(word, suffix)
-	}
-}
-
 func Misses(misses string) FilterFunc {
 	return func(word string) bool {
 		return !strings.ContainsAny(word, misses)
@@ -70,5 +61,51 @@ func Pattern(pattern string) (FilterFunc, error) {
 	}
 	return func(word string) bool {
 		return re.MatchString(word)
+	}, nil
+}
+
+func Guesses(guesses ...string) (FilterFunc, error) {
+	var fns []FilterFunc
+	for _, guess := range guesses {
+		x := []rune(guess)
+		var misses string
+		var pattern []string
+		for i := 0; i < len(x); i++ {
+			switch {
+			case x[i] == '~':
+				i++
+				pattern = append(pattern, fmt.Sprintf("[^%c", x[i]))
+			case unicode.IsUpper(x[i]):
+				pattern = append(pattern, string(unicode.ToLower(x[i])))
+			case unicode.IsLower(x[i]):
+				misses += string(x[i])
+				pattern = append(pattern, "")
+			}
+		}
+		var re string
+		for _, s := range pattern {
+			switch {
+			case s == "":
+				re += fmt.Sprintf("[^%s]", misses)
+			case s[0] == '[':
+				re += fmt.Sprintf("%s%s]", s, misses)
+			default:
+				re += s
+			}
+		}
+		log.Debug().Str("guess", guess).Str("pattern", re).Msg("guesses")
+		p, err := Pattern(re)
+		if err != nil {
+			return nil, err
+		}
+		fns = append(fns, p)
+	}
+	return func(word string) bool {
+		for _, fn := range fns {
+			if !fn(word) {
+				return false
+			}
+		}
+		return true
 	}, nil
 }

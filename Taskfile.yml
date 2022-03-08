@@ -15,8 +15,6 @@ vars:
     "{{.CWD}}/dist"
   COMMIT:
     sh: git rev-parse --short HEAD
-  LDFLAGS:
-    -ldflags "-X {{.PKG}}.buildCommit={{.COMMIT}} -X {{.PKG}}.buildTime="{{now | date "2006-01-02T15:04:05Z07:00"}}""
 
 tasks:
   default:
@@ -35,13 +33,6 @@ tasks:
       # https://github.com/golang/go/issues/49138
       - MallocNanoZone=0 go test {{.CLI_ARGS}} -race -count=1 -covermode atomic -coverprofile {{.DIST}}/coverage.txt {{.PKG}}
 
-  test-integration:
-    desc: Run integration tests
-    deps: [build]
-    cmds:
-      # https://github.com/golang/go/issues/49138
-      - MallocNanoZone=0 go test {{.CLI_ARGS}} --tags=integration -race -count=1 -covermode atomic {{.PKG}}
-
   cover:
     desc: Visualize test coverage
     deps: [test]
@@ -57,7 +48,7 @@ tasks:
     desc: Build all cmds
     deps: [dist]
     cmds:
-      - go build {{.LDFLAGS}} -o {{.DIST}}/{{.APP}} cmd/{{.APP}}/*.go
+      - go build -o {{.DIST}}/{{.APP}} cmd/{{.APP}}/*.go
 
   lint:
     desc: Runs golint
@@ -69,13 +60,6 @@ tasks:
     deps: [test, lint]
     cmds:
       - goreleaser --debug release --snapshot --rm-dist
-
-  manual:
-    desc: Generate the user manual
-    deps: [build]
-    cmds:
-      - mkdir -p docs
-      - dist/{{.APP}} manual docs/templates > docs/manual.md
 
   install:
     desc: Install binary
