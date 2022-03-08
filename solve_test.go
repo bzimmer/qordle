@@ -152,7 +152,7 @@ func TestGuesses(t *testing.T) {
 		err, result bool
 	}{
 		{
-			name:    "guesses with match",
+			name:    "no guesses",
 			word:    "hoody",
 			guesses: []string{""},
 			result:  true,
@@ -169,6 +169,13 @@ func TestGuesses(t *testing.T) {
 			name:    "guesses with no match",
 			word:    "hoody",
 			guesses: []string{"cloud"},
+			result:  false,
+			err:     false,
+		},
+		{
+			name:    "guesses with one match out of order",
+			word:    "dusty",
+			guesses: []string{"brain", "clov~e"},
 			result:  false,
 			err:     false,
 		},

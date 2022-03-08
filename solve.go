@@ -68,12 +68,13 @@ func Guesses(guesses ...string) (FilterFunc, error) {
 	var fns []FilterFunc
 	for _, guess := range guesses {
 		x := []rune(guess)
-		var misses string
+		var hits, misses string
 		var pattern []string
 		for i := 0; i < len(x); i++ {
 			switch {
 			case x[i] == '~':
 				i++
+				hits += string(x[i])
 				pattern = append(pattern, fmt.Sprintf("[^%c", x[i]))
 			case unicode.IsUpper(x[i]):
 				pattern = append(pattern, string(unicode.ToLower(x[i])))
@@ -98,7 +99,7 @@ func Guesses(guesses ...string) (FilterFunc, error) {
 		if err != nil {
 			return nil, err
 		}
-		fns = append(fns, p)
+		fns = append(fns, Hits(hits), p)
 	}
 	return func(word string) bool {
 		for _, fn := range fns {
