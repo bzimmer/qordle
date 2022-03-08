@@ -77,7 +77,9 @@ func Guesses(guesses ...string) (FilterFunc, error) {
 				hits += string(x[i])
 				pattern = append(pattern, fmt.Sprintf("[^%c", x[i]))
 			case unicode.IsUpper(x[i]):
-				pattern = append(pattern, string(unicode.ToLower(x[i])))
+				hit := string(unicode.ToLower(x[i]))
+				hits += hit
+				pattern = append(pattern, hit)
 			case unicode.IsLower(x[i]):
 				misses += string(x[i])
 				pattern = append(pattern, "")
@@ -94,7 +96,12 @@ func Guesses(guesses ...string) (FilterFunc, error) {
 				re += s
 			}
 		}
-		log.Debug().Str("guess", guess).Str("pattern", re).Msg("guesses")
+		log.Debug().
+			Str("hits", hits).
+			Str("misses", misses).
+			Str("guess", guess).
+			Str("pattern", re).
+			Msg("guesses")
 		p, err := Pattern(re)
 		if err != nil {
 			return nil, err
