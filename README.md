@@ -1,4 +1,8 @@
 # qordle
+
+![build](https://github.com/bzimmer/qordle/actions/workflows/build.yaml/badge.svg)
+[![codecov](https://codecov.io/gh/bzimmer/qordle/branch/main/graph/badge.svg?token=8L0KXGSM9N)](https://codecov.io/gh/bzimmer/qordle)
+
 Simple wordle solution suggester.
 
 ## Usage
