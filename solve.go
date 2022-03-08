@@ -68,37 +68,62 @@ func Guesses(guesses ...string) (FilterFunc, error) {
 	var fns []FilterFunc
 	for _, guess := range guesses {
 		x := []rune(guess)
-		var hits, misses string
-		var pattern []string
+		var hits, pattern []string
+		misses := make(map[int]string, 0)
 		for i := 0; i < len(x); i++ {
 			switch {
 			case x[i] == '~':
 				i++
-				hits += string(x[i])
-				pattern = append(pattern, fmt.Sprintf("[^%c", x[i]))
+				hits = append(hits, string(x[i]))
+				misses[len(pattern)] = string(x[i])
+				pattern = append(pattern, "[^")
 			case unicode.IsUpper(x[i]):
 				hit := string(unicode.ToLower(x[i]))
-				hits += hit
+				hits = append(hits, hit)
 				pattern = append(pattern, hit)
 			case unicode.IsLower(x[i]):
-				misses += string(x[i])
+				misses[len(pattern)] = string(x[i])
 				pattern = append(pattern, "")
 			}
 		}
+
+		contains := func(m []string, s string) bool {
+			for _, x := range m {
+				if x == s {
+					return true
+				}
+			}
+			return false
+		}
+		join := func(idx int) string {
+			var s string
+			for key, val := range misses {
+				switch key {
+				case idx:
+					s += val
+				default:
+					if !contains(hits, val) {
+						s += val
+					}
+				}
+			}
+			return s
+		}
+
 		var re string
-		for _, s := range pattern {
+		for i, s := range pattern {
 			switch {
 			case s == "":
-				re += fmt.Sprintf("[^%s]", misses)
+				re += fmt.Sprintf("[^%s]", join(i))
 			case s[0] == '[':
-				re += fmt.Sprintf("%s%s]", s, misses)
+				re += fmt.Sprintf("%s%s]", s, join(i))
 			default:
 				re += s
 			}
 		}
 		log.Debug().
-			Str("hits", hits).
-			Str("misses", misses).
+			Strs("hits", hits).
+			Interface("misses", misses).
 			Str("guess", guess).
 			Str("pattern", re).
 			Msg("guesses")
@@ -106,7 +131,7 @@ func Guesses(guesses ...string) (FilterFunc, error) {
 		if err != nil {
 			return nil, err
 		}
-		fns = append(fns, Hits(hits), p)
+		fns = append(fns, Hits(strings.Join(hits, "")), p)
 	}
 	return func(word string) bool {
 		for _, fn := range fns {
