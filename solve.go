@@ -64,6 +64,30 @@ func Pattern(pattern string) (FilterFunc, error) {
 	}, nil
 }
 
+func contains(m []string, s string) bool {
+	for _, x := range m {
+		if x == s {
+			return true
+		}
+	}
+	return false
+}
+
+func join(hits []string, misses map[int]string, idx int) string {
+	var s string
+	for key, val := range misses {
+		switch key {
+		case idx:
+			s += val
+		default:
+			if !contains(hits, val) {
+				s += val
+			}
+		}
+	}
+	return s
+}
+
 func Guesses(guesses ...string) (FilterFunc, error) {
 	var fns []FilterFunc
 	for _, guess := range guesses {
@@ -87,36 +111,13 @@ func Guesses(guesses ...string) (FilterFunc, error) {
 			}
 		}
 
-		contains := func(m []string, s string) bool {
-			for _, x := range m {
-				if x == s {
-					return true
-				}
-			}
-			return false
-		}
-		join := func(idx int) string {
-			var s string
-			for key, val := range misses {
-				switch key {
-				case idx:
-					s += val
-				default:
-					if !contains(hits, val) {
-						s += val
-					}
-				}
-			}
-			return s
-		}
-
 		var re string
 		for i, s := range pattern {
 			switch {
 			case s == "":
-				re += fmt.Sprintf("[^%s]", join(i))
+				re += fmt.Sprintf("[^%s]", join(hits, misses, i))
 			case s[0] == '[':
-				re += fmt.Sprintf("%s%s]", s, join(i))
+				re += fmt.Sprintf("%s%s]", s, join(hits, misses, i))
 			default:
 				re += s
 			}
