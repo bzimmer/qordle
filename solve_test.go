@@ -179,6 +179,13 @@ func TestGuesses(t *testing.T) {
 			result:  false,
 			err:     false,
 		},
+		{
+			name:    "guesses with one match out of order but also legal",
+			word:    "pleat",
+			guesses: []string{"br~ain", "~l~egAl"},
+			result:  true,
+			err:     false,
+		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
