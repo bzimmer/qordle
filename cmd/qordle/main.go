@@ -112,7 +112,7 @@ func main() {
 				dictionary, err = qordle.DictionaryFs(afero.NewOsFs(), source)
 			case false:
 				source = "embedded"
-				dictionary, err = qordle.DictionarySlice(qordle.Solutions)
+				dictionary, err = qordle.DictionarySlice(qordle.Words)
 			}
 			if err != nil {
 				return err
