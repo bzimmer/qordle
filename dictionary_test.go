@@ -48,3 +48,24 @@ func TestDictionaryFs(t *testing.T) {
 		})
 	}
 }
+
+func TestDictionarySlice(t *testing.T) {
+	for _, tt := range []struct {
+		name          string
+		words, result []string
+	}{
+		{
+			name:   "embdedded",
+			words:  []string{"hoody", "foobar"},
+			result: []string{"hoody", "foobar"},
+		},
+	} {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			a := assert.New(t)
+			dictionary, err := qordle.DictionarySlice(tt.words)
+			a.NoError(err)
+			a.Equal(tt.result, dictionary.Words())
+		})
+	}
+}

@@ -37,3 +37,7 @@ func DictionaryFs(fs afero.Fs, path string) (Dictionary, error) {
 
 	return d, nil
 }
+
+func DictionarySlice(words []string) (Dictionary, error) {
+	return &dictionary{words: words}, nil
+}
