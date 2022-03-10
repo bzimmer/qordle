@@ -12,7 +12,7 @@ import (
 type FilterFunc func(string) bool
 
 func Solve(words Dictionary, fns ...FilterFunc) Dictionary {
-	var res []string
+	res := make([]string, 0)
 	for _, word := range words {
 		matches := true
 		for i := 0; matches && i < len(fns); i++ {
