@@ -2,20 +2,28 @@ package qordle
 
 import (
 	"bufio"
+	"embed"
+	"io"
 
 	"github.com/spf13/afero"
 )
 
-type Dictionary interface {
-	Words() []string
-}
+type Dictionary []string
 
-type dictionary struct {
-	words []string
-}
+//go:embed data
+var data embed.FS
 
-func (d *dictionary) Words() []string {
-	return d.words
+func dict(r io.Reader) (Dictionary, error) {
+	var res []string
+	scanner := bufio.NewScanner(r)
+	for scanner.Scan() {
+		res = append(res, scanner.Text())
+	}
+	err := scanner.Err()
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
 
 func DictionaryFs(fs afero.Fs, path string) (Dictionary, error) {
@@ -24,16 +32,14 @@ func DictionaryFs(fs afero.Fs, path string) (Dictionary, error) {
 		return nil, err
 	}
 	defer fp.Close()
+	return dict(fp)
+}
 
-	d := new(dictionary)
-	scanner := bufio.NewScanner(fp)
-	for scanner.Scan() {
-		d.words = append(d.words, scanner.Text())
-	}
-	err = scanner.Err()
+func DictionaryEmbed() (Dictionary, error) {
+	fp, err := data.Open("data/qordle.txt")
 	if err != nil {
 		return nil, err
 	}
-
-	return d, nil
+	defer fp.Close()
+	return dict(fp)
 }

@@ -103,14 +103,30 @@ func main() {
 				}
 				fns = append(fns, fs)
 			}
-			dictionary, err := qordle.DictionaryFs(afero.NewOsFs(), c.String("dictionary"))
+			var err error
+			var source string
+			var dictionary qordle.Dictionary
+			switch c.IsSet("dictionary") {
+			case true:
+				source = c.String("dictionary")
+				dictionary, err = qordle.DictionaryFs(afero.NewOsFs(), source)
+			case false:
+				source = "embedded"
+				dictionary, err = qordle.DictionaryEmbed()
+			}
 			if err != nil {
 				return err
 			}
+			n := len(dictionary)
 			dictionary = qordle.Solve(dictionary, fns...)
-
+			q := len(dictionary)
+			log.Debug().
+				Int("master", n).
+				Int("filtered", q).
+				Str("source", source).
+				Msg("dictionary")
 			enc := json.NewEncoder(c.App.Writer)
-			return enc.Encode(dictionary.Words())
+			return enc.Encode(dictionary)
 		},
 	}
 	if err := app.RunContext(context.Background(), os.Args); err != nil {

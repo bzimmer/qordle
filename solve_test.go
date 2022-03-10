@@ -205,7 +205,7 @@ func TestGuesses(t *testing.T) {
 func TestSolve(t *testing.T) {
 	for _, tt := range []struct {
 		name          string
-		words, result []string
+		words, result qordle.Dictionary
 		fns           []qordle.FilterFunc
 	}{
 		{
@@ -224,10 +224,8 @@ func TestSolve(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			a := assert.New(t)
-			dictionary := qordle.Solve(&dictionaryTest{
-				words: tt.words,
-			}, tt.fns...)
-			a.Equal(tt.result, dictionary.Words())
+			dictionary := qordle.Solve(tt.words, tt.fns...)
+			a.Equal(tt.result, dictionary)
 		})
 	}
 }
