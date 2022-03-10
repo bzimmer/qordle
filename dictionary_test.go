@@ -2,6 +2,7 @@ package qordle_test
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"github.com/bzimmer/qordle"
@@ -10,14 +11,25 @@ import (
 )
 
 func TestDictionaryFs(t *testing.T) {
+	path := "/tmp/share/dict/qordle.txt"
 	for _, tt := range []struct {
-		name          string
+		name, path    string
 		words, result qordle.Dictionary
+		err           bool
 	}{
 		{
-			name:   "readfs",
+			name:   "valid file",
+			path:   path,
 			words:  []string{"hoody", "foobar"},
 			result: []string{"hoody", "foobar"},
+			err:    false,
+		},
+		{
+			name:   "invalid file",
+			path:   "data/missing-file.txt",
+			words:  []string{"hoody", "foobar"},
+			result: []string{},
+			err:    true,
 		},
 	} {
 		tt := tt
@@ -25,8 +37,8 @@ func TestDictionaryFs(t *testing.T) {
 			a := assert.New(t)
 
 			afs := afero.NewMemMapFs()
-			path := "/tmp/share/dict/words"
-			a.NoError(afs.MkdirAll("/tmp/share/dict", 0755))
+			parent, _ := filepath.Split(path)
+			a.NoError(afs.MkdirAll(parent, 0755))
 			fp, err := afs.Create(path)
 			a.NoError(err)
 			for _, word := range tt.words {
@@ -34,9 +46,15 @@ func TestDictionaryFs(t *testing.T) {
 			}
 			a.NoError(fp.Close())
 
-			dictionary, err := qordle.DictionaryFs(afs, path)
-			a.NoError(err)
-			a.Equal(tt.result, dictionary)
+			dictionary, err := qordle.DictionaryFs(afs, tt.path)
+			switch tt.err {
+			case true:
+				a.Error(err)
+				a.Empty(tt.result)
+			case false:
+				a.NoError(err)
+				a.Equal(tt.result, dictionary)
+			}
 		})
 	}
 }
