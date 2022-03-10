@@ -80,6 +80,7 @@ func main() {
 		},
 		Before: initLogging,
 		Action: func(c *cli.Context) error {
+			t := time.Now()
 			fns := []qordle.FilterFunc{qordle.Lower(), qordle.Length(c.Int("length"))}
 			switch c.NArg() {
 			case 0:
@@ -121,6 +122,7 @@ func main() {
 			dictionary = qordle.Solve(dictionary, fns...)
 			q := len(dictionary)
 			log.Debug().
+				Dur("elpased", time.Since(t)).
 				Int("master", n).
 				Int("filtered", q).
 				Str("source", source).
