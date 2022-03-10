@@ -9,18 +9,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type dictionaryTest struct {
-	words []string
-}
-
-func (d *dictionaryTest) Words() []string {
-	return d.words
-}
-
 func TestDictionaryFs(t *testing.T) {
 	for _, tt := range []struct {
 		name          string
-		words, result []string
+		words, result qordle.Dictionary
 	}{
 		{
 			name:   "readfs",
@@ -44,28 +36,14 @@ func TestDictionaryFs(t *testing.T) {
 
 			dictionary, err := qordle.DictionaryFs(afs, path)
 			a.NoError(err)
-			a.Equal(tt.result, dictionary.Words())
+			a.Equal(tt.result, dictionary)
 		})
 	}
 }
 
-func TestDictionarySlice(t *testing.T) {
-	for _, tt := range []struct {
-		name          string
-		words, result []string
-	}{
-		{
-			name:   "embdedded",
-			words:  []string{"hoody", "foobar"},
-			result: []string{"hoody", "foobar"},
-		},
-	} {
-		tt := tt
-		t.Run(tt.name, func(t *testing.T) {
-			a := assert.New(t)
-			dictionary, err := qordle.DictionarySlice(tt.words)
-			a.NoError(err)
-			a.Equal(tt.result, dictionary.Words())
-		})
-	}
+func TestDictionaryEmbedded(t *testing.T) {
+	a := assert.New(t)
+	dictionary, err := qordle.DictionaryEmbed()
+	a.NoError(err)
+	a.GreaterOrEqual(len(dictionary), 10)
 }
