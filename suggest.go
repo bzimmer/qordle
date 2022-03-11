@@ -13,7 +13,7 @@ func Suggest(words Dictionary) Dictionary {
 		for j := range w {
 			if _, ok := s[w[j]]; !ok {
 				s[w[j]] = true
-				m[w[j]] += 1
+				m[w[j]]++
 			}
 		}
 	}
