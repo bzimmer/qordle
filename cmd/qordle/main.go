@@ -40,7 +40,7 @@ func flags() []cli.Flag {
 		&cli.BoolFlag{
 			Name:    "alpha",
 			Aliases: []string{"A"},
-			Usage:   "returns words in alphabetical order (default is suggested order)",
+			Usage:   "alphabetize word order (default is suggested word order)",
 			Value:   false,
 		},
 		&cli.BoolFlag{

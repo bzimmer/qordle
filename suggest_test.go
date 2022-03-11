@@ -20,7 +20,7 @@ func TestSuggest(t *testing.T) {
 		{
 			name:   "suggest two",
 			words:  qordle.Dictionary{"maths", "sport", "brain", "raise"},
-			result: qordle.Dictionary{"raise", "maths", "sport", "brain"},
+			result: qordle.Dictionary{"raise", "brain", "maths", "sport"},
 		},
 		{
 			name:   "empty",
