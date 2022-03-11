@@ -238,22 +238,22 @@ func TestGuesses(t *testing.T) {
 	}
 }
 
-func TestSolve(t *testing.T) {
+func TestFilter(t *testing.T) {
 	for _, tt := range []struct {
 		name          string
 		words, result qordle.Dictionary
 		fns           []qordle.FilterFunc
 	}{
 		{
-			name:   "solve",
-			words:  []string{"hoody", "foobar"},
-			result: []string{"hoody"},
+			name:   "filter",
+			words:  qordle.Dictionary{"hoody", "foobar"},
+			result: qordle.Dictionary{"hoody"},
 			fns:    []qordle.FilterFunc{qordle.Length(5)},
 		},
 		{
-			name:   "solve all",
-			words:  []string{"hoody", "foobar"},
-			result: []string{"hoody", "foobar"},
+			name:   "filter all",
+			words:  qordle.Dictionary{"hoody", "foobar"},
+			result: qordle.Dictionary{"hoody", "foobar"},
 			fns:    []qordle.FilterFunc{},
 		},
 	} {

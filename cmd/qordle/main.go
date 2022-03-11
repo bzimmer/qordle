@@ -38,6 +38,12 @@ func flags() []cli.Flag {
 			Usage: "dictionary of possible words (eg /usr/share/dict/words)",
 		},
 		&cli.BoolFlag{
+			Name:    "alpha",
+			Aliases: []string{"A"},
+			Usage:   "returns words in alphabetical order (default is suggested order)",
+			Value:   false,
+		},
+		&cli.BoolFlag{
 			Name:  "debug",
 			Usage: "enable debug log level",
 			Value: false,
@@ -119,6 +125,10 @@ func main() {
 				Int("filtered", q).
 				Str("source", source).
 				Msg("dictionary")
+
+			if !c.Bool("alpha") {
+				dictionary = qordle.Suggest(dictionary)
+			}
 			enc := json.NewEncoder(c.App.Writer)
 			return enc.Encode(dictionary)
 		},
