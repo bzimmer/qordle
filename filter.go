@@ -11,7 +11,7 @@ import (
 
 type FilterFunc func(string) bool
 
-func Solve(words Dictionary, fns ...FilterFunc) Dictionary {
+func Filter(words Dictionary, fns ...FilterFunc) Dictionary {
 	res := make([]string, 0)
 	for _, word := range words {
 		matches := true
@@ -23,6 +23,10 @@ func Solve(words Dictionary, fns ...FilterFunc) Dictionary {
 		}
 	}
 	return res
+}
+
+func NoOp(word string) bool {
+	return true
 }
 
 func Lower() FilterFunc {
@@ -38,12 +42,18 @@ func Length(length int) FilterFunc {
 }
 
 func Misses(misses string) FilterFunc {
+	if misses == "" {
+		return NoOp
+	}
 	return func(word string) bool {
 		return !strings.ContainsAny(word, misses)
 	}
 }
 
 func Hits(hits string) FilterFunc {
+	if hits == "" {
+		return NoOp
+	}
 	return func(word string) bool {
 		for i := range hits {
 			if !strings.Contains(word, string(hits[i])) {
@@ -55,13 +65,17 @@ func Hits(hits string) FilterFunc {
 }
 
 func Pattern(pattern string) (FilterFunc, error) {
+	if pattern == "" {
+		return NoOp, nil
+	}
 	re, err := regexp.Compile(pattern)
 	if err != nil {
 		return nil, err
 	}
-	return func(word string) bool {
+	fn := func(word string) bool {
 		return re.MatchString(word)
-	}, nil
+	}
+	return fn, nil
 }
 
 func contains(m []string, s string) bool {
@@ -91,6 +105,9 @@ func join(hits []string, misses map[int]string, idx int) string {
 func Guesses(guesses ...string) (FilterFunc, error) {
 	var fns []FilterFunc
 	for _, guess := range guesses {
+		if guess == "" {
+			continue
+		}
 		x := []rune(guess)
 		var hits, pattern []string
 		misses := make(map[int]string, 0)
@@ -133,6 +150,9 @@ func Guesses(guesses ...string) (FilterFunc, error) {
 			return nil, err
 		}
 		fns = append(fns, Hits(strings.Join(hits, "")), p)
+	}
+	if len(fns) == 0 {
+		return NoOp, nil
 	}
 	return func(word string) bool {
 		for _, fn := range fns {
