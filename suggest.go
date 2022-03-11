@@ -4,6 +4,7 @@ import (
 	"sort"
 )
 
+// Suggest orders the dictionary by the word providing the most new information
 func Suggest(words Dictionary) Dictionary {
 	// find the most common letters in the word list
 	m := make(map[rune]int)
@@ -18,7 +19,7 @@ func Suggest(words Dictionary) Dictionary {
 		}
 	}
 
-	// map each word to it's sum of letters skipping duplicates
+	// map each word to it's sum of letters (skip duplicates)
 	x := make(map[int][]string)
 	for i := range words {
 		n := 0
@@ -33,7 +34,7 @@ func Suggest(words Dictionary) Dictionary {
 		x[n] = append(x[n], words[i])
 	}
 
-	// sort the words by their letter summation
+	// sort the words by their letter sums
 	ranks := make([]int, 0, len(x))
 	for k := range x {
 		ranks = append(ranks, k)
@@ -43,7 +44,10 @@ func Suggest(words Dictionary) Dictionary {
 	// construct the new dictionary
 	dict := make(Dictionary, 0)
 	for i := len(ranks) - 1; i >= 0; i-- {
-		dict = append(dict, x[ranks[i]]...)
+		// alpha sort to ensure stability in the output
+		q := x[ranks[i]]
+		sort.Strings(q)
+		dict = append(dict, q...)
 	}
 
 	return dict
