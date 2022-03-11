@@ -22,6 +22,11 @@ func TestSuggest(t *testing.T) {
 			words:  qordle.Dictionary{"maths", "sport", "brain", "raise"},
 			result: qordle.Dictionary{"raise", "maths", "sport", "brain"},
 		},
+		{
+			name:   "empty",
+			words:  qordle.Dictionary{},
+			result: qordle.Dictionary{},
+		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
