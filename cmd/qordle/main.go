@@ -31,12 +31,11 @@ func flags() []cli.Flag {
 		},
 		&cli.StringFlag{
 			Name:  "pattern",
-			Usage: "match against a known pattern (all letters green, use '.' for all unknown letters)",
+			Usage: "match against a known pattern (use '.' for all unknown letters)",
 		},
 		&cli.StringFlag{
 			Name:  "dictionary",
-			Usage: "dictionary of possible words",
-			Value: "/usr/share/dict/words",
+			Usage: "dictionary of possible words (eg /usr/share/dict/words)",
 		},
 		&cli.BoolFlag{
 			Name:  "debug",
@@ -81,30 +80,23 @@ func main() {
 		Before: initLogging,
 		Action: func(c *cli.Context) error {
 			t := time.Now()
-			fns := []qordle.FilterFunc{qordle.Lower(), qordle.Length(c.Int("length"))}
-			switch c.NArg() {
-			case 0:
-				if c.IsSet("pattern") {
-					f, err := qordle.Pattern(c.String("pattern"))
-					if err != nil {
-						return err
-					}
-					fns = append(fns, f)
-				}
-				if c.IsSet("hits") {
-					fns = append(fns, qordle.Hits(c.String("hits")))
-				}
-				if c.IsSet("misses") {
-					fns = append(fns, qordle.Misses(c.String("misses")))
-				}
-			default:
-				fs, err := qordle.Guesses(c.Args().Slice()...)
-				if err != nil {
-					return err
-				}
-				fns = append(fns, fs)
+			pattern, err := qordle.Pattern(c.String("pattern"))
+			if err != nil {
+				return err
 			}
-			var err error
+			guesses, err := qordle.Guesses(c.Args().Slice()...)
+			if err != nil {
+				return err
+			}
+			fns := []qordle.FilterFunc{
+				qordle.Lower(),
+				qordle.Length(c.Int("length")),
+				qordle.Hits(c.String("hits")),
+				qordle.Misses(c.String("misses")),
+				pattern,
+				guesses,
+			}
+
 			var source string
 			var dictionary qordle.Dictionary
 			switch c.IsSet("dictionary") {
@@ -119,7 +111,7 @@ func main() {
 				return err
 			}
 			n := len(dictionary)
-			dictionary = qordle.Solve(dictionary, fns...)
+			dictionary = qordle.Filter(dictionary, fns...)
 			q := len(dictionary)
 			log.Debug().
 				Dur("elpased", time.Since(t)).

@@ -82,6 +82,20 @@ func TestHitsAndMisses(t *testing.T) {
 			result: false,
 			ff:     qordle.Misses,
 		},
+		{
+			name:   "misses empty",
+			input:  "",
+			word:   "banana",
+			result: true,
+			ff:     qordle.Misses,
+		},
+		{
+			name:   "hits empty",
+			input:  "",
+			word:   "banana",
+			result: true,
+			ff:     qordle.Hits,
+		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
@@ -116,6 +130,28 @@ func TestLength(t *testing.T) {
 			a := assert.New(t)
 			p := qordle.Length(tt.length)
 			a.Equal(tt.result, p(tt.word))
+		})
+	}
+}
+
+func TestNoOp(t *testing.T) {
+	for _, tt := range []struct {
+		name, word string
+		result     bool
+	}{
+		{
+			name: "word",
+			word: "hoody",
+		},
+		{
+			name: "empty",
+			word: "",
+		},
+	} {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			a := assert.New(t)
+			a.True(qordle.NoOp(tt.word))
 		})
 	}
 }
@@ -224,7 +260,7 @@ func TestSolve(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			a := assert.New(t)
-			dictionary := qordle.Solve(tt.words, tt.fns...)
+			dictionary := qordle.Filter(tt.words, tt.fns...)
 			a.Equal(tt.result, dictionary)
 		})
 	}
