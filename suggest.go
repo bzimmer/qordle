@@ -19,7 +19,7 @@ func Suggest(words Dictionary) Dictionary {
 		}
 	}
 
-	// map each word to it's sum of letters (skip duplicates)
+	// map each word to its sum of letters (skip duplicates)
 	x := make(map[int][]string)
 	for i := range words {
 		n := 0
