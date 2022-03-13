@@ -40,7 +40,13 @@ func flags() []cli.Flag {
 		&cli.BoolFlag{
 			Name:    "alpha",
 			Aliases: []string{"A"},
-			Usage:   "alphabetize word order (default is suggested word order)",
+			Usage:   "use the alphabetize strategy",
+			Value:   false,
+		},
+		&cli.BoolFlag{
+			Name:    "position",
+			Aliases: []string{"P"},
+			Usage:   "use the position strategy",
 			Value:   false,
 		},
 		&cli.BoolFlag{
@@ -116,6 +122,7 @@ func main() {
 			if err != nil {
 				return err
 			}
+
 			n := len(dictionary)
 			dictionary = qordle.Filter(dictionary, fns...)
 			q := len(dictionary)
@@ -126,11 +133,12 @@ func main() {
 				Str("source", source).
 				Msg("dictionary")
 
-			if !c.Bool("alpha") {
-				dictionary = qordle.Suggest(dictionary)
+			strategy := qordle.Frequency
+			if c.Bool("alpha") {
+				strategy = qordle.Alpha
 			}
 			enc := json.NewEncoder(c.App.Writer)
-			return enc.Encode(dictionary)
+			return enc.Encode(strategy(dictionary))
 		},
 	}
 	if err := app.RunContext(context.Background(), os.Args); err != nil {
