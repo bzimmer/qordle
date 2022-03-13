@@ -4,8 +4,18 @@ import (
 	"sort"
 )
 
-// Suggest orders the dictionary by the word providing the most new information
-func Suggest(words Dictionary) Dictionary {
+type Strategy func(words Dictionary) Dictionary
+
+// Alpha orders the dictionary alphabetically
+func Alpha(words Dictionary) Dictionary {
+	dict := make(Dictionary, len(words))
+	copy(dict, words)
+	sort.Strings(dict)
+	return dict
+}
+
+// Frequency orders the dictionary by words containing the most frequent letters
+func Frequency(words Dictionary) Dictionary {
 	// find the most common letters in the word list
 	m := make(map[rune]int)
 	for i := range words {

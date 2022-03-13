@@ -7,18 +7,43 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSuggest(t *testing.T) {
+func TestAlpha(t *testing.T) {
 	for _, tt := range []struct {
 		name          string
 		words, result qordle.Dictionary
 	}{
 		{
-			name:   "suggest one",
+			name:   "simple",
+			words:  qordle.Dictionary{"easle", "fause", "false", "haste", "halse"},
+			result: qordle.Dictionary{"easle", "false", "fause", "halse", "haste"},
+		},
+		{
+			name:   "empty",
+			words:  qordle.Dictionary{},
+			result: qordle.Dictionary{},
+		},
+	} {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			a := assert.New(t)
+			dictionary := qordle.Alpha(tt.words)
+			a.Equal(tt.result, dictionary)
+		})
+	}
+}
+
+func TestFrequency(t *testing.T) {
+	for _, tt := range []struct {
+		name          string
+		words, result qordle.Dictionary
+	}{
+		{
+			name:   "frequency one",
 			words:  qordle.Dictionary{"easle", "false", "fause", "halse", "haste"},
 			result: qordle.Dictionary{"false", "halse", "easle", "fause", "haste"},
 		},
 		{
-			name:   "suggest two",
+			name:   "frequency two",
 			words:  qordle.Dictionary{"maths", "sport", "brain", "raise"},
 			result: qordle.Dictionary{"raise", "brain", "maths", "sport"},
 		},
@@ -31,7 +56,7 @@ func TestSuggest(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			a := assert.New(t)
-			dictionary := qordle.Suggest(tt.words)
+			dictionary := qordle.Frequency(tt.words)
 			a.Equal(tt.result, dictionary)
 		})
 	}
