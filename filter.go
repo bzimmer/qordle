@@ -9,6 +9,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+const YellowPrefix = '~'
+
 type FilterFunc func(string) bool
 
 func Filter(words Dictionary, fns ...FilterFunc) Dictionary {
@@ -113,7 +115,7 @@ func Guesses(guesses ...string) (FilterFunc, error) {
 		misses := make(map[int]string, 0)
 		for i := 0; i < len(x); i++ {
 			switch {
-			case x[i] == '~':
+			case x[i] == YellowPrefix:
 				i++
 				hits = append(hits, string(x[i]))
 				misses[len(pattern)] = string(x[i])

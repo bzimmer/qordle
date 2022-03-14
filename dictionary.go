@@ -3,12 +3,21 @@ package qordle
 import (
 	"bufio"
 	"embed"
+	"encoding/json"
 	"io"
+	"io/fs"
+	"path/filepath"
+	"sort"
+	"strings"
 
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/afero"
+	"github.com/urfave/cli/v2"
 )
 
 type Dictionary []string
+
+const Data = "data"
 
 //go:embed data
 var data embed.FS
@@ -26,8 +35,18 @@ func dict(r io.Reader) (Dictionary, error) {
 	return res, nil
 }
 
-func DictionaryFs(fs afero.Fs, path string) (Dictionary, error) {
-	fp, err := fs.Open(path)
+func DictionaryFs(afs afero.Fs, path string) (Dictionary, error) {
+	fp, err := afs.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer fp.Close()
+	log.Info().Str("path", path).Msg("fs")
+	return dict(fp)
+}
+
+func DictionaryEm(path string) (Dictionary, error) {
+	fp, err := data.Open(filepath.Join(Data, path))
 	if err != nil {
 		return nil, err
 	}
@@ -35,11 +54,35 @@ func DictionaryFs(fs afero.Fs, path string) (Dictionary, error) {
 	return dict(fp)
 }
 
-func DictionaryEmbed() (Dictionary, error) {
-	fp, err := data.Open("data/qordle.txt")
-	if err != nil {
-		return nil, err
+func ListEm() ([]string, error) {
+	dicts := make([]string, 0)
+	werr := fs.WalkDir(data, Data, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		dicts = append(dicts, strings.Replace(d.Name(), ".txt", "", 1))
+		return nil
+	})
+	if werr != nil {
+		return nil, werr
 	}
-	defer fp.Close()
-	return dict(fp)
+	sort.Strings(dicts)
+	return dicts, nil
+}
+
+func CommandWordlists() *cli.Command {
+	return &cli.Command{
+		Name: "wordlists",
+		Action: func(c *cli.Context) error {
+			enc := json.NewEncoder(c.App.Writer)
+			list, err := ListEm()
+			if err != nil {
+				return err
+			}
+			return enc.Encode(list)
+		},
+	}
 }

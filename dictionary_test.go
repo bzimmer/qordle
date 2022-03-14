@@ -1,17 +1,20 @@
 package qordle_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/bzimmer/qordle"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
+	"github.com/urfave/cli/v2"
 )
 
 func TestDictionaryFs(t *testing.T) {
-	path := "/tmp/share/dict/qordle.txt"
+	path := "data/solutions.txt"
 	for _, tt := range []struct {
 		name, path    string
 		words, result qordle.Dictionary
@@ -50,7 +53,7 @@ func TestDictionaryFs(t *testing.T) {
 			switch tt.err {
 			case true:
 				a.Error(err)
-				a.Empty(tt.result)
+				a.Empty(dictionary)
 			case false:
 				a.NoError(err)
 				a.Equal(tt.result, dictionary)
@@ -59,9 +62,71 @@ func TestDictionaryFs(t *testing.T) {
 	}
 }
 
-func TestDictionaryEmbedded(t *testing.T) {
+func TestDictionaryEm(t *testing.T) {
+	for _, tt := range []struct {
+		name, path string
+		err        bool
+	}{
+		{
+			name: "valid file",
+			path: "solutions.txt",
+			err:  false,
+		},
+		{
+			name: "invalid file",
+			path: "missing-file.txt",
+			err:  true,
+		},
+	} {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			a := assert.New(t)
+
+			dictionary, err := qordle.DictionaryEm(tt.path)
+			switch tt.err {
+			case true:
+				a.Error(err)
+				a.Empty(dictionary)
+			case false:
+				a.NoError(err)
+				a.NotEmpty(dictionary)
+			}
+		})
+	}
+}
+
+func TestListEm(t *testing.T) {
 	a := assert.New(t)
-	dictionary, err := qordle.DictionaryEmbed()
+	list, err := qordle.ListEm()
 	a.NoError(err)
-	a.GreaterOrEqual(len(dictionary), 10)
+	a.NotEmpty(list)
+}
+
+func TestCommandWordlists(t *testing.T) {
+	for _, tt := range []struct {
+		name         string
+		dictionaries []string
+	}{
+		{
+			name:         "wordlists",
+			dictionaries: []string{"possible", "qordle", "solutions"},
+		},
+	} {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			a := assert.New(t)
+			builder := &strings.Builder{}
+			app := &cli.App{
+				Name:     tt.name,
+				Writer:   builder,
+				Commands: []*cli.Command{qordle.CommandWordlists()},
+			}
+			err := app.Run([]string{"qordle", "wordlists"})
+			a.NoError(err)
+			res := []string{}
+			err = json.Unmarshal([]byte(builder.String()), &res)
+			a.NoError(err)
+			a.Equal(tt.dictionaries, res)
+		})
+	}
 }

@@ -9,81 +9,26 @@ Simple wordle solution suggester.
 
 `qordle` uses the hits, misses, and a pattern (if known) to suggest words matching the solution.
 
-It does not:
+## Input
 
-* score or rank the possibilities
+* Input correctly placed letters as an uppercase
+* Input incorrectly placed letters as a lowercase letter preceeded by a `~` (tilde)
+* Input missesas as lowercase letters
 
 ## Example
 
 ![Screenshot](screenshot.png)
 
-```sh
-~ > qordle --hits ar --misses binstpel --pattern ..ar. | jq
-[
-  "acara",
-  "afara",
-  "arara",
-  "award",
-  "chard",
-  "chark",
-  "charm",
-  "charr",
-  "chary",
-  "dwarf",
-  "guara",
-  "guard",
-  "hoard",
-  "hoary",
-  "orary",
-  "ovary",
-  "quark",
-  "uzara",
-  "wharf"
-]
-```
+By default the letter frequency strategy orders the possible words.
 
 ```sh
-~ > qordle --hits ar --misses binstpel --pattern ".[acdfghjklmoquvwxyz]ar." | jq
-[
-  "acara",
-  "afara",
-  "award",
-  "chard",
-  "chark",
-  "charm",
-  "charr",
-  "chary",
-  "dwarf",
-  "guara",
-  "guard",
-  "hoard",
-  "hoary",
-  "ovary",
-  "quark",
-  "uzara",
-  "wharf"
-]
+~ > qordle b~rAin stARt peARl
+["chard","hoard","dwarf","wharf","award","guard","charm","ovary","quark"]
 ```
 
+Specify the `-A` flag to order the words alphabetically.
+
 ```sh
-~ > qordle b~rAin stARt peARl | jq
-[
-  "acara",
-  "afara",
-  "award",
-  "chard",
-  "chark",
-  "charm",
-  "charr",
-  "chary",
-  "dwarf",
-  "guara",
-  "guard",
-  "hoard",
-  "hoary",
-  "ovary",
-  "quark",
-  "uzara",
-  "wharf"
-]
+~ > qordle -A b~rAin stARt peARl
+["award","chard","charm","dwarf","guard","hoard","ovary","quark","wharf"]
 ```

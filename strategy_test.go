@@ -61,3 +61,35 @@ func TestFrequency(t *testing.T) {
 		})
 	}
 }
+
+func TestPosition(t *testing.T) {
+	for _, tt := range []struct {
+		name          string
+		words, result qordle.Dictionary
+	}{
+		{
+			name: "position",
+			words: qordle.Dictionary{
+				"irate",
+				"raise",
+				"cater",
+				"slate",
+				"stale",
+				"steal",
+			},
+			result: []string{"slate", "stale", "irate", "raise", "steal", "cater"},
+		},
+		{
+			name:   "empty",
+			words:  qordle.Dictionary{},
+			result: qordle.Dictionary{},
+		},
+	} {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			a := assert.New(t)
+			dictionary := qordle.Position(tt.words)
+			a.Equal(tt.result, dictionary)
+		})
+	}
+}
