@@ -45,7 +45,7 @@ func Position(words Dictionary) Dictionary {
 			if _, ok := pos[letter]; !ok {
 				pos[letter] = make(map[int]int)
 			}
-			pos[letter][index] += 1
+			pos[letter][index]++
 		}
 	}
 
@@ -83,7 +83,7 @@ func Frequency(words Dictionary) Dictionary {
 		n := 0
 		word := []rune(word)
 		s := make(map[rune]bool, 0)
-		for j := range []rune(word) {
+		for j := range word {
 			if _, ok := s[word[j]]; !ok {
 				s[word[j]] = true
 				n += freq[word[j]]

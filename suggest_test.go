@@ -19,7 +19,7 @@ func TestSuggestCommand(t *testing.T) {
 			strategy: "a",
 		},
 		{
-			name:     "frequeny",
+			name:     "frequency",
 			strategy: "f",
 		},
 		{
