@@ -81,7 +81,6 @@ func TestDictionaryEm(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			a := assert.New(t)
-
 			dictionary, err := qordle.DictionaryEm(tt.path)
 			switch tt.err {
 			case true:

@@ -116,9 +116,7 @@ func CommandScore() *cli.Command {
 	return &cli.Command{
 		Name: "score",
 		Action: func(c *cli.Context) error {
-			scores, err := Score(
-				c.Args().First(),
-				c.Args().Tail()...)
+			scores, err := Score(c.Args().First(), c.Args().Tail()...)
 			if err != nil {
 				return err
 			}
