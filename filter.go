@@ -115,11 +115,6 @@ func Guesses(guesses ...string) (FilterFunc, error) {
 		misses := make(map[int]string, 0)
 		for i := 0; i < len(x); i++ {
 			switch {
-			case x[i] == YellowPrefix:
-				i++
-				hits = append(hits, string(x[i]))
-				misses[len(pattern)] = string(x[i])
-				pattern = append(pattern, "[^")
 			case unicode.IsUpper(x[i]):
 				hit := string(unicode.ToLower(x[i]))
 				hits = append(hits, hit)
@@ -127,6 +122,13 @@ func Guesses(guesses ...string) (FilterFunc, error) {
 			case unicode.IsLower(x[i]):
 				misses[len(pattern)] = string(x[i])
 				pattern = append(pattern, "")
+			default:
+				// case x[i] == YellowPrefix:
+				i++
+				w := string(unicode.ToLower(x[i]))
+				hits = append(hits, w)
+				misses[len(pattern)] = w
+				pattern = append(pattern, "[^")
 			}
 		}
 
