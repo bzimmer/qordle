@@ -192,35 +192,42 @@ func TestGuesses(t *testing.T) {
 			word:    "hoody",
 			guesses: []string{""},
 			result:  true,
-			err:     false,
 		},
 		{
 			name:    "guesses with match",
 			word:    "hoody",
 			guesses: []string{"s~hOut"},
 			result:  true,
-			err:     false,
 		},
 		{
 			name:    "guesses with no match",
 			word:    "hoody",
 			guesses: []string{"cloud"},
 			result:  false,
-			err:     false,
 		},
 		{
 			name:    "guesses with one match out of order",
 			word:    "dusty",
 			guesses: []string{"brain", "clov~e"},
 			result:  false,
-			err:     false,
 		},
 		{
 			name:    "guesses with one match out of order but also legal",
 			word:    "pleat",
 			guesses: []string{"br~ain", "~l~egAl"},
 			result:  true,
-			err:     false,
+		},
+		{
+			name:    "guesses with partial as hash",
+			word:    "pleat",
+			guesses: []string{"br#ain", "#l#egAl"},
+			result:  true,
+		},
+		{
+			name:    "guesses with partial as hash and capital partial",
+			word:    "pleat",
+			guesses: []string{"br#ain", "#l#EgAl"},
+			result:  true,
 		},
 	} {
 		tt := tt

@@ -87,9 +87,8 @@ func TestScoreCommand(t *testing.T) {
 
 func TestPlayCommand(t *testing.T) {
 	for _, tt := range []struct {
-		name           string
+		name, err      string
 		words, guesses []string
-		err            bool
 	}{
 		{
 			name:    "table",
@@ -97,13 +96,18 @@ func TestPlayCommand(t *testing.T) {
 			guesses: []string{"so~arE", "mAiLE", "cABLE", "fABLE", "gABLE", "hABLE", "TABLE"},
 		},
 		{
-			name:  "xxyyzz",
-			words: []string{"xxyyzz"},
-			err:   true,
+			name:  "failed to find secret",
+			words: []string{"12345"},
+			err:   "failed to find secret",
+		},
+		{
+			name:  "secret and guess lengths do not match",
+			words: []string{"123456"},
+			err:   "secret and guess lengths do not match",
 		},
 		{
 			name: "no word",
-			err:  true,
+			err:  "expected at least one word to play",
 		},
 	} {
 		tt := tt
@@ -116,8 +120,8 @@ func TestPlayCommand(t *testing.T) {
 				Commands: []*cli.Command{qordle.CommandPlay()},
 			}
 			err := app.Run(append([]string{"qordle", "play"}, tt.words...))
-			if tt.err {
-				a.Error(err)
+			if tt.err != "" {
+				a.Equal(tt.err, err.Error())
 				return
 			}
 			res := []string{}
