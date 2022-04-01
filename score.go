@@ -65,6 +65,9 @@ func play(secret string, dict Dictionary, words ...string) ([]string, error) {
 		case len(dict) == 0:
 			return nil, fmt.Errorf("failed to find secret")
 		case dict[0] == secret:
+			if len(scores) == 1 {
+				return scores, nil
+			}
 			return append(scores, strings.ToUpper(dict[0])), nil
 		}
 		words = append(words, dict[0])
@@ -80,18 +83,28 @@ func CommandPlay() *cli.Command {
 				Aliases: []string{"s"},
 				Value:   "soare",
 			},
+			&cli.StringSliceFlag{
+				Name:    "wordlist",
+				Aliases: []string{"w"},
+				Usage:   "use the specified embedded word list",
+				Value:   nil,
+			},
 		},
 		Before: func(c *cli.Context) error {
 			if c.NArg() == 0 {
 				return fmt.Errorf("expected at least one word to play")
+			}
+			if !c.IsSet("wordlist") || len(c.StringSlice("wordlist")) == 0 {
+				c.Set("wordlist", "possible")
+				c.Set("wordlist", "solutions")
 			}
 			return nil
 		},
 		Action: func(c *cli.Context) error {
 			var dict Dictionary
 			enc := json.NewEncoder(c.App.Writer)
-			for _, fn := range []string{"possible.txt", "solutions.txt"} {
-				t, err := DictionaryEm(fn)
+			for _, wordlist := range c.StringSlice("wordlist") {
+				t, err := DictionaryEm(fmt.Sprintf("%s.txt", wordlist))
 				if err != nil {
 					return err
 				}
