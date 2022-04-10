@@ -49,6 +49,12 @@ func Position(words Dictionary) Dictionary {
 		}
 	}
 
+	for letter, val := range pos {
+		for index, count := range val {
+			log.Debug().Str("letter", string(letter)).Int("index", index).Int("count", count).Msg("position")
+		}
+	}
+
 	// score the word by summing the position count for each letter
 	scores := make(map[int][]string)
 	for _, word := range words {

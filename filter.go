@@ -123,7 +123,6 @@ func Guesses(guesses ...string) (FilterFunc, error) {
 				misses[len(pattern)] = string(x[i])
 				pattern = append(pattern, "")
 			default:
-				// case x[i] == YellowPrefix:
 				i++
 				w := string(unicode.ToLower(x[i]))
 				hits = append(hits, w)

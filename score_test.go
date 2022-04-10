@@ -87,27 +87,37 @@ func TestScoreCommand(t *testing.T) {
 
 func TestPlayCommand(t *testing.T) {
 	for _, tt := range []struct {
-		name, err      string
-		words, guesses []string
+		name, err               string
+		args, guesses, wordlist []string
 	}{
 		{
 			name:    "table",
-			words:   []string{"table"},
+			args:    []string{"table"},
 			guesses: []string{"so~arE", "mAiLE", "cABLE", "fABLE", "gABLE", "hABLE", "TABLE"},
 		},
 		{
-			name:  "failed to find secret",
-			words: []string{"12345"},
-			err:   "failed to find secret",
+			name:    "first guess is the secret",
+			args:    []string{"soare"},
+			guesses: []string{"SOARE"},
 		},
 		{
-			name:  "secret and guess lengths do not match",
-			words: []string{"123456"},
-			err:   "secret and guess lengths do not match",
+			name: "failed to find secret",
+			args: []string{"12345"},
+			err:  "failed to find secret",
+		},
+		{
+			name: "secret and guess lengths do not match",
+			args: []string{"123456"},
+			err:  "secret and guess lengths do not match",
 		},
 		{
 			name: "no word",
 			err:  "expected at least one word to play",
+		},
+		{
+			name:    "six letter word",
+			args:    []string{"-w", "qordle", "--start", "shadow", "treaty"},
+			guesses: []string{"sh~adow", "c~anA~an", "~a~e~rAT~e", "TREATY"},
 		},
 	} {
 		tt := tt
@@ -119,7 +129,7 @@ func TestPlayCommand(t *testing.T) {
 				Writer:   builder,
 				Commands: []*cli.Command{qordle.CommandPlay()},
 			}
-			err := app.Run(append([]string{"qordle", "play"}, tt.words...))
+			err := app.Run(append([]string{"qordle", "play"}, tt.args...))
 			if tt.err != "" {
 				a.Equal(tt.err, err.Error())
 				return
