@@ -84,11 +84,11 @@ func CommandSuggest() *cli.Command {
 			dictionary = Filter(dictionary, fns...)
 			q := len(dictionary)
 
-			strat, err := strategy(c.String("strategy"))
+			st, err := strategy(c.String("strategy"))
 			if err != nil {
 				return err
 			}
-			dictionary = strat.Apply(dictionary)
+			dictionary = st.Apply(dictionary)
 			log.Debug().
 				Dur("elapsed", time.Since(t)).
 				Int("master", n).

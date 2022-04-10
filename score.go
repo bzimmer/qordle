@@ -109,8 +109,12 @@ func CommandPlay() *cli.Command {
 				return fmt.Errorf("expected at least one word to play")
 			}
 			if !c.IsSet("wordlist") || len(c.StringSlice("wordlist")) == 0 {
-				c.Set("wordlist", "possible")
-				c.Set("wordlist", "solutions")
+				if err := c.Set("wordlist", "possible"); err != nil {
+					return err
+				}
+				if err := c.Set("wordlist", "solutions"); err != nil {
+					return err
+				}
 			}
 			return nil
 		},
@@ -124,14 +128,14 @@ func CommandPlay() *cli.Command {
 				}
 				words = append(words, t...)
 			}
-			strat, err := strategy(c.String("strategy"))
+			st, err := strategy(c.String("strategy"))
 			if err != nil {
 				return err
 			}
 			gm := &game{
 				start:    c.String("start"),
 				words:    words,
-				strategy: strat,
+				strategy: st,
 			}
 			for _, secret := range c.Args().Slice() {
 				words, err := gm.play(secret)
