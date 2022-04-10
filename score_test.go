@@ -61,6 +61,11 @@ func TestScoreCommand(t *testing.T) {
 			words: []string{"table", "cable"},
 			score: []string{"cABLE"},
 		},
+		{
+			name:  "score with error",
+			words: []string{"tableau", "cable"},
+			err:   true,
+		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {

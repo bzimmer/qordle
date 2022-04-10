@@ -35,7 +35,15 @@ func Score(secret string, guesses ...string) ([]string, error) {
 	return scores, nil
 }
 
-func play(secret string, dict Dictionary, words ...string) ([]string, error) {
+type game struct {
+	start    string
+	words    Dictionary
+	strategy Strategy
+}
+
+func (g *game) play(secret string) ([]string, error) {
+	dict := g.words
+	words := []string{g.start}
 	fns := []FilterFunc{Length(len(secret)), Lower()}
 	for {
 		scores, err := Score(secret, words...)
@@ -46,7 +54,7 @@ func play(secret string, dict Dictionary, words ...string) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		dict = Position(Filter(dict, append(fns, guesses)...))
+		dict = g.strategy.Apply(Filter(dict, append(fns, guesses)...))
 		log.Info().
 			Int("dict", len(dict)).
 			Str("secret", secret).
@@ -80,7 +88,7 @@ func CommandPlay() *cli.Command {
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "start",
-				Aliases: []string{"s"},
+				Aliases: []string{"t"},
 				Value:   "soare",
 			},
 			&cli.StringSliceFlag{
@@ -89,30 +97,48 @@ func CommandPlay() *cli.Command {
 				Usage:   "use the specified embedded word list",
 				Value:   nil,
 			},
+			&cli.StringFlag{
+				Name:    "strategy",
+				Aliases: []string{"s"},
+				Usage:   "use the specified strategy",
+				Value:   "position",
+			},
 		},
 		Before: func(c *cli.Context) error {
 			if c.NArg() == 0 {
 				return fmt.Errorf("expected at least one word to play")
 			}
 			if !c.IsSet("wordlist") || len(c.StringSlice("wordlist")) == 0 {
-				c.Set("wordlist", "possible")
-				c.Set("wordlist", "solutions")
+				if err := c.Set("wordlist", "possible"); err != nil {
+					return err
+				}
+				if err := c.Set("wordlist", "solutions"); err != nil {
+					return err
+				}
 			}
 			return nil
 		},
 		Action: func(c *cli.Context) error {
-			var dict Dictionary
+			var words Dictionary
 			enc := json.NewEncoder(c.App.Writer)
 			for _, wordlist := range c.StringSlice("wordlist") {
 				t, err := DictionaryEm(fmt.Sprintf("%s.txt", wordlist))
 				if err != nil {
 					return err
 				}
-				dict = append(dict, t...)
+				words = append(words, t...)
 			}
-			start := c.String("start")
+			st, err := strategy(c.String("strategy"))
+			if err != nil {
+				return err
+			}
+			gm := &game{
+				start:    c.String("start"),
+				words:    words,
+				strategy: st,
+			}
 			for _, secret := range c.Args().Slice() {
-				words, err := play(secret, dict, start)
+				words, err := gm.play(secret)
 				if err != nil {
 					return err
 				}

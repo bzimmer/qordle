@@ -13,16 +13,6 @@ import (
 	"github.com/bzimmer/qordle"
 )
 
-func flags() []cli.Flag {
-	return []cli.Flag{
-		&cli.BoolFlag{
-			Name:  "debug",
-			Usage: "enable debug log level",
-			Value: false,
-		},
-	}
-}
-
 func initLogging(c *cli.Context) error {
 	level := zerolog.InfoLevel
 	if c.Bool("debug") {
@@ -48,7 +38,13 @@ func main() {
 		HelpName:    "qordle",
 		Usage:       "CLI for guessing wordle words",
 		Description: "CLI for guessing wordle words",
-		Flags:       flags(),
+		Flags: []cli.Flag{
+			&cli.BoolFlag{
+				Name:  "debug",
+				Usage: "enable debug log level",
+				Value: false,
+			},
+		},
 		ExitErrHandler: func(c *cli.Context, err error) {
 			if err == nil {
 				return
