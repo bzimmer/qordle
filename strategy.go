@@ -1,15 +1,32 @@
 package qordle
 
 import (
+	"fmt"
 	"sort"
 
 	"github.com/rs/zerolog/log"
 )
 
-type Strategy func(words Dictionary) Dictionary
+func strategy(code string) (Strategy, error) {
+	switch code {
+	case "a", "alpha":
+		return new(Alpha), nil
+	case "p", "pos", "position":
+		return new(Position), nil
+	case "f", "freq", "frequency":
+		return new(Frequency), nil
+	}
+	return nil, fmt.Errorf("unknown strategy `%s`", code)
+}
+
+type Strategy interface {
+	Apply(words Dictionary) Dictionary
+}
 
 // Alpha orders the dictionary alphabetically
-func Alpha(words Dictionary) Dictionary {
+type Alpha struct{}
+
+func (s *Alpha) Apply(words Dictionary) Dictionary {
 	dict := make(Dictionary, len(words))
 	copy(dict, words)
 	sort.Strings(dict)
@@ -37,7 +54,9 @@ func mkdict(op string, scores map[int][]string) Dictionary {
 }
 
 // Position orders words by their letter's optimal position
-func Position(words Dictionary) Dictionary {
+type Position struct{}
+
+func (s *Position) Apply(words Dictionary) Dictionary {
 	// count the number of times a letter appears at the position
 	pos := make(map[rune]map[int]int)
 	for _, word := range words {
@@ -69,7 +88,9 @@ func Position(words Dictionary) Dictionary {
 }
 
 // Frequency orders the dictionary by words containing the most frequent letters
-func Frequency(words Dictionary) Dictionary {
+type Frequency struct{}
+
+func (s *Frequency) Apply(words Dictionary) Dictionary {
 	// find the most common letters in the word list
 	freq := make(map[rune]int)
 	for i := range words {

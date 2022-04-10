@@ -26,7 +26,8 @@ func TestAlpha(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			a := assert.New(t)
-			dictionary := qordle.Alpha(tt.words)
+			s := new(qordle.Alpha)
+			dictionary := s.Apply(tt.words)
 			a.Equal(tt.result, dictionary)
 		})
 	}
@@ -56,7 +57,8 @@ func TestFrequency(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			a := assert.New(t)
-			dictionary := qordle.Frequency(tt.words)
+			s := new(qordle.Frequency)
+			dictionary := s.Apply(tt.words)
 			a.Equal(tt.result, dictionary)
 		})
 	}
@@ -88,7 +90,8 @@ func TestPosition(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			a := assert.New(t)
-			dictionary := qordle.Position(tt.words)
+			s := new(qordle.Position)
+			dictionary := s.Apply(tt.words)
 			a.Equal(tt.result, dictionary)
 		})
 	}

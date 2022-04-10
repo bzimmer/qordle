@@ -47,11 +47,6 @@ func CommandSuggest() *cli.Command {
 				Usage:   "use the specified strategy",
 				Value:   "p",
 			},
-			&cli.BoolFlag{
-				Name:  "debug",
-				Usage: "enable debug log level",
-				Value: false,
-			},
 		},
 		Action: func(c *cli.Context) error {
 			t := time.Now()
@@ -89,18 +84,11 @@ func CommandSuggest() *cli.Command {
 			dictionary = Filter(dictionary, fns...)
 			q := len(dictionary)
 
-			var strategy Strategy
-			switch st := c.String("strategy"); st {
-			case "a":
-				strategy = Alpha
-			case "p":
-				strategy = Position
-			case "f":
-				strategy = Frequency
-			default:
-				return fmt.Errorf("unknown strategy `%s`", st)
+			strat, err := strategy(c.String("strategy"))
+			if err != nil {
+				return err
 			}
-			dictionary = strategy(dictionary)
+			dictionary = strat.Apply(dictionary)
 			log.Debug().
 				Dur("elapsed", time.Since(t)).
 				Int("master", n).
