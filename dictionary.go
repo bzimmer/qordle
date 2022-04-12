@@ -75,7 +75,8 @@ func ListEm() ([]string, error) {
 
 func CommandWordlists() *cli.Command {
 	return &cli.Command{
-		Name: "wordlists",
+		Name:  "wordlists",
+		Usage: "list all available wordlists",
 		Action: func(c *cli.Context) error {
 			enc := json.NewEncoder(c.App.Writer)
 			list, err := ListEm()

@@ -70,10 +70,10 @@ func TestScoreCommand(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			a := assert.New(t)
-			builder := &strings.Builder{}
+			var builder strings.Builder
 			app := &cli.App{
 				Name:     tt.name,
-				Writer:   builder,
+				Writer:   &builder,
 				Commands: []*cli.Command{qordle.CommandScore()},
 			}
 			err := app.Run(append([]string{"qordle", "score"}, tt.words...))
@@ -82,7 +82,7 @@ func TestScoreCommand(t *testing.T) {
 				return
 			}
 			a.NoError(err)
-			res := []string{}
+			var res []string
 			err = json.Unmarshal([]byte(builder.String()), &res)
 			a.NoError(err)
 			a.Equal(tt.score, res)
@@ -97,7 +97,7 @@ func TestPlayCommand(t *testing.T) {
 	}{
 		{
 			name:    "table",
-			args:    []string{"table"},
+			args:    []string{"-s", "position", "table"},
 			guesses: []string{"so~arE", "mAiLE", "cABLE", "fABLE", "gABLE", "hABLE", "TABLE"},
 		},
 		{
@@ -120,18 +120,23 @@ func TestPlayCommand(t *testing.T) {
 			err:  "expected at least one word to play",
 		},
 		{
-			name:    "six letter word",
-			args:    []string{"-w", "qordle", "--start", "shadow", "treaty"},
+			name:    "six letter word with explicit strategy",
+			args:    []string{"-s", "position", "-w", "qordle", "--start", "shadow", "treaty"},
 			guesses: []string{"sh~adow", "c~anA~an", "~a~e~rAT~e", "TREATY"},
+		},
+		{
+			name:    "six letter word with no implicit strategy",
+			args:    []string{"-w", "qordle", "--start", "shadow", "treaty"},
+			guesses: []string{"sh~adow", "~alin~e~r", "p~e~rAc~t", "~rugAT~e", "TREATY"},
 		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			a := assert.New(t)
-			builder := &strings.Builder{}
+			var builder strings.Builder
 			app := &cli.App{
 				Name:     tt.name,
-				Writer:   builder,
+				Writer:   &builder,
 				Commands: []*cli.Command{qordle.CommandPlay()},
 			}
 			err := app.Run(append([]string{"qordle", "play"}, tt.args...))
@@ -139,7 +144,7 @@ func TestPlayCommand(t *testing.T) {
 				a.Equal(tt.err, err.Error())
 				return
 			}
-			res := []string{}
+			var res []string
 			err = json.Unmarshal([]byte(builder.String()), &res)
 			a.NoError(err)
 			a.Equal(tt.guesses, res)
