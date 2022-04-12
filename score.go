@@ -84,7 +84,8 @@ func (g *game) play(secret string) ([]string, error) {
 
 func CommandPlay() *cli.Command {
 	return &cli.Command{
-		Name: "play",
+		Name:  "play",
+		Usage: "play wordle automatically",
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:    "start",
@@ -101,7 +102,7 @@ func CommandPlay() *cli.Command {
 				Name:    "strategy",
 				Aliases: []string{"s"},
 				Usage:   "use the specified strategy",
-				Value:   "position",
+				Value:   "frequency",
 			},
 		},
 		Before: func(c *cli.Context) error {
@@ -153,7 +154,9 @@ func CommandPlay() *cli.Command {
 
 func CommandScore() *cli.Command {
 	return &cli.Command{
-		Name: "score",
+		Name:      "score",
+		Usage:     "score the guesses against the secret",
+		ArgsUsage: "<secret> <guess> [, <guess>]",
 		Action: func(c *cli.Context) error {
 			scores, err := Score(c.Args().First(), c.Args().Tail()...)
 			if err != nil {

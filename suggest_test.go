@@ -11,8 +11,7 @@ import (
 
 func TestSuggestCommand(t *testing.T) {
 	for _, tt := range []struct {
-		name, strategy, dictionary string
-		err                        bool
+		name, strategy, dictionary, err string
 	}{
 		{
 			name:     "alpha",
@@ -29,12 +28,12 @@ func TestSuggestCommand(t *testing.T) {
 		{
 			name:     "unknown",
 			strategy: "u",
-			err:      true,
+			err:      "unknown strategy `u`",
 		},
 		{
 			name:       "invalid dictionary",
 			dictionary: "blahblahblah",
-			err:        true,
+			err:        "open blahblahblah: no such file or directory",
 		},
 	} {
 		tt := tt
@@ -54,8 +53,8 @@ func TestSuggestCommand(t *testing.T) {
 			}
 			args = append(args, "raise", "fol~l~y")
 			err := app.Run(args)
-			if tt.err {
-				a.Error(err)
+			if tt.err != "" {
+				a.Equal(tt.err, err.Error())
 				return
 			}
 			a.NoError(err)

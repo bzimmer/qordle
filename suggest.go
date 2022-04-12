@@ -12,7 +12,9 @@ import (
 
 func CommandSuggest() *cli.Command {
 	return &cli.Command{
-		Name: "suggest",
+		Name:        "suggest",
+		Usage:       "suggest the next guess",
+		Description: "suggest the next guess",
 		Flags: []cli.Flag{
 			&cli.IntFlag{
 				Name:  "length",
@@ -45,7 +47,7 @@ func CommandSuggest() *cli.Command {
 				Name:    "strategy",
 				Aliases: []string{"s"},
 				Usage:   "use the specified strategy",
-				Value:   "p",
+				Value:   "frequency",
 			},
 		},
 		Action: func(c *cli.Context) error {
