@@ -17,10 +17,10 @@ import (
 
 type Dictionary []string
 
-const Data = "data"
+const dataFsDir = "data"
 
 //go:embed data
-var data embed.FS
+var dataFs embed.FS
 
 func dict(r io.Reader) (Dictionary, error) {
 	var res []string
@@ -28,8 +28,7 @@ func dict(r io.Reader) (Dictionary, error) {
 	for scanner.Scan() {
 		res = append(res, scanner.Text())
 	}
-	err := scanner.Err()
-	if err != nil {
+	if err := scanner.Err(); err != nil {
 		return nil, err
 	}
 	return res, nil
@@ -46,7 +45,7 @@ func DictionaryFs(afs afero.Fs, path string) (Dictionary, error) {
 }
 
 func DictionaryEm(path string) (Dictionary, error) {
-	fp, err := data.Open(filepath.Join(Data, path))
+	fp, err := dataFs.Open(filepath.Join(dataFsDir, path))
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +55,7 @@ func DictionaryEm(path string) (Dictionary, error) {
 
 func ListEm() ([]string, error) {
 	dicts := make([]string, 0)
-	werr := fs.WalkDir(data, Data, func(path string, d fs.DirEntry, err error) error {
+	werr := fs.WalkDir(dataFs, dataFsDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
