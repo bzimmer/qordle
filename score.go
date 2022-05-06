@@ -18,19 +18,25 @@ func Score(secret string, guesses ...string) ([]string, error) {
 		if len(secret) != len(guess) {
 			return nil, errors.New("secret and guess lengths do not match")
 		}
-		var score string
+		var score strings.Builder
 		guess = strings.ToLower(guess)
 		for index := range guess {
 			switch {
 			case secret[index] == guess[index]:
-				score += strings.ToUpper(string(guess[index]))
+				if _, err := score.WriteString(strings.ToUpper(string(guess[index]))); err != nil {
+					return nil, err
+				}
 			case strings.Contains(secret, string(guess[index])):
-				score += fmt.Sprintf("%c%c", YellowPrefix, guess[index])
+				if _, err := score.WriteString(fmt.Sprintf("%c%c", YellowPrefix, guess[index])); err != nil {
+					return nil, err
+				}
 			default:
-				score += string(guess[index])
+				if err := score.WriteByte(guess[index]); err != nil {
+					return nil, err
+				}
 			}
 		}
-		scores = append(scores, score)
+		scores = append(scores, score.String())
 	}
 	return scores, nil
 }
@@ -121,7 +127,6 @@ func CommandPlay() *cli.Command {
 		},
 		Action: func(c *cli.Context) error {
 			var words Dictionary
-			enc := json.NewEncoder(c.App.Writer)
 			for _, wordlist := range c.StringSlice("wordlist") {
 				t, err := DictionaryEm(fmt.Sprintf("%s.txt", wordlist))
 				if err != nil {
@@ -138,6 +143,7 @@ func CommandPlay() *cli.Command {
 				words:    words,
 				strategy: st,
 			}
+			enc := json.NewEncoder(c.App.Writer)
 			for _, secret := range c.Args().Slice() {
 				words, err := gm.play(secret)
 				if err != nil {

@@ -19,7 +19,7 @@ archives:
       386: i386
       amd64: x86_64
 checksum:
-  name_template: 'checksums.txt'
+  name_template: checksums.txt
 snapshot:
   name_template: "{{ incpatch .Version }}-next"
 changelog:
@@ -30,4 +30,19 @@ changelog:
       - '^test:'
       - '^Merge pull request'
 announce:
-  skip: "true"
+  skip: true
+
+# Check https://goreleaser.com/customization/homebrew/
+brews:
+  - name: qordle
+    homepage: https://github.com/bzimmer/qordle
+    description: Wordle problem solver
+    license: MIT
+    commit_author:
+      name: bzimmer
+      email: bzimmer@ziclix.com
+    tap:
+      owner: bzimmer
+      name: homebrew-tap
+    skip_upload: auto
+    install: bin.install "qordle"
