@@ -68,9 +68,15 @@ func (s *Position) Apply(words Dictionary) Dictionary {
 		}
 	}
 
-	for letter, val := range pos {
-		for index, count := range val {
-			log.Debug().Str("letter", string(letter)).Int("index", index).Int("count", count).Msg("position")
+	if log.Debug().Enabled() {
+		for letter, val := range pos {
+			for index, count := range val {
+				log.Debug().
+					Str("letter", string(letter)).
+					Int("index", index).
+					Int("count", count).
+					Msg("position")
+			}
 		}
 	}
 

@@ -5,6 +5,13 @@
 
 Simple wordle solution suggester
 
+## Install
+
+```sh
+$ brew tap bzimmer/tap
+$ brew install qordle
+```
+
 ## Usage
 
 `qordle` uses the hits, misses, and a pattern (if known) to suggest words matching the solution.
@@ -20,17 +27,17 @@ Simple wordle solution suggester
 ![Screenshot](screenshot.png)
 
 ```sh
-~ > qordle suggest b~rAin stARt peARl
+$ qordle suggest b~rAin stARt peARl
 ["chard","hoard","dwarf","wharf","award","guard","charm","ovary","quark"]
 ```
 
 ```sh
-~ > qordle suggest -s position b~rAin stARt peARl
+$ qordle suggest -s position b~rAin stARt peARl
 ["chard","award","guard","charm","hoard","wharf","dwarf","quark","ovary"]
 ```
 
 ```sh
-~ > qordle play --start brain table
+$ qordle play --start brain table
 2022-04-12T11:03:13-07:00 INF play dict=118 next=mabes scores=["~br~ain"] secret=table words=["brain"]
 2022-04-12T11:03:13-07:00 INF play dict=5 next=cable scores=["~br~ain","mAB~es"] secret=table words=["brain","mabes"]
 2022-04-12T11:03:13-07:00 INF play dict=4 next=fable scores=["~br~ain","mAB~es","cABLE"] secret=table words=["brain","mabes","cable"]

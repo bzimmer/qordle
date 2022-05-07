@@ -13,25 +13,6 @@ import (
 	"github.com/bzimmer/qordle"
 )
 
-func initLogging(c *cli.Context) error {
-	level := zerolog.InfoLevel
-	if c.Bool("debug") {
-		level = zerolog.DebugLevel
-	}
-	zerolog.SetGlobalLevel(level)
-	zerolog.DurationFieldUnit = time.Millisecond
-	zerolog.DurationFieldInteger = false
-	zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
-	log.Logger = log.Output(
-		zerolog.ConsoleWriter{
-			Out:        c.App.ErrWriter,
-			NoColor:    false,
-			TimeFormat: time.RFC3339,
-		},
-	)
-	return nil
-}
-
 func main() {
 	app := &cli.App{
 		Name:        "qordle",
@@ -51,7 +32,24 @@ func main() {
 			}
 			log.Error().Stack().Err(err).Msg(c.App.Name)
 		},
-		Before: initLogging,
+		Before: func(c *cli.Context) error {
+			level := zerolog.InfoLevel
+			if c.Bool("debug") {
+				level = zerolog.DebugLevel
+			}
+			zerolog.SetGlobalLevel(level)
+			zerolog.DurationFieldUnit = time.Millisecond
+			zerolog.DurationFieldInteger = false
+			zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
+			log.Logger = log.Output(
+				zerolog.ConsoleWriter{
+					Out:        c.App.ErrWriter,
+					NoColor:    false,
+					TimeFormat: time.RFC3339,
+				},
+			)
+			return nil
+		},
 		Commands: []*cli.Command{
 			qordle.CommandPlay(),
 			qordle.CommandScore(),

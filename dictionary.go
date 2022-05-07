@@ -55,7 +55,7 @@ func DictionaryEm(path string) (Dictionary, error) {
 
 func ListEm() ([]string, error) {
 	dicts := make([]string, 0)
-	werr := fs.WalkDir(dataFs, dataFsDir, func(path string, d fs.DirEntry, err error) error {
+	if err := fs.WalkDir(dataFs, dataFsDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -64,9 +64,8 @@ func ListEm() ([]string, error) {
 		}
 		dicts = append(dicts, strings.Replace(d.Name(), ".txt", "", 1))
 		return nil
-	})
-	if werr != nil {
-		return nil, werr
+	}); err != nil {
+		return nil, err
 	}
 	sort.Strings(dicts)
 	return dicts, nil
@@ -77,11 +76,11 @@ func CommandWordlists() *cli.Command {
 		Name:  "wordlists",
 		Usage: "list all available wordlists",
 		Action: func(c *cli.Context) error {
-			enc := json.NewEncoder(c.App.Writer)
 			list, err := ListEm()
 			if err != nil {
 				return err
 			}
+			enc := json.NewEncoder(c.App.Writer)
 			return enc.Encode(list)
 		},
 	}
