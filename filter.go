@@ -9,8 +9,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const YellowPrefix = '~'
-
 type FilterFunc func(string) bool
 
 func Filter(words Dictionary, fns ...FilterFunc) Dictionary {
@@ -31,7 +29,7 @@ func NoOp(word string) bool {
 	return true
 }
 
-func Lower() FilterFunc {
+func IsLower() FilterFunc {
 	return func(word string) bool {
 		return unicode.IsLower(rune(word[0]))
 	}
@@ -142,12 +140,14 @@ func Guesses(guesses ...string) (FilterFunc, error) {
 				re += s
 			}
 		}
-		log.Debug().
-			Strs("hits", hits).
-			Interface("misses", misses).
-			Str("guess", guess).
-			Str("pattern", re).
-			Msg("guesses")
+		if debug && log.Debug().Enabled() {
+			log.Debug().
+				Strs("hits", hits).
+				Interface("misses", misses).
+				Str("guess", guess).
+				Str("pattern", re).
+				Msg("guesses")
+		}
 		p, err := Pattern(re)
 		if err != nil {
 			return nil, err

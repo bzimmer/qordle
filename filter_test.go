@@ -175,7 +175,7 @@ func TestLower(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			a := assert.New(t)
-			p := qordle.Lower()
+			p := qordle.IsLower()
 			a.Equal(tt.result, p(tt.word))
 		})
 	}

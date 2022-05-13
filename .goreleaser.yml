@@ -11,6 +11,15 @@ builds:
     main: ./cmd/qordle
     ldflags:
       - -s -w -X {{.ModulePath}}.buildVersion={{.Version}} -X {{.ModulePath}}.buildCommit={{.ShortCommit}} -X {{.ModulePath}}.buildTime={{.Date}} -X {{.ModulePath}}.buildBuilder=goreleaser
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    main: ./cmd/qordled
+    ldflags:
+      - -s -w -X {{.ModulePath}}.buildVersion={{.Version}} -X {{.ModulePath}}.buildCommit={{.ShortCommit}} -X {{.ModulePath}}.buildTime={{.Date}} -X {{.ModulePath}}.buildBuilder=goreleaser
 archives:
   - replacements:
       darwin: Darwin
@@ -32,7 +41,6 @@ changelog:
 announce:
   skip: true
 
-# Check https://goreleaser.com/customization/homebrew/
 brews:
   - name: qordle
     homepage: https://github.com/bzimmer/qordle
@@ -46,3 +54,15 @@ brews:
       name: homebrew-tap
     skip_upload: auto
     install: bin.install "qordle"
+  - name: qordled
+    homepage: https://github.com/bzimmer/qordle
+    description: Wordle problem solver daemon
+    license: MIT
+    commit_author:
+      name: bzimmer
+      email: bzimmer@ziclix.com
+    tap:
+      owner: bzimmer
+      name: homebrew-tap
+    skip_upload: auto
+    install: bin.install "qordled"

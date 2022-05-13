@@ -7,24 +7,29 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func strategy(code string) (Strategy, error) {
+func NewStrategy(code string) (Strategy, error) {
 	switch code {
 	case "a", "alpha":
 		return new(Alpha), nil
 	case "p", "pos", "position":
 		return new(Position), nil
-	case "f", "freq", "frequency":
+	case "", "f", "freq", "frequency":
 		return new(Frequency), nil
 	}
 	return nil, fmt.Errorf("unknown strategy `%s`", code)
 }
 
 type Strategy interface {
+	String() string
 	Apply(words Dictionary) Dictionary
 }
 
 // Alpha orders the dictionary alphabetically
 type Alpha struct{}
+
+func (s *Alpha) String() string {
+	return "alpha"
+}
 
 func (s *Alpha) Apply(words Dictionary) Dictionary {
 	dict := make(Dictionary, len(words))
@@ -47,7 +52,9 @@ func mkdict(op string, scores map[int][]string) Dictionary {
 		// alpha sort to ensure stability in the output
 		q := scores[ranks[i]]
 		sort.Strings(q)
-		log.Debug().Int("score", ranks[i]).Strs("words", q).Msg(op)
+		if debug && log.Debug().Enabled() {
+			log.Debug().Int("score", ranks[i]).Strs("words", q).Msg(op)
+		}
 		dict = append(dict, q...)
 	}
 	return dict
@@ -55,6 +62,10 @@ func mkdict(op string, scores map[int][]string) Dictionary {
 
 // Position orders words by their letter's optimal position
 type Position struct{}
+
+func (s *Position) String() string {
+	return "position"
+}
 
 func (s *Position) Apply(words Dictionary) Dictionary {
 	// count the number of times a letter appears at the position
@@ -68,7 +79,7 @@ func (s *Position) Apply(words Dictionary) Dictionary {
 		}
 	}
 
-	if log.Debug().Enabled() {
+	if debug && log.Debug().Enabled() {
 		for letter, val := range pos {
 			for index, count := range val {
 				log.Debug().
@@ -95,6 +106,10 @@ func (s *Position) Apply(words Dictionary) Dictionary {
 
 // Frequency orders the dictionary by words containing the most frequent letters
 type Frequency struct{}
+
+func (s *Frequency) String() string {
+	return "frequency"
+}
 
 func (s *Frequency) Apply(words Dictionary) Dictionary {
 	// find the most common letters in the word list

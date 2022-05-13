@@ -69,12 +69,12 @@ func TestDictionaryEm(t *testing.T) {
 	}{
 		{
 			name: "valid file",
-			path: "solutions.txt",
+			path: "solutions",
 			err:  false,
 		},
 		{
 			name: "invalid file",
-			path: "missing-file.txt",
+			path: "missing-file",
 			err:  true,
 		},
 	} {
