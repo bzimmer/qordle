@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/aws/aws-lambda-go/events"
@@ -69,6 +70,14 @@ func suggest(c echo.Context) error {
 }
 
 func newEngine(c *cli.Context) (*echo.Echo, error) {
+	baseURL := c.String("base-url")
+	log.Info().Str("baseURL", baseURL).Msg("found baseURL")
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, err
+	}
+	log.Info().Str("path", u.Path).Msg("root path")
+
 	engine := echo.New()
 	engine.Pre(middleware.RemoveTrailingSlash())
 	engine.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
@@ -79,9 +88,10 @@ func newEngine(c *cli.Context) (*echo.Echo, error) {
 		log.Error().Err(err).Msg("error")
 	}
 
+	base := engine.Group(u.Path)
 	methods := []string{http.MethodGet, http.MethodPost}
-	engine.GET("/play/:secret", play)
-	group := engine.Group("/suggest")
+	base.GET("/play/:secret", play)
+	group := base.Group("/suggest")
 	group.Match(methods, "", suggest)
 	group.Match(methods, "/:guesses", suggest)
 	return engine, nil
@@ -94,7 +104,7 @@ func serve(c *cli.Context) error {
 	}
 	engine.Static("/", "public")
 	address := fmt.Sprintf(":%d", c.Int("port"))
-	log.Info().Str("address", address).Msg("http server")
+	log.Info().Str("address", "http://localhost"+address).Msg("http server")
 	return http.ListenAndServe(address, engine)
 }
 

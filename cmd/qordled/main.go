@@ -24,6 +24,12 @@ func main() {
 				Value: 0,
 				Usage: "port on which to run",
 			},
+			&cli.StringFlag{
+				Name:    "base-url",
+				Value:   "http://localhost",
+				Usage:   "Base URL",
+				EnvVars: []string{"BASE_URL"},
+			},
 			&cli.BoolFlag{
 				Name:  "debug",
 				Usage: "enable debug log level",

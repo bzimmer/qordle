@@ -61,3 +61,11 @@ tasks:
     deps: [test, lint]
     cmds:
       - goreleaser --debug release --snapshot --rm-dist
+
+  qordled:
+    desc: Run qordled
+    deps: [build]
+    env:
+      BASE_URL: http://localhost:8091/qordle
+    cmds:
+      - "{{.DIST}}/qordled --port 8091"
