@@ -8,5 +8,5 @@
 
 [[redirects]]
   from = "/qordle/*"
-  to = "/.netlify/functions/qordle/:splat"
+  to = "/.netlify/functions/qordled/:splat"
   status = 200
