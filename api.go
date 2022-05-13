@@ -16,22 +16,18 @@ import (
 )
 
 func play(c echo.Context) error {
-	secret := c.Param("secret")
-	start := c.QueryParam("start")
-	if start == "" {
-		start = "brain"
-	}
 	dictionary, err := DictionaryEm("solutions.txt")
 	if err != nil {
 		return err
 	}
-	tt := c.QueryParam("strategy")
-	if tt == "" {
-		tt = "frequency"
-	}
-	st, err := strategy(tt)
+	st, err := strategy(c.QueryParam("strategy"))
 	if err != nil {
 		return err
+	}
+	secret := c.Param("secret")
+	start := c.QueryParam("start")
+	if start == "" {
+		start = "brain"
 	}
 	gm := &game{start: start, words: dictionary, strategy: st}
 	dictionary, err = gm.play(secret)
@@ -41,7 +37,7 @@ func play(c echo.Context) error {
 	log.Debug().
 		Str("secret", secret).
 		Str("start", start).
-		Str("strategy", tt).
+		Str("strategy", st.String()).
 		Strs("dictionary", dictionary).Msg("play")
 	return c.JSONPretty(http.StatusOK, dictionary, " ")
 }
@@ -57,17 +53,13 @@ func suggest(c echo.Context) error {
 		return err
 	}
 	dictionary = Filter(dictionary, ff)
-	tt := c.QueryParam("strategy")
-	if tt == "" {
-		tt = "frequency"
-	}
-	st, err := strategy(tt)
+	st, err := strategy(c.QueryParam("strategy"))
 	if err != nil {
 		return err
 	}
 	dictionary = st.Apply(dictionary)
 	log.Debug().
-		Str("strategy", tt).
+		Str("strategy", st.String()).
 		Strs("dictionary", dictionary).Msg("play")
 	return c.JSONPretty(http.StatusOK, dictionary, " ")
 }
