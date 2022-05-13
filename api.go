@@ -16,11 +16,11 @@ import (
 )
 
 func play(c echo.Context) error {
-	dictionary, err := DictionaryEm("solutions.txt")
+	dictionary, err := DictionaryEm("solutions")
 	if err != nil {
 		return err
 	}
-	st, err := strategy(c.QueryParam("strategy"))
+	st, err := NewStrategy(c.QueryParam("strategy"))
 	if err != nil {
 		return err
 	}
@@ -29,8 +29,12 @@ func play(c echo.Context) error {
 	if start == "" {
 		start = "brain"
 	}
-	gm := &game{start: start, words: dictionary, strategy: st}
-	dictionary, err = gm.play(secret)
+	game := NewGame(
+		WithDictionary(dictionary),
+		WithStart(start),
+		WithStrategy(st))
+
+	dictionary, err = game.Play(secret)
 	if err != nil {
 		return err
 	}
@@ -43,7 +47,7 @@ func play(c echo.Context) error {
 }
 
 func suggest(c echo.Context) error {
-	dictionary, err := DictionaryEm("solutions.txt")
+	dictionary, err := DictionaryEm("solutions")
 	if err != nil {
 		return err
 	}
@@ -53,7 +57,7 @@ func suggest(c echo.Context) error {
 		return err
 	}
 	dictionary = Filter(dictionary, ff)
-	st, err := strategy(c.QueryParam("strategy"))
+	st, err := NewStrategy(c.QueryParam("strategy"))
 	if err != nil {
 		return err
 	}
@@ -68,16 +72,18 @@ func newEngine(c *cli.Context) (*echo.Echo, error) {
 	engine := echo.New()
 	engine.Pre(middleware.RemoveTrailingSlash())
 	engine.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: "time=${time_rfc3339}, method=${method}, uri=${uri}, path=${path}, status=${status}\n",
+		Format: "time=${time_rfc3339} method=${method} uri=${uri} path=${path} status=${status}\n",
 	}))
 	engine.HTTPErrorHandler = func(err error, c echo.Context) {
 		engine.DefaultHTTPErrorHandler(err, c)
 		log.Error().Err(err).Msg("error")
 	}
 
+	methods := []string{http.MethodGet, http.MethodPost}
 	engine.GET("/play/:secret", play)
-	engine.GET("/suggest/:guesses", suggest)
-	engine.POST("/suggest/:guesses", suggest)
+	group := engine.Group("/suggest")
+	group.Match(methods, "", suggest)
+	group.Match(methods, "/:guesses", suggest)
 	return engine, nil
 }
 

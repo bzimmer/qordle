@@ -7,7 +7,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func strategy(code string) (Strategy, error) {
+func NewStrategy(code string) (Strategy, error) {
 	switch code {
 	case "a", "alpha":
 		return new(Alpha), nil
@@ -52,7 +52,9 @@ func mkdict(op string, scores map[int][]string) Dictionary {
 		// alpha sort to ensure stability in the output
 		q := scores[ranks[i]]
 		sort.Strings(q)
-		log.Debug().Int("score", ranks[i]).Strs("words", q).Msg(op)
+		if debug && log.Debug().Enabled() {
+			log.Debug().Int("score", ranks[i]).Strs("words", q).Msg(op)
+		}
 		dict = append(dict, q...)
 	}
 	return dict
@@ -77,7 +79,7 @@ func (s *Position) Apply(words Dictionary) Dictionary {
 		}
 	}
 
-	if log.Debug().Enabled() {
+	if debug && log.Debug().Enabled() {
 		for letter, val := range pos {
 			for index, count := range val {
 				log.Debug().

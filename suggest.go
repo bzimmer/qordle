@@ -2,7 +2,6 @@ package qordle
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -61,7 +60,7 @@ func CommandSuggest() *cli.Command {
 				return err
 			}
 			fns := []FilterFunc{
-				Lower(),
+				IsLower(),
 				Length(c.Int("length")),
 				Hits(c.String("hits")),
 				Misses(c.String("misses")),
@@ -75,8 +74,7 @@ func CommandSuggest() *cli.Command {
 				source = c.String("dictionary")
 				dictionary, err = DictionaryFs(afero.NewOsFs(), source)
 			} else {
-				source = fmt.Sprintf("%s.txt", c.String("wordlist"))
-				dictionary, err = DictionaryEm(source)
+				dictionary, err = DictionaryEm(c.String("wordlist"))
 			}
 			if err != nil {
 				return err
@@ -86,17 +84,19 @@ func CommandSuggest() *cli.Command {
 			dictionary = Filter(dictionary, fns...)
 			q := len(dictionary)
 
-			st, err := strategy(c.String("strategy"))
+			st, err := NewStrategy(c.String("strategy"))
 			if err != nil {
 				return err
 			}
 			dictionary = st.Apply(dictionary)
-			log.Debug().
-				Dur("elapsed", time.Since(t)).
-				Int("master", n).
-				Int("filtered", q).
-				Str("source", source).
-				Msg("dictionary")
+			if debug && log.Debug().Enabled() {
+				log.Debug().
+					Dur("elapsed", time.Since(t)).
+					Int("master", n).
+					Int("filtered", q).
+					Str("source", source).
+					Msg("dictionary")
+			}
 			enc := json.NewEncoder(c.App.Writer)
 			return enc.Encode(dictionary)
 		},

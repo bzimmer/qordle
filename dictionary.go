@@ -17,7 +17,10 @@ import (
 
 type Dictionary []string
 
-const dataFsDir = "data"
+const (
+	dottxt    = ".txt"
+	dataFsDir = "data"
+)
 
 //go:embed data
 var dataFs embed.FS
@@ -45,7 +48,7 @@ func DictionaryFs(afs afero.Fs, path string) (Dictionary, error) {
 }
 
 func DictionaryEm(path string) (Dictionary, error) {
-	fp, err := dataFs.Open(filepath.Join(dataFsDir, path))
+	fp, err := dataFs.Open(filepath.Join(dataFsDir, path+dottxt))
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +65,7 @@ func ListEm() ([]string, error) {
 		if d.IsDir() {
 			return nil
 		}
-		dicts = append(dicts, strings.Replace(d.Name(), ".txt", "", 1))
+		dicts = append(dicts, strings.Replace(d.Name(), dottxt, "", 1))
 		return nil
 	}); err != nil {
 		return nil, err
