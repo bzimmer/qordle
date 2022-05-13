@@ -1,0 +1,67 @@
+
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html 
+     PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>qordle -- wordle solver</title>
+    <meta name="description" content="Qordle solves wordle problems.">
+    <link href="/css/qordle.css" rel="stylesheet" type="text/css"/>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <script src="/js/qordle.js" type="text/javascript"></script>
+  </head>
+  <body >
+    <div id="main">
+      <div id="header">
+        <a href="/">
+        <span id="title">qordle</span>
+        </a>
+      </div>
+       <table>
+       <tr>
+        <td id="left_slash" class="slash"></td>
+        <td>
+         <table>
+          <tr>
+           <td>
+            <label id="suggest_label" for="guess">Guesses</label>
+           </td>
+          </tr>
+          <tr>
+           <td colspan="2">
+              <input id="guess" class="round" type="text" name="guess" value=""/>
+           </td>
+          </tr>
+          <tr>
+           <td colspan="2">
+            <label id="suggestions_label" for="suggestions">Suggestions</label>
+           </td>
+          </tr>
+          <tr>
+           <td colspan="2">
+            <textarea id="suggestions" class="round" name="suggestions" rows="3" cols="30"></textarea>
+           </td>
+          </tr>
+          <tr>
+            <td colspan="2">
+              <div id="footer">
+                <p>inspired by <a href="http://https://pythex.org/">pythex</a></p>
+              </div>
+            </td>
+          </tr>
+         </table>
+        </td>
+        <td id="right_slash" class="slash"></td>
+       </tr>
+      </table>
+    </div>
+    <script type="text/javascript">
+    $("#guess").on('keyup', function (e) {
+      if (e.key === 'Enter' || e.keyCode === 13) {
+        suggest();
+      }
+    });
+    </script>
+  </body>
+</html>

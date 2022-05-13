@@ -1,0 +1,12 @@
+[build]
+  command = "GOOS=linux GOARCH=amd64 go build -o functions/qordle ./cmd/qordled/main.go"
+  publish = "public"
+  functions = "functions"
+
+[build.environment]
+  GO_VERSION="1.18"
+
+[[redirects]]
+  from = "/qordle/*"
+  to = "/.netlify/functions/qordle/:splat"
+  status = 200

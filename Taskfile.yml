@@ -49,6 +49,7 @@ tasks:
     deps: [dist]
     cmds:
       - go build -o {{.DIST}}/{{.APP}} cmd/{{.APP}}/*.go
+      - go build -o {{.DIST}}/{{.APP}}d cmd/{{.APP}}d/*.go
 
   lint:
     desc: Runs golint
@@ -60,12 +61,3 @@ tasks:
     deps: [test, lint]
     cmds:
       - goreleaser --debug release --snapshot --rm-dist
-
-  install:
-    desc: Install binary
-    deps: [snapshot]
-    vars:
-      BINARY: $GOPATH/bin/{{.APP}}
-    cmds:
-      - rm {{.BINARY}}
-      - cp {{.DIST}}/{{.APP}}_{{OS}}_{{ARCH}}/{{.APP}} {{.BINARY}}

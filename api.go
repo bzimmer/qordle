@@ -1,0 +1,123 @@
+package qordle
+
+import (
+	"context"
+	"fmt"
+	"net/http"
+	"strings"
+
+	"github.com/aws/aws-lambda-go/events"
+	"github.com/aws/aws-lambda-go/lambda"
+	echoadapter "github.com/awslabs/aws-lambda-go-api-proxy/echo"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+	"github.com/rs/zerolog/log"
+	"github.com/urfave/cli/v2"
+)
+
+func play(c echo.Context) error {
+	secret := c.Param("secret")
+	start := c.QueryParam("start")
+	if start == "" {
+		start = "brain"
+	}
+	dictionary, err := DictionaryEm("solutions.txt")
+	if err != nil {
+		return err
+	}
+	tt := c.QueryParam("strategy")
+	if tt == "" {
+		tt = "frequency"
+	}
+	st, err := strategy(tt)
+	if err != nil {
+		return err
+	}
+	gm := &game{start: start, words: dictionary, strategy: st}
+	dictionary, err = gm.play(secret)
+	if err != nil {
+		return err
+	}
+	log.Debug().
+		Str("secret", secret).
+		Str("start", start).
+		Str("strategy", tt).
+		Strs("dictionary", dictionary).Msg("play")
+	return c.JSONPretty(http.StatusOK, dictionary, " ")
+}
+
+func suggest(c echo.Context) error {
+	dictionary, err := DictionaryEm("solutions.txt")
+	if err != nil {
+		return err
+	}
+	gss := strings.Split(c.Param("guesses"), ",")
+	ff, err := Guesses(gss...)
+	if err != nil {
+		return err
+	}
+	dictionary = Filter(dictionary, ff)
+	tt := c.QueryParam("strategy")
+	if tt == "" {
+		tt = "frequency"
+	}
+	st, err := strategy(tt)
+	if err != nil {
+		return err
+	}
+	dictionary = st.Apply(dictionary)
+	log.Debug().
+		Str("strategy", tt).
+		Strs("dictionary", dictionary).Msg("play")
+	return c.JSONPretty(http.StatusOK, dictionary, " ")
+}
+
+func newEngine(c *cli.Context) (*echo.Echo, error) {
+	engine := echo.New()
+	engine.Pre(middleware.RemoveTrailingSlash())
+	engine.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Format: "time=${time_rfc3339}, method=${method}, uri=${uri}, path=${path}, status=${status}\n",
+	}))
+	engine.HTTPErrorHandler = func(err error, c echo.Context) {
+		engine.DefaultHTTPErrorHandler(err, c)
+		log.Error().Err(err).Msg("error")
+	}
+
+	engine.GET("/play/:secret", play)
+	engine.GET("/suggest/:guesses", suggest)
+	engine.POST("/suggest/:guesses", suggest)
+	return engine, nil
+}
+
+func serve(c *cli.Context) error {
+	engine, err := newEngine(c)
+	if err != nil {
+		return err
+	}
+	engine.Static("/", "public")
+	address := fmt.Sprintf(":%d", c.Int("port"))
+	log.Info().Str("address", address).Msg("http server")
+	return http.ListenAndServe(address, engine)
+}
+
+func function(c *cli.Context) error {
+	engine, err := newEngine(c)
+	if err != nil {
+		return err
+	}
+	log.Info().Msg("lambda function")
+	gl := echoadapter.New(engine)
+	lambda.Start(func(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
+		return gl.ProxyWithContext(ctx, req)
+	})
+	return nil
+}
+
+func ActionAPI() cli.ActionFunc {
+	return func(c *cli.Context) error {
+		if c.IsSet("port") {
+			return serve(c)
+		}
+		return function(c)
+	}
+}
