@@ -8,15 +8,16 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 
 	"github.com/bzimmer/qordle"
 )
 
 func TestGame(t *testing.T) {
 	for _, tt := range []struct {
-		name, start, secret        string
-		strategy, err_strategy     string
-		dictionary, err_dictionary string
+		name, start, secret       string
+		strategy, errStrategy     string
+		dictionary, errDictionary string
 	}{
 		{
 			name:       "simple",
@@ -33,18 +34,18 @@ func TestGame(t *testing.T) {
 			dictionary: "qordle",
 		},
 		{
-			name:           "missing dictionary",
-			start:          "soare",
-			secret:         "train",
-			strategy:       "frequency",
-			err_dictionary: "missing dictionary",
+			name:          "missing dictionary",
+			start:         "soare",
+			secret:        "train",
+			strategy:      "frequency",
+			errDictionary: "missing dictionary",
 		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			a := assert.New(t)
-			a.NotEqual(tt.strategy, tt.err_strategy)
-			a.NotEqual(tt.dictionary, tt.err_dictionary)
+			a.NotEqual(tt.strategy, tt.errStrategy)
+			a.NotEqual(tt.dictionary, tt.errDictionary)
 			var err error
 			var st qordle.Strategy
 			if tt.strategy != "" {
@@ -63,20 +64,20 @@ func TestGame(t *testing.T) {
 				qordle.WithDictionary(dt),
 				qordle.WithStart(tt.start))
 			words, err := game.Play(tt.secret)
-			if tt.err_strategy != "" {
+			if tt.errStrategy != "" {
 				a.Error(err)
-				a.Equal(tt.err_strategy, err.Error())
+				a.Equal(tt.errStrategy, err.Error())
 				return
 			}
-			if tt.err_dictionary != "" {
+			if tt.errDictionary != "" {
 				a.Error(err)
-				a.Equal(tt.err_dictionary, err.Error())
+				a.Equal(tt.errDictionary, err.Error())
 				return
 			}
 			a.NoError(err)
 			a.NotNil(words)
 			a.GreaterOrEqual(len(words), 1)
-			upper := cases.Upper(qordle.Language)
+			upper := cases.Upper(language.English)
 			a.Equal(upper.String(tt.secret), words[len(words)-1])
 		})
 	}

@@ -9,6 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 type Game struct {
@@ -69,7 +70,7 @@ func (g *Game) Play(secret string) ([]string, error) {
 }
 
 func game(dictionary Dictionary, strategy Strategy, words []string, secret string) ([]string, error) {
-	upper := cases.Upper(Language)
+	upper := cases.Upper(language.English)
 	fns := []FilterFunc{Length(len(secret)), IsLower()}
 	for {
 		scores, err := Score(secret, words...)
@@ -148,7 +149,7 @@ func CommandPlay() *cli.Command {
 		Action: func(c *cli.Context) error {
 			var words Dictionary
 			for _, wordlist := range c.StringSlice("wordlist") {
-				t, err := DictionaryEm(fmt.Sprintf("%s", wordlist))
+				t, err := DictionaryEm(wordlist)
 				if err != nil {
 					return err
 				}
