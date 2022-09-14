@@ -110,7 +110,7 @@ func serve(c *cli.Context) error {
 	engine.Static("/", "public")
 	address := fmt.Sprintf(":%d", c.Int("port"))
 	log.Info().Str("address", "http://localhost"+address).Msg("http server")
-	return http.ListenAndServe(address, engine)
+	return engine.Start(address)
 }
 
 func function(c *cli.Context) error {
