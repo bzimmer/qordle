@@ -3,31 +3,32 @@ package qordle
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"os"
+	"sort"
 	"strings"
 
+	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 )
 
-type Graph map[rune]map[rune][]string
+type Graph map[rune]map[rune]map[string]string
 
-type Solution struct {
-	words   []string
-	letters map[rune]struct{}
+type Set struct {
+	values map[rune]struct{}
 }
 
-func (sol *Solution) String() string {
-	return fmt.Sprintf("%s", sol.words)
-}
-
-func (sol *Solution) Add(v string) {
-	sol.words = append(sol.words, v)
-	if sol.letters == nil {
-		sol.letters = make(map[rune]struct{})
+func (set *Set) Add(v string) {
+	if set.values == nil {
+		set.values = make(map[rune]struct{})
 	}
 	for _, v := range v {
-		sol.letters[v] = struct{}{}
+		set.values[v] = struct{}{}
+	}
+}
+
+func (set *Set) Union(s *Set) {
+	for key, value := range s.values {
+		set.values[key] = value
 	}
 }
 
@@ -122,16 +123,75 @@ func (box *Box) Words(trie *Trie) []string {
 	return s
 }
 
+func hash(v string) string {
+	s := []rune(v)
+	sort.SliceStable(s, func(i, j int) bool {
+		return s[i] < s[j]
+	})
+	if len(s) < 2 {
+		return string(s)
+	}
+	var e int = 1
+	for i := 1; i < len(s); i++ {
+		if s[i] == s[i-1] {
+			continue
+		}
+		s[e] = s[i]
+		e++
+	}
+	return string(s[:e])
+}
+
+// func (box *Box) solutions(graph Graph, paths []string, letters *Set, next rune) [][]string {
+// 	// if len(letters.values) == 12 {
+// 	// 	return [][]string{paths}
+// 	// }
+// 	// if len(paths) == 5 {
+// 	// 	return [][]string{}
+// 	// }
+// 	// fmt.Fprintf(os.Stderr, "%s\n", paths)
+
+// 	solutions := [][]string{}
+// 	// for last, words := range graph[next] {
+// 	// 	for _, word := range words {
+// 	// 		// if !slices.Contains(paths, word) {
+// 	// 		// 	log.Warn().Strs("paths", paths).Str("word", word).Interface("solutions", solutions).Msg("solutions")
+// 	// 		// 	continue
+// 	// 		// }
+// 	// 		log.Info().Strs("paths", paths).Str("word", word).Interface("solutions", solutions).Msg("solutions")
+// 	// 		set := new(Set)
+// 	// 		// fmt.Fprintf(os.Stderr, "%s\n", word)
+// 	// 		set.Add(word)
+// 	// 		set.Union(letters)
+// 	// 		solutions = append(solutions, box.solutions(graph, append(paths, word), set, last)...)
+// 	// 	}
+// 	// }
+// 	return solutions
+// }
+
 func (box *Box) Solutions(words []string) any {
-	graph := make(map[rune]map[rune][]string)
+	graph := make(map[rune]map[rune]map[string]string)
 	for _, word := range words {
 		first, last := rune(word[0]), rune(word[len(word)-1])
 		if _, ok := graph[first]; !ok {
-			graph[first] = make(map[rune][]string)
+			graph[first] = map[rune]map[string]string{last: {}}
 		}
-		graph[first][last] = append(graph[first][last], word)
+		if _, ok := graph[first][last]; !ok {
+			graph[first][last] = map[string]string{}
+		}
+		graph[first][last][hash(word)] = word
 	}
-	return graph
+
+	log.Debug().Interface("graph", graph).Msg("solutions")
+
+	solutions := [][]string{}
+	// for _, lasts := range graph {
+	// 	for last, words := range lasts {
+	// 		solutions = append(solutions, box.solutions(graph, words, new(Set), last)...)
+	// 	}
+	// }
+	// fmt.Fprintf(os.Stderr, "%s\n", solutions)
+	return []any{solutions, graph}
 }
 
 func CommandLetterBox() *cli.Command {
