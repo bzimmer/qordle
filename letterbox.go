@@ -3,33 +3,16 @@ package qordle
 import (
 	"bufio"
 	"encoding/json"
-	"fmt"
 	"os"
+	"sort"
 	"strings"
+	"time"
 
+	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 )
 
-type Graph map[rune]map[rune][]string
-
-type Solution struct {
-	words   []string
-	letters map[rune]struct{}
-}
-
-func (sol *Solution) String() string {
-	return fmt.Sprintf("%s", sol.words)
-}
-
-func (sol *Solution) Add(v string) {
-	sol.words = append(sol.words, v)
-	if sol.letters == nil {
-		sol.letters = make(map[rune]struct{})
-	}
-	for _, v := range v {
-		sol.letters[v] = struct{}{}
-	}
-}
+type Graph map[rune]map[rune]map[string]string
 
 type Trie struct {
 	word     bool
@@ -122,15 +105,42 @@ func (box *Box) Words(trie *Trie) []string {
 	return s
 }
 
-func (box *Box) Solutions(words []string) any {
-	graph := make(map[rune]map[rune][]string)
-	for _, word := range words {
-		first, last := rune(word[0]), rune(word[len(word)-1])
-		if _, ok := graph[first]; !ok {
-			graph[first] = make(map[rune][]string)
-		}
-		graph[first][last] = append(graph[first][last], word)
+func (box *Box) hash(v string) string {
+	s := []rune(v)
+	sort.SliceStable(s, func(i, j int) bool {
+		return s[i] < s[j]
+	})
+	if len(s) < 2 {
+		return string(s)
 	}
+	e := 1
+	for i := 1; i < len(s); i++ {
+		if s[i] == s[i-1] {
+			continue
+		}
+		s[e] = s[i]
+		e++
+	}
+	return string(s[:e])
+}
+
+func (box *Box) Solutions(words []string) any {
+	var unique int
+	graph := make(map[rune]map[rune]map[string]string)
+	for _, word := range words {
+		first, last, m := rune(word[0]), rune(word[len(word)-1]), box.hash(word)
+		if _, ok := graph[first]; !ok {
+			graph[first] = map[rune]map[string]string{last: {}}
+		}
+		if _, ok := graph[first][last]; !ok {
+			graph[first][last] = map[string]string{}
+		}
+		if _, ok := graph[first][last][m]; !ok {
+			unique++
+			graph[first][last][m] = word
+		}
+	}
+	log.Info().Int("unique", unique).Int("words", len(words)).Msg("solutions")
 	return graph
 }
 
@@ -142,7 +152,7 @@ func CommandLetterBox() *cli.Command {
 			&cli.StringFlag{
 				Name:  "box",
 				Usage: "the letter box in `aaa-bbb-ccc-ddd` format",
-				Value: "mar-sej-hdw-opq",
+				Value: "afh-mie-pow-bwu",
 			},
 			&cli.IntFlag{
 				Name:  "min",
@@ -151,8 +161,11 @@ func CommandLetterBox() *cli.Command {
 			},
 		},
 		Action: func(c *cli.Context) error {
+			defer func(t time.Time) {
+				log.Info().Dur("elapsed", time.Since(t)).Msg(c.Command.Name)
+			}(time.Now())
+			var count int
 			trie := NewTrie()
-			box := NewBox(c.String("box"), c.Int("min"))
 			for i := 0; i < c.NArg(); i++ {
 				if err := func() error {
 					fp, err := os.Open(c.Args().Get(i))
@@ -162,6 +175,7 @@ func CommandLetterBox() *cli.Command {
 					defer fp.Close()
 					scanner := bufio.NewScanner(fp)
 					for scanner.Scan() {
+						count++
 						trie.Add(scanner.Text())
 					}
 					return scanner.Err()
@@ -169,6 +183,8 @@ func CommandLetterBox() *cli.Command {
 					return err
 				}
 			}
+			log.Info().Int("words", count).Msg("possible")
+			box := NewBox(c.String("box"), c.Int("min"))
 			words := box.Words(trie)
 			enc := json.NewEncoder(c.App.Writer)
 			return enc.Encode(box.Solutions(words))
