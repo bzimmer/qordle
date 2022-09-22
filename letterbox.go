@@ -3,16 +3,29 @@ package qordle
 import (
 	"bufio"
 	"encoding/json"
+	"io"
 	"os"
-	"sort"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/RoaringBitmap/roaring"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 )
 
-type Graph map[rune]map[rune]map[string]string
+const letters = 12
+const concurrency = 5
+
+type Graph map[rune][]string
+
+func bitmap(word string) *roaring.Bitmap {
+	bm := roaring.New()
+	for _, r := range word {
+		bm.Add(uint32(r))
+	}
+	return bm
+}
 
 type Trie struct {
 	word     bool
@@ -21,6 +34,17 @@ type Trie struct {
 
 func NewTrie() *Trie {
 	return new(Trie)
+}
+
+func (trie *Trie) Load(in io.Reader) (int, error) {
+	var count int
+	scanner := bufio.NewScanner(in)
+	for scanner.Scan() {
+		count++
+		text := strings.ToLower(scanner.Text())
+		trie.Add(text)
+	}
+	return count, scanner.Err()
 }
 
 func (trie *Trie) Add(word string) {
@@ -63,13 +87,14 @@ func (trie *Trie) Word() bool {
 }
 
 type Box struct {
-	min   int
+	min   int // minimum word length to be a solution
+	len   int // minimum word chain length to be a solution
 	sides []string
 }
 
-func NewBox(box string, min int) *Box {
+func NewBox(box string, min, length int) *Box {
 	sides := strings.Split(box, "-")
-	return &Box{sides: sides, min: min}
+	return &Box{sides: sides, min: min, len: length}
 }
 
 func (box *Box) words(trie *Trie, prefix string, side int) []string {
@@ -105,43 +130,60 @@ func (box *Box) Words(trie *Trie) []string {
 	return s
 }
 
-func (box *Box) hash(v string) string {
-	s := []rune(v)
-	sort.SliceStable(s, func(i, j int) bool {
-		return s[i] < s[j]
-	})
-	if len(s) < 2 {
-		return string(s)
+func (box *Box) graph(words []string) Graph {
+	graph := make(map[rune][]string)
+	for _, word := range words {
+		first := rune(word[0])
+		graph[first] = append(graph[first], word)
 	}
-	e := 1
-	for i := 1; i < len(s); i++ {
-		if s[i] == s[i-1] {
-			continue
-		}
-		s[e] = s[i]
-		e++
-	}
-	return string(s[:e])
+	return graph
 }
 
-func (box *Box) Solutions(words []string) any {
-	var unique int
-	graph := make(map[rune]map[rune]map[string]string)
-	for _, word := range words {
-		first, last, m := rune(word[0]), rune(word[len(word)-1]), box.hash(word)
-		if _, ok := graph[first]; !ok {
-			graph[first] = map[rune]map[string]string{last: {}}
-		}
-		if _, ok := graph[first][last]; !ok {
-			graph[first][last] = map[string]string{}
-		}
-		if _, ok := graph[first][last][m]; !ok {
-			unique++
-			graph[first][last][m] = word
-		}
+func (box *Box) solutions(graph Graph, bm *roaring.Bitmap, words []string, first rune) [][]string {
+	if len(words) == box.len {
+		return nil
 	}
-	log.Info().Int("unique", unique).Int("words", len(words)).Msg("solutions")
-	return graph
+	var solutions [][]string
+	for _, next := range graph[first] {
+		u := roaring.Or(bm, bitmap(next))
+		if u.GetCardinality() == letters {
+			return append(solutions, append(words, next))
+		}
+		last := rune(next[len(next)-1])
+		solutions = append(solutions, box.solutions(graph, u, append(words, next), last)...)
+	}
+	return solutions
+}
+
+func (box *Box) Solutions(words []string) <-chan []string {
+	wc := make(chan string)
+	go func() {
+		defer close(wc)
+		for _, word := range words {
+			wc <- word
+		}
+	}()
+	var wg sync.WaitGroup
+	graph := box.graph(words)
+	solutions := make(chan []string)
+	for i := 0; i < concurrency; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for word := range wc {
+				bm := bitmap(word)
+				last := rune(word[len(word)-1])
+				for _, sol := range box.solutions(graph, bm, []string{word}, last) {
+					solutions <- sol
+				}
+			}
+		}()
+	}
+	go func() {
+		defer close(solutions)
+		wg.Wait()
+	}()
+	return solutions
 }
 
 func CommandLetterBox() *cli.Command {
@@ -152,12 +194,17 @@ func CommandLetterBox() *cli.Command {
 			&cli.StringFlag{
 				Name:  "box",
 				Usage: "the letter box in `aaa-bbb-ccc-ddd` format",
-				Value: "afh-mie-pow-bwu",
+				Value: "rme-wcl-tgk-api",
 			},
 			&cli.IntFlag{
 				Name:  "min",
 				Usage: "minimum word size",
 				Value: 3,
+			},
+			&cli.IntFlag{
+				Name:  "len",
+				Usage: "maximum solution length",
+				Value: 2,
 			},
 		},
 		Action: func(c *cli.Context) error {
@@ -173,21 +220,31 @@ func CommandLetterBox() *cli.Command {
 						return err
 					}
 					defer fp.Close()
-					scanner := bufio.NewScanner(fp)
-					for scanner.Scan() {
-						count++
-						trie.Add(scanner.Text())
+					n, err := trie.Load(fp)
+					if err != nil {
+						return err
 					}
-					return scanner.Err()
+					count += n
+					return nil
 				}(); err != nil {
 					return err
 				}
 			}
-			log.Info().Int("words", count).Msg("possible")
-			box := NewBox(c.String("box"), c.Int("min"))
+			box := NewBox(c.String("box"), c.Int("min"), c.Int("len"))
 			words := box.Words(trie)
+			log.Info().Int("words", len(words)).Int("dictonary", count).Msg("possible")
+
+			m := map[int]int{}
 			enc := json.NewEncoder(c.App.Writer)
-			return enc.Encode(box.Solutions(words))
+			for solution := range box.Solutions(words) {
+				m[len(solution)]++
+				if err := enc.Encode(solution); err != nil {
+					return err
+				}
+			}
+			log.Info().Interface("combinations", m).Msg("solutions")
+
+			return nil
 		},
 	}
 }

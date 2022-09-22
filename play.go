@@ -109,7 +109,7 @@ func game(dictionary Dictionary, strategy Strategy, words []string, secret strin
 	}
 }
 
-func CommandPlay() *cli.Command {
+func CommandPlay() *cli.Command { //nolint:gocognit
 	return &cli.Command{
 		Name:  "play",
 		Usage: "play wordle automatically",
@@ -165,11 +165,11 @@ func CommandPlay() *cli.Command {
 				WithStart(c.String("start")))
 			enc := json.NewEncoder(c.App.Writer)
 			for _, secret := range c.Args().Slice() {
-				words, err := game.Play(secret)
+				words, err = game.Play(secret)
 				if err != nil {
 					return err
 				}
-				if err := enc.Encode(words); err != nil {
+				if err = enc.Encode(words); err != nil {
 					return err
 				}
 			}

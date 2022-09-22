@@ -3,6 +3,7 @@ module github.com/bzimmer/qordle
 go 1.18
 
 require (
+	github.com/RoaringBitmap/roaring v1.2.1
 	github.com/aws/aws-lambda-go v1.34.1
 	github.com/awslabs/aws-lambda-go-api-proxy v0.13.3
 	github.com/labstack/echo/v4 v4.9.0
@@ -14,12 +15,14 @@ require (
 )
 
 require (
+	github.com/bits-and-blooms/bitset v1.2.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/golang-jwt/jwt v3.2.2+incompatible // indirect
 	github.com/labstack/gommon v0.3.1 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
+	github.com/mschoch/smat v0.2.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
