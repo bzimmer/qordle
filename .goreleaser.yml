@@ -2,20 +2,18 @@ before:
   hooks:
     - task test
 builds:
-  - env:
-      - CGO_ENABLED=0
+  - id: qordle
+    binary: qordle
     goos:
       - linux
-      - windows
       - darwin
     main: ./cmd/qordle
     ldflags:
       - -s -w -X {{.ModulePath}}.buildVersion={{.Version}} -X {{.ModulePath}}.buildCommit={{.ShortCommit}} -X {{.ModulePath}}.buildTime={{.Date}} -X {{.ModulePath}}.buildBuilder=goreleaser
-  - env:
-      - CGO_ENABLED=0
+  - id: qordled
+    binary: qordled
     goos:
       - linux
-      - windows
       - darwin
     main: ./cmd/qordled
     ldflags:
@@ -24,7 +22,6 @@ archives:
   - replacements:
       darwin: Darwin
       linux: Linux
-      windows: Windows
       386: i386
       amd64: x86_64
 checksum:
