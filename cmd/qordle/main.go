@@ -51,6 +51,7 @@ func main() {
 			return nil
 		},
 		Commands: []*cli.Command{
+			qordle.CommandLetterBox(),
 			qordle.CommandPlay(),
 			qordle.CommandScore(),
 			qordle.CommandSuggest(),

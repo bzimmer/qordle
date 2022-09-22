@@ -1,6 +1,6 @@
 package qordle
 
 const (
-	debug  = true
+	debug  = false
 	yellow = '~'
 )

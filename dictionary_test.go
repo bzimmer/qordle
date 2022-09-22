@@ -108,7 +108,7 @@ func TestCommandWordlists(t *testing.T) {
 	}{
 		{
 			name:         "wordlists",
-			dictionaries: []string{"possible", "qordle", "solutions"},
+			dictionaries: []string{"possible", "qordle", "simple", "solutions"},
 		},
 	} {
 		tt := tt

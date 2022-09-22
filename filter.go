@@ -102,7 +102,7 @@ func join(hits []string, misses map[int]string, idx int) string {
 	return s
 }
 
-func Guesses(guesses ...string) (FilterFunc, error) {
+func Guesses(guesses ...string) (FilterFunc, error) { //nolint:gocognit
 	var fns []FilterFunc
 	for _, guess := range guesses {
 		if guess == "" {
