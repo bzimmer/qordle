@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -12,10 +13,10 @@ import (
 	"github.com/RoaringBitmap/roaring"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
+	"golang.org/x/exp/slices"
 )
 
 const letters = 12
-const concurrency = 5
 
 type Graph map[rune][]string
 
@@ -37,6 +38,9 @@ func NewTrie() *Trie {
 }
 
 func (trie *Trie) Load(in io.Reader) (int, error) {
+	defer func(t time.Time) {
+		log.Info().Dur("elapsed", time.Since(t)).Msg("build trie")
+	}(time.Now())
 	var count int
 	scanner := bufio.NewScanner(in)
 	for scanner.Scan() {
@@ -88,13 +92,43 @@ func (trie *Trie) Word() bool {
 
 type Box struct {
 	min   int // minimum word length to be a solution
-	len   int // minimum word chain length to be a solution
+	max   int // maximum word chain length to be a solution
+	con   int // number of concurrent goroutines
 	sides []string
 }
 
-func NewBox(box string, min, length int) *Box {
-	sides := strings.Split(box, "-")
-	return &Box{sides: sides, min: min, len: length}
+type BoxOption func(*Box)
+
+func WithSides(sides string) BoxOption {
+	return func(box *Box) {
+		box.sides = strings.Split(sides, "-")
+	}
+}
+
+func WithMinWordLength(n int) BoxOption {
+	return func(box *Box) {
+		box.min = n
+	}
+}
+
+func WithMaxSolutionLength(n int) BoxOption {
+	return func(box *Box) {
+		box.max = n
+	}
+}
+
+func WithConcurrent(n int) BoxOption {
+	return func(box *Box) {
+		box.con = n
+	}
+}
+
+func NewBox(opts ...BoxOption) *Box {
+	box := new(Box)
+	for i := range opts {
+		opts[i](box)
+	}
+	return box
 }
 
 func (box *Box) words(trie *Trie, prefix string, side int) []string {
@@ -139,18 +173,22 @@ func (box *Box) graph(words []string) Graph {
 	return graph
 }
 
-func (box *Box) solutions(graph Graph, bm *roaring.Bitmap, words []string, first rune) [][]string {
-	if len(words) == box.len {
+func (box *Box) solutions(graph Graph, bm *roaring.Bitmap, solution []string, first rune) [][]string {
+	if len(solution) == box.max {
 		return nil
 	}
 	var solutions [][]string
 	for _, next := range graph[first] {
-		u := roaring.Or(bm, bitmap(next))
-		if u.GetCardinality() == letters {
-			return append(solutions, append(words, next))
+		union := roaring.Or(bm, bitmap(next))
+		if union.GetCardinality() == bm.GetCardinality() {
+			continue
+		}
+		sol := append(slices.Clone(solution), next)
+		if union.GetCardinality() == letters {
+			return append(solutions, sol)
 		}
 		last := rune(next[len(next)-1])
-		solutions = append(solutions, box.solutions(graph, u, append(words, next), last)...)
+		solutions = append(slices.Clone(solutions), box.solutions(graph, union, sol, last)...)
 	}
 	return solutions
 }
@@ -166,7 +204,7 @@ func (box *Box) Solutions(words []string) <-chan []string {
 	var wg sync.WaitGroup
 	graph := box.graph(words)
 	solutions := make(chan []string)
-	for i := 0; i < concurrency; i++ {
+	for i := 0; i < box.con; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -202,9 +240,14 @@ func CommandLetterBox() *cli.Command {
 				Value: 3,
 			},
 			&cli.IntFlag{
-				Name:  "len",
+				Name:  "max",
 				Usage: "maximum solution length",
 				Value: 2,
+			},
+			&cli.IntFlag{
+				Name:  "concurrent",
+				Usage: "number of cpus to use for concurrent solving",
+				Value: runtime.NumCPU(),
 			},
 		},
 		Action: func(c *cli.Context) error {
@@ -230,19 +273,24 @@ func CommandLetterBox() *cli.Command {
 					return err
 				}
 			}
-			box := NewBox(c.String("box"), c.Int("min"), c.Int("len"))
+			box := NewBox(
+				WithSides(c.String("box")),
+				WithConcurrent(c.Int("concurrent")),
+				WithMinWordLength(c.Int("min")),
+				WithMaxSolutionLength(c.Int("max")))
 			words := box.Words(trie)
-			log.Info().Int("words", len(words)).Int("dictonary", count).Msg("possible")
+			log.Info().Int("matching", len(words)).Int("possible", count).Msg("dictonary")
 
-			m := map[int]int{}
+			start := time.Now()
+			solutions := map[int]int{}
 			enc := json.NewEncoder(c.App.Writer)
 			for solution := range box.Solutions(words) {
-				m[len(solution)]++
+				solutions[len(solution)]++
 				if err := enc.Encode(solution); err != nil {
 					return err
 				}
 			}
-			log.Info().Interface("combinations", m).Msg("solutions")
+			log.Info().Interface("solutions", solutions).Dur("elapsed", time.Since(start)).Msg("find solutions")
 
 			return nil
 		},
