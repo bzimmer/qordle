@@ -182,7 +182,7 @@ type elem struct {
 func (box *Box) solutions(solutions chan<- []string, graph Graph, e elem) {
 	stack := []elem{e}
 	for len(stack) > 0 {
-		e := stack[len(stack)-1]
+		e = stack[len(stack)-1]
 		stack = stack[:len(stack)-1]
 		if len(e.s) > box.max {
 			continue
