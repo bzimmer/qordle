@@ -174,21 +174,29 @@ func (box *Box) graph(words []string) Graph {
 }
 
 func (box *Box) solutions(graph Graph, bm *roaring.Bitmap, solution []string, first rune) [][]string {
-	if len(solution) == box.max {
+	if len(solution) > box.max {
+		// log.Debug().Strs("solution", solution).Str("first", string(first)).Msg("exceed")
 		return nil
 	}
+	if bm.GetCardinality() == letters {
+		return [][]string{solution}
+	}
+	// if log.Logger.GetLevel() == zerolog.DebugLevel {
+	// 	_, ok := graph[first]
+	// 	if !ok {
+	// 		log.Debug().Strs("solution", solution).Str("first", string(first)).Msg("graph")
+	// 	}
+	// }
 	var solutions [][]string
 	for _, next := range graph[first] {
 		union := roaring.Or(bm, bitmap(next))
 		if union.GetCardinality() == bm.GetCardinality() {
+			// log.Debug().Strs("solution", solution).Str("next", next).Str("first", string(first)).Msg("cardinality")
 			continue
 		}
-		sol := append(slices.Clone(solution), next)
-		if union.GetCardinality() == letters {
-			return append(solutions, sol)
-		}
 		last := rune(next[len(next)-1])
-		solutions = append(slices.Clone(solutions), box.solutions(graph, union, sol, last)...)
+		soln := append(slices.Clone(solution), next)
+		solutions = append(slices.Clone(solutions), box.solutions(graph, union, soln, last)...)
 	}
 	return solutions
 }

@@ -11,6 +11,7 @@ import (
 )
 
 func TestScore(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		name, secret    string
 		guesses, scores []string
@@ -37,6 +38,7 @@ func TestScore(t *testing.T) {
 	} {
 		tt := tt
 		t.Run(tt.secret, func(t *testing.T) {
+			t.Parallel()
 			a := assert.New(t)
 			scores, err := qordle.Score(tt.secret, tt.guesses...)
 			if tt.err {
@@ -51,6 +53,7 @@ func TestScore(t *testing.T) {
 }
 
 func TestScoreCommand(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		name         string
 		words, score []string
@@ -69,6 +72,7 @@ func TestScoreCommand(t *testing.T) {
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			a := assert.New(t)
 			var builder strings.Builder
 			app := &cli.App{

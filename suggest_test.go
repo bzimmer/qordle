@@ -10,6 +10,7 @@ import (
 )
 
 func TestSuggestCommand(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		name, strategy, dictionary, err string
 	}{
@@ -38,6 +39,7 @@ func TestSuggestCommand(t *testing.T) {
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			a := assert.New(t)
 			app := &cli.App{
 				Name:     tt.name,
