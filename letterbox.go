@@ -70,9 +70,6 @@ func (trie *Trie) Add(word string) {
 func (trie *Trie) Node(word string) *Trie {
 	node := trie
 	for _, r := range word {
-		if !node.Prefix() {
-			return nil
-		}
 		child := node.children[r]
 		if child == nil {
 			return nil
@@ -83,11 +80,11 @@ func (trie *Trie) Node(word string) *Trie {
 }
 
 func (trie *Trie) Prefix() bool {
-	return len(trie.children) > 0
+	return trie != nil && len(trie.children) > 0
 }
 
 func (trie *Trie) Word() bool {
-	return trie.word
+	return trie != nil && trie.word
 }
 
 type Box struct {
@@ -173,32 +170,34 @@ func (box *Box) graph(words []string) Graph {
 	return graph
 }
 
-func (box *Box) solutions(graph Graph, bm *roaring.Bitmap, solution []string, first rune) [][]string {
-	if len(solution) > box.max {
-		// log.Debug().Strs("solution", solution).Str("first", string(first)).Msg("exceed")
-		return nil
-	}
-	if bm.GetCardinality() == letters {
-		return [][]string{solution}
-	}
-	// if log.Logger.GetLevel() == zerolog.DebugLevel {
-	// 	_, ok := graph[first]
-	// 	if !ok {
-	// 		log.Debug().Strs("solution", solution).Str("first", string(first)).Msg("graph")
-	// 	}
-	// }
-	var solutions [][]string
-	for _, next := range graph[first] {
-		union := roaring.Or(bm, bitmap(next))
-		if union.GetCardinality() == bm.GetCardinality() {
-			// log.Debug().Strs("solution", solution).Str("next", next).Str("first", string(first)).Msg("cardinality")
+type elem struct {
+	f rune
+	s []string
+	b *roaring.Bitmap
+}
+
+func (box *Box) solutions(solutions chan<- []string, graph Graph, e elem) {
+	stack := []elem{e}
+	for len(stack) > 0 {
+		e = stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		if len(e.s) > box.max {
 			continue
 		}
-		last := rune(next[len(next)-1])
-		soln := append(slices.Clone(solution), next)
-		solutions = append(slices.Clone(solutions), box.solutions(graph, union, soln, last)...)
+		if e.b.GetCardinality() == letters {
+			solutions <- e.s
+			continue
+		}
+		for _, next := range graph[e.f] {
+			union := roaring.Or(e.b, bitmap(next))
+			if union.GetCardinality() == e.b.GetCardinality() {
+				continue
+			}
+			last := rune(next[len(next)-1])
+			soln := append(slices.Clone(e.s), next)
+			stack = append(stack, elem{b: union, f: last, s: soln})
+		}
 	}
-	return solutions
 }
 
 func (box *Box) Solutions(words []string) <-chan []string {
@@ -211,17 +210,14 @@ func (box *Box) Solutions(words []string) <-chan []string {
 	}()
 	var wg sync.WaitGroup
 	graph := box.graph(words)
-	solutions := make(chan []string)
+	solutions := make(chan []string, box.con)
 	for i := 0; i < box.con; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			for word := range wc {
-				bm := bitmap(word)
-				last := rune(word[len(word)-1])
-				for _, sol := range box.solutions(graph, bm, []string{word}, last) {
-					solutions <- sol
-				}
+				e := elem{b: bitmap(word), s: []string{word}, f: rune(word[len(word)-1])}
+				box.solutions(solutions, graph, e)
 			}
 		}()
 	}

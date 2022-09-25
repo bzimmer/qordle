@@ -20,18 +20,32 @@ func TestTrie(t *testing.T) {
 		prefix, word  bool
 	}{
 		{
-			name:    "add",
+			name:    "whole word",
 			pattern: "foo",
 			prefix:  false,
 			word:    true,
 			words:   []string{"foo"},
 		},
 		{
-			name:    "add",
+			name:    "prefix",
 			pattern: "foo",
 			prefix:  true,
 			word:    true,
 			words:   []string{"foo", "food"},
+		},
+		{
+			name:    "nothing",
+			pattern: "bar",
+			prefix:  false,
+			word:    false,
+			words:   []string{"foo"},
+		},
+		{
+			name:    "no words",
+			pattern: "bar",
+			prefix:  false,
+			word:    false,
+			words:   []string{},
 		},
 	} {
 		tt := tt
