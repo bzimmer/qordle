@@ -11,6 +11,7 @@ require (
 	github.com/spf13/afero v1.9.2
 	github.com/stretchr/testify v1.7.2
 	github.com/urfave/cli/v2 v2.15.0
+	golang.org/x/exp v0.0.0-20220921164117-439092de6870
 	golang.org/x/text v0.3.7
 )
 

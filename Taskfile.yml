@@ -69,3 +69,8 @@ tasks:
       BASE_URL: http://localhost:8091/qordle
     cmds:
       - "{{.DIST}}/qordled --port 8091"
+
+  scc:
+    desc: Run scc (https://github.com/boyter/scc)
+    cmds:
+      - scc -i go {{.CWD}}

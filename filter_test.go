@@ -10,6 +10,7 @@ import (
 type FilterFuncFunc func(string) qordle.FilterFunc
 
 func TestPattern(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		name, word, pattern string
 		result, err         bool
@@ -42,6 +43,7 @@ func TestPattern(t *testing.T) {
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			a := assert.New(t)
 			p, err := qordle.Pattern(tt.pattern)
 			if tt.err {
@@ -56,6 +58,7 @@ func TestPattern(t *testing.T) {
 }
 
 func TestHitsAndMisses(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		name, input, word string
 		result            bool
@@ -99,6 +102,7 @@ func TestHitsAndMisses(t *testing.T) {
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			a := assert.New(t)
 			p := tt.ff(tt.input)
 			a.Equal(tt.result, p(tt.word))
@@ -107,6 +111,7 @@ func TestHitsAndMisses(t *testing.T) {
 }
 
 func TestLength(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		name, word string
 		result     bool
@@ -127,6 +132,7 @@ func TestLength(t *testing.T) {
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			a := assert.New(t)
 			p := qordle.Length(tt.length)
 			a.Equal(tt.result, p(tt.word))
@@ -135,6 +141,7 @@ func TestLength(t *testing.T) {
 }
 
 func TestNoOp(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		name, word string
 		result     bool
@@ -150,6 +157,7 @@ func TestNoOp(t *testing.T) {
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			a := assert.New(t)
 			a.True(qordle.NoOp(tt.word))
 		})
@@ -157,6 +165,7 @@ func TestNoOp(t *testing.T) {
 }
 
 func TestLower(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		name, word string
 		result     bool
@@ -174,6 +183,7 @@ func TestLower(t *testing.T) {
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			a := assert.New(t)
 			p := qordle.IsLower()
 			a.Equal(tt.result, p(tt.word))
@@ -182,6 +192,7 @@ func TestLower(t *testing.T) {
 }
 
 func TestGuesses(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		name, word  string
 		guesses     []string
@@ -232,6 +243,7 @@ func TestGuesses(t *testing.T) {
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			a := assert.New(t)
 			p, err := qordle.Guesses(tt.guesses...)
 			switch tt.err {
@@ -246,6 +258,7 @@ func TestGuesses(t *testing.T) {
 }
 
 func TestFilter(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		name          string
 		words, result qordle.Dictionary
@@ -266,6 +279,7 @@ func TestFilter(t *testing.T) {
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			a := assert.New(t)
 			dictionary := qordle.Filter(tt.words, tt.fns...)
 			a.Equal(tt.result, dictionary)

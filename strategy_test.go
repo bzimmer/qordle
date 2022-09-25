@@ -8,6 +8,7 @@ import (
 )
 
 func TestAlpha(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		name          string
 		words, result qordle.Dictionary
@@ -25,6 +26,7 @@ func TestAlpha(t *testing.T) {
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			a := assert.New(t)
 			s := new(qordle.Alpha)
 			dictionary := s.Apply(tt.words)
@@ -34,6 +36,7 @@ func TestAlpha(t *testing.T) {
 }
 
 func TestFrequency(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		name          string
 		words, result qordle.Dictionary
@@ -56,6 +59,7 @@ func TestFrequency(t *testing.T) {
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			a := assert.New(t)
 			s := new(qordle.Frequency)
 			dictionary := s.Apply(tt.words)
@@ -65,6 +69,7 @@ func TestFrequency(t *testing.T) {
 }
 
 func TestPosition(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		name          string
 		words, result qordle.Dictionary
@@ -89,6 +94,7 @@ func TestPosition(t *testing.T) {
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			a := assert.New(t)
 			s := new(qordle.Position)
 			dictionary := s.Apply(tt.words)

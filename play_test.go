@@ -14,6 +14,7 @@ import (
 )
 
 func TestGame(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		name, start, secret       string
 		strategy, errStrategy     string
@@ -43,6 +44,7 @@ func TestGame(t *testing.T) {
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			a := assert.New(t)
 			a.NotEqual(tt.strategy, tt.errStrategy)
 			a.NotEqual(tt.dictionary, tt.errDictionary)
