@@ -173,22 +173,33 @@ func (box *Box) graph(words []string) Graph {
 	return graph
 }
 
-func (box *Box) solutions(solutions chan<- []string, graph Graph, bm *roaring.Bitmap, solution []string, first rune) {
-	if len(solution) > box.max {
-		return
-	}
-	if bm.GetCardinality() == letters {
-		solutions <- solution
-		return
-	}
-	for _, next := range graph[first] {
-		union := roaring.Or(bm, bitmap(next))
-		if union.GetCardinality() == bm.GetCardinality() {
+type elem struct {
+	f rune
+	s []string
+	b *roaring.Bitmap
+}
+
+func (box *Box) solutions(solutions chan<- []string, graph Graph, e elem) {
+	stack := []elem{e}
+	for len(stack) > 0 {
+		e := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		if len(e.s) > box.max {
 			continue
 		}
-		last := rune(next[len(next)-1])
-		soln := append(slices.Clone(solution), next)
-		box.solutions(solutions, graph, union, soln, last)
+		if e.b.GetCardinality() == letters {
+			solutions <- e.s
+			continue
+		}
+		for _, next := range graph[e.f] {
+			union := roaring.Or(e.b, bitmap(next))
+			if union.GetCardinality() == e.b.GetCardinality() {
+				continue
+			}
+			last := rune(next[len(next)-1])
+			soln := append(slices.Clone(e.s), next)
+			stack = append(stack, elem{b: union, f: last, s: soln})
+		}
 	}
 }
 
@@ -208,9 +219,8 @@ func (box *Box) Solutions(words []string) <-chan []string {
 		go func() {
 			defer wg.Done()
 			for word := range wc {
-				bm := bitmap(word)
-				last := rune(word[len(word)-1])
-				box.solutions(solutions, graph, bm, []string{word}, last)
+				e := elem{b: bitmap(word), s: []string{word}, f: rune(word[len(word)-1])}
+				box.solutions(solutions, graph, e)
 			}
 		}()
 	}
