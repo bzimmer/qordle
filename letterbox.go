@@ -70,9 +70,6 @@ func (trie *Trie) Add(word string) {
 func (trie *Trie) Node(word string) *Trie {
 	node := trie
 	for _, r := range word {
-		if !node.Prefix() {
-			return nil
-		}
 		child := node.children[r]
 		if child == nil {
 			return nil
@@ -83,11 +80,11 @@ func (trie *Trie) Node(word string) *Trie {
 }
 
 func (trie *Trie) Prefix() bool {
-	return len(trie.children) > 0
+	return trie != nil && len(trie.children) > 0
 }
 
 func (trie *Trie) Word() bool {
-	return trie.word
+	return trie != nil && trie.word
 }
 
 type Box struct {
