@@ -284,7 +284,7 @@ func CommandLetterBox() *cli.Command {
 			enc := json.NewEncoder(c.App.Writer)
 			for solution := range box.Solutions(words) {
 				solutions[len(solution)]++
-				if err := enc.Encode(solution); err != nil {
+				if err = enc.Encode(solution); err != nil {
 					return err
 				}
 			}
