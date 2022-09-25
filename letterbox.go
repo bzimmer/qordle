@@ -173,32 +173,23 @@ func (box *Box) graph(words []string) Graph {
 	return graph
 }
 
-func (box *Box) solutions(graph Graph, bm *roaring.Bitmap, solution []string, first rune) [][]string {
+func (box *Box) solutions(solutions chan<- []string, graph Graph, bm *roaring.Bitmap, solution []string, first rune) {
 	if len(solution) > box.max {
-		// log.Debug().Strs("solution", solution).Str("first", string(first)).Msg("exceed")
-		return nil
+		return
 	}
 	if bm.GetCardinality() == letters {
-		return [][]string{solution}
+		solutions <- solution
+		return
 	}
-	// if log.Logger.GetLevel() == zerolog.DebugLevel {
-	// 	_, ok := graph[first]
-	// 	if !ok {
-	// 		log.Debug().Strs("solution", solution).Str("first", string(first)).Msg("graph")
-	// 	}
-	// }
-	var solutions [][]string
 	for _, next := range graph[first] {
 		union := roaring.Or(bm, bitmap(next))
 		if union.GetCardinality() == bm.GetCardinality() {
-			// log.Debug().Strs("solution", solution).Str("next", next).Str("first", string(first)).Msg("cardinality")
 			continue
 		}
 		last := rune(next[len(next)-1])
 		soln := append(slices.Clone(solution), next)
-		solutions = append(slices.Clone(solutions), box.solutions(graph, union, soln, last)...)
+		box.solutions(solutions, graph, union, soln, last)
 	}
-	return solutions
 }
 
 func (box *Box) Solutions(words []string) <-chan []string {
@@ -211,7 +202,7 @@ func (box *Box) Solutions(words []string) <-chan []string {
 	}()
 	var wg sync.WaitGroup
 	graph := box.graph(words)
-	solutions := make(chan []string)
+	solutions := make(chan []string, box.con)
 	for i := 0; i < box.con; i++ {
 		wg.Add(1)
 		go func() {
@@ -219,9 +210,7 @@ func (box *Box) Solutions(words []string) <-chan []string {
 			for word := range wc {
 				bm := bitmap(word)
 				last := rune(word[len(word)-1])
-				for _, sol := range box.solutions(graph, bm, []string{word}, last) {
-					solutions <- sol
-				}
+				box.solutions(solutions, graph, bm, []string{word}, last)
 			}
 		}()
 	}
