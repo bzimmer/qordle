@@ -1,10 +1,7 @@
 package qordle
 
 import (
-	"bufio"
 	"encoding/json"
-	"io"
-	"os"
 	"runtime"
 	"strings"
 	"sync"
@@ -12,6 +9,7 @@ import (
 
 	"github.com/RoaringBitmap/roaring"
 	"github.com/rs/zerolog/log"
+	"github.com/spf13/afero"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/exp/slices"
 )
@@ -37,23 +35,9 @@ func NewTrie() *Trie {
 	return new(Trie)
 }
 
-func (trie *Trie) Load(in io.Reader) (int, error) {
-	defer func(t time.Time) {
-		log.Info().Dur("elapsed", time.Since(t)).Msg("build trie")
-	}(time.Now())
-	var count int
-	scanner := bufio.NewScanner(in)
-	for scanner.Scan() {
-		count++
-		text := strings.ToLower(scanner.Text())
-		trie.Add(text)
-	}
-	return count, scanner.Err()
-}
-
 func (trie *Trie) Add(word string) {
 	node := trie
-	for _, r := range word {
+	for _, r := range strings.ToLower(word) {
 		child := node.children[r]
 		if child == nil {
 			if node.children == nil {
@@ -228,6 +212,31 @@ func (box *Box) Solutions(words []string) <-chan []string {
 	return solutions
 }
 
+func trie(c *cli.Context) (int, *Trie, error) {
+	var err error
+	var dict Dictionary
+	switch args := c.Args().Slice(); len(args) {
+	case 0:
+		if dict, err = DictionaryEm("solutions"); err != nil {
+			return 0, nil, err
+		}
+	default:
+		var m Dictionary
+		fs := afero.NewOsFs()
+		for i := 0; i < len(args); i++ {
+			if m, err = DictionaryFs(fs, args[i]); err != nil {
+				return 0, nil, err
+			}
+			dict = append(dict, m...)
+		}
+	}
+	trie := NewTrie()
+	for i := range dict {
+		trie.Add(dict[i])
+	}
+	return len(dict), trie, nil
+}
+
 func CommandLetterBox() *cli.Command {
 	return &cli.Command{
 		Name:  "letterbox",
@@ -258,39 +267,24 @@ func CommandLetterBox() *cli.Command {
 			defer func(t time.Time) {
 				log.Info().Dur("elapsed", time.Since(t)).Msg(c.Command.Name)
 			}(time.Now())
-			var count int
-			trie := NewTrie()
-			for i := 0; i < c.NArg(); i++ {
-				if err := func() error {
-					fp, err := os.Open(c.Args().Get(i))
-					if err != nil {
-						return err
-					}
-					defer fp.Close()
-					n, err := trie.Load(fp)
-					if err != nil {
-						return err
-					}
-					count += n
-					return nil
-				}(); err != nil {
-					return err
-				}
+			n, t, err := trie(c)
+			if err != nil {
+				return err
 			}
 			box := NewBox(
 				WithSides(c.String("box")),
 				WithConcurrent(c.Int("concurrent")),
 				WithMinWordLength(c.Int("min")),
 				WithMaxSolutionLength(c.Int("max")))
-			words := box.Words(trie)
-			log.Info().Int("matching", len(words)).Int("possible", count).Msg("dictonary")
+			words := box.Words(t)
+			log.Info().Int("matching", len(words)).Int("possible", n).Msg("dictonary")
 
 			start := time.Now()
 			solutions := map[int]int{}
 			enc := json.NewEncoder(c.App.Writer)
 			for solution := range box.Solutions(words) {
 				solutions[len(solution)]++
-				if err := enc.Encode(solution); err != nil {
+				if err = enc.Encode(solution); err != nil {
 					return err
 				}
 			}
