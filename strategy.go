@@ -3,8 +3,6 @@ package qordle
 import (
 	"fmt"
 	"sort"
-
-	"github.com/rs/zerolog/log"
 )
 
 func NewStrategy(code string) (Strategy, error) {
@@ -38,7 +36,7 @@ func (s *Alpha) Apply(words Dictionary) Dictionary {
 	return dict
 }
 
-func mkdict(op string, scores map[int][]string) Dictionary {
+func mkdict(_ string, scores map[int][]string) Dictionary {
 	// sort the words by their positional scores
 	ranks := make([]int, 0, len(scores))
 	for k := range scores {
@@ -52,9 +50,6 @@ func mkdict(op string, scores map[int][]string) Dictionary {
 		// alpha sort to ensure stability in the output
 		q := scores[ranks[i]]
 		sort.Strings(q)
-		if debug && log.Debug().Enabled() {
-			log.Debug().Int("score", ranks[i]).Strs("words", q).Msg(op)
-		}
 		dict = append(dict, q...)
 	}
 	return dict
@@ -76,18 +71,6 @@ func (s *Position) Apply(words Dictionary) Dictionary {
 				pos[letter] = make(map[int]int)
 			}
 			pos[letter][index]++
-		}
-	}
-
-	if debug && log.Debug().Enabled() {
-		for letter, val := range pos {
-			for index, count := range val {
-				log.Debug().
-					Str("letter", string(letter)).
-					Int("index", index).
-					Int("count", count).
-					Msg("position")
-			}
 		}
 	}
 

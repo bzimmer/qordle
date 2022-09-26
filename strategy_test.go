@@ -31,6 +31,7 @@ func TestAlpha(t *testing.T) {
 			s := new(qordle.Alpha)
 			dictionary := s.Apply(tt.words)
 			a.Equal(tt.result, dictionary)
+			a.Equal("alpha", s.String())
 		})
 	}
 }
@@ -64,6 +65,7 @@ func TestFrequency(t *testing.T) {
 			s := new(qordle.Frequency)
 			dictionary := s.Apply(tt.words)
 			a.Equal(tt.result, dictionary)
+			a.Equal("frequency", s.String())
 		})
 	}
 }
@@ -99,6 +101,7 @@ func TestPosition(t *testing.T) {
 			s := new(qordle.Position)
 			dictionary := s.Apply(tt.words)
 			a.Equal(tt.result, dictionary)
+			a.Equal("position", s.String())
 		})
 	}
 }

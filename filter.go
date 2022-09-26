@@ -5,8 +5,6 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
-
-	"github.com/rs/zerolog/log"
 )
 
 type FilterFunc func(string) bool
@@ -139,14 +137,6 @@ func Guesses(guesses ...string) (FilterFunc, error) { //nolint:gocognit
 			default:
 				re += s
 			}
-		}
-		if debug && log.Debug().Enabled() {
-			log.Debug().
-				Strs("hits", hits).
-				Interface("misses", misses).
-				Str("guess", guess).
-				Str("pattern", re).
-				Msg("guesses")
 		}
 		p, err := Pattern(re)
 		if err != nil {

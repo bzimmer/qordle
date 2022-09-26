@@ -2,6 +2,7 @@ package qordle
 
 import (
 	"encoding/json"
+	"math"
 	"runtime"
 	"strings"
 	"sync"
@@ -185,6 +186,7 @@ func (box *Box) solutions(solutions chan<- []string, graph Graph, e elem) {
 }
 
 func (box *Box) Solutions(words []string) <-chan []string {
+	start := time.Now()
 	wc := make(chan string)
 	go func() {
 		defer close(wc)
@@ -194,7 +196,8 @@ func (box *Box) Solutions(words []string) <-chan []string {
 	}()
 	var wg sync.WaitGroup
 	graph := box.graph(words)
-	solutions := make(chan []string, box.con)
+	n := math.Max(1, float64(3*box.con))
+	solutions := make(chan []string, int(n))
 	for i := 0; i < box.con; i++ {
 		wg.Add(1)
 		go func() {
@@ -206,13 +209,27 @@ func (box *Box) Solutions(words []string) <-chan []string {
 		}()
 	}
 	go func() {
+		defer func(t time.Time) {
+			log.Info().Dur("elapsed", time.Since(t)).Msg("find solutions")
+		}(start)
 		defer close(solutions)
 		wg.Wait()
 	}()
 	return solutions
 }
 
+func box(c *cli.Context) *Box {
+	return NewBox(
+		WithSides(c.String("box")),
+		WithConcurrent(c.Int("concurrent")),
+		WithMinWordLength(c.Int("min")),
+		WithMaxSolutionLength(c.Int("max")))
+}
+
 func trie(c *cli.Context) (int, *Trie, error) {
+	defer func(t time.Time) {
+		log.Info().Dur("elapsed", time.Since(t)).Msg("build trie")
+	}(time.Now())
 	var err error
 	var dict Dictionary
 	switch args := c.Args().Slice(); len(args) {
@@ -271,24 +288,19 @@ func CommandLetterBox() *cli.Command {
 			if err != nil {
 				return err
 			}
-			box := NewBox(
-				WithSides(c.String("box")),
-				WithConcurrent(c.Int("concurrent")),
-				WithMinWordLength(c.Int("min")),
-				WithMaxSolutionLength(c.Int("max")))
+			box := box(c)
 			words := box.Words(t)
 			log.Info().Int("matching", len(words)).Int("possible", n).Msg("dictonary")
 
-			start := time.Now()
-			solutions := map[int]int{}
+			sol := map[int]int{}
 			enc := json.NewEncoder(c.App.Writer)
 			for solution := range box.Solutions(words) {
-				solutions[len(solution)]++
+				sol[len(solution)]++
 				if err = enc.Encode(solution); err != nil {
 					return err
 				}
 			}
-			log.Info().Interface("solutions", solutions).Dur("elapsed", time.Since(start)).Msg("find solutions")
+			log.Info().Interface("solutions", sol).Msg("solutions")
 
 			return nil
 		},
