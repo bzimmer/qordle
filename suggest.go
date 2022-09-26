@@ -83,20 +83,18 @@ func CommandSuggest() *cli.Command {
 			n := len(dictionary)
 			dictionary = Filter(dictionary, fns...)
 			q := len(dictionary)
+			log.Debug().
+				Dur("elapsed", time.Since(t)).
+				Int("master", n).
+				Int("filtered", q).
+				Str("source", source).
+				Msg("dictionary")
 
 			st, err := NewStrategy(c.String("strategy"))
 			if err != nil {
 				return err
 			}
 			dictionary = st.Apply(dictionary)
-			if debug && log.Debug().Enabled() {
-				log.Debug().
-					Dur("elapsed", time.Since(t)).
-					Int("master", n).
-					Int("filtered", q).
-					Str("source", source).
-					Msg("dictionary")
-			}
 			enc := json.NewEncoder(c.App.Writer)
 			return enc.Encode(dictionary)
 		},
