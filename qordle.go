@@ -1,5 +1,0 @@
-package qordle
-
-const (
-	yellow = '~'
-)

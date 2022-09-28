@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/RoaringBitmap/roaring"
+	"github.com/kelindar/bitmap"
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/afero"
 	"github.com/urfave/cli/v2"
@@ -19,12 +19,18 @@ const letters = 12
 
 type Graph map[rune][]string
 
-func bitmap(word string) *roaring.Bitmap {
-	bm := roaring.New()
+func or(a *bitmap.Bitmap, b *bitmap.Bitmap) *bitmap.Bitmap {
+	c := new(bitmap.Bitmap)
+	c.Or(*a, *b)
+	return c
+}
+
+func bm(word string) *bitmap.Bitmap {
+	m := new(bitmap.Bitmap)
 	for _, r := range word {
-		bm.Add(uint32(r))
+		m.Set(uint32(r))
 	}
-	return bm
+	return m
 }
 
 type Trie struct {
@@ -158,7 +164,7 @@ func (box *Box) graph(words []string) Graph {
 type elem struct {
 	f rune
 	s []string
-	b *roaring.Bitmap
+	b *bitmap.Bitmap
 }
 
 func (box *Box) solutions(solutions chan<- []string, graph Graph, e elem) {
@@ -169,13 +175,14 @@ func (box *Box) solutions(solutions chan<- []string, graph Graph, e elem) {
 		if len(e.s) > box.max {
 			continue
 		}
-		if e.b.GetCardinality() == letters {
+		c := e.b.Count()
+		if c == letters {
 			solutions <- e.s
 			continue
 		}
 		for _, next := range graph[e.f] {
-			union := roaring.Or(e.b, bitmap(next))
-			if union.GetCardinality() == e.b.GetCardinality() {
+			union := or(e.b, bm(next))
+			if c == union.Count() {
 				continue
 			}
 			last := rune(next[len(next)-1])
@@ -190,27 +197,27 @@ func (box *Box) Solutions(words []string) <-chan []string {
 	wc := make(chan string)
 	go func() {
 		defer close(wc)
-		for _, word := range words {
-			wc <- word
+		for i := range words {
+			wc <- words[i]
 		}
 	}()
 	var wg sync.WaitGroup
-	graph := box.graph(words)
-	n := math.Max(1, float64(3*box.con))
-	solutions := make(chan []string, int(n))
-	for i := 0; i < box.con; i++ {
+	g := box.graph(words)
+	n := int(math.Max(1, float64(box.con)))
+	solutions := make(chan []string, 3*n)
+	for i := 0; i < n; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			for word := range wc {
-				e := elem{b: bitmap(word), s: []string{word}, f: rune(word[len(word)-1])}
-				box.solutions(solutions, graph, e)
+				e := elem{b: bm(word), s: []string{word}, f: rune(word[len(word)-1])}
+				box.solutions(solutions, g, e)
 			}
 		}()
 	}
 	go func() {
 		defer func(t time.Time) {
-			log.Info().Dur("elapsed", time.Since(t)).Msg("find solutions")
+			log.Info().Dur("elapsed", time.Since(t)).Int("concurrency", n).Msg("find solutions")
 		}(start)
 		defer close(solutions)
 		wg.Wait()
