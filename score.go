@@ -10,6 +10,8 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+const yellow = '~'
+
 // Score generates the scoreboard after each guess of the secret word
 func Score(secret string, guesses ...string) ([]string, error) {
 	log.Debug().Str("secret", secret).Strs("guesses", guesses).Msg("score")
@@ -19,8 +21,7 @@ func Score(secret string, guesses ...string) ([]string, error) {
 			return nil, errors.New("secret and guess lengths do not match")
 		}
 		var score strings.Builder
-		guess = strings.ToLower(guess)
-		for index := range guess {
+		for index := range strings.ToLower(guess) {
 			switch {
 			case secret[index] == guess[index]:
 				if _, err := score.WriteString(strings.ToUpper(string(guess[index]))); err != nil {
