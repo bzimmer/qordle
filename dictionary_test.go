@@ -7,10 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bzimmer/qordle"
 	"github.com/spf13/afero"
 	"github.com/stretchr/testify/assert"
 	"github.com/urfave/cli/v2"
+
+	"github.com/bzimmer/qordle"
 )
 
 func TestDictionaryFs(t *testing.T) {

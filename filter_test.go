@@ -3,8 +3,9 @@ package qordle_test
 import (
 	"testing"
 
-	"github.com/bzimmer/qordle"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/bzimmer/qordle"
 )
 
 type FilterFuncFunc func(string) qordle.FilterFunc

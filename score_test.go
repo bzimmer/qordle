@@ -5,9 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bzimmer/qordle"
 	"github.com/stretchr/testify/assert"
 	"github.com/urfave/cli/v2"
+
+	"github.com/bzimmer/qordle"
 )
 
 func TestScore(t *testing.T) {
