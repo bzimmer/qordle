@@ -74,3 +74,11 @@ tasks:
     desc: Run scc (https://github.com/boyter/scc)
     cmds:
       - scc -i go {{.CWD}}
+
+  goimports:
+    desc: Run goimports
+    vars:
+      Module:
+        sh: go mod edit -json | jq -r .Module.Path
+    cmds:
+      - goimports -w -local "{{.Module}}" .
