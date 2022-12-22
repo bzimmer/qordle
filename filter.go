@@ -53,8 +53,16 @@ func Hits(hits string) FilterFunc {
 		return NoOp
 	}
 	return func(word string) bool {
+		m := map[rune]int{}
 		for i := range hits {
-			if !strings.Contains(word, string(hits[i])) {
+			m[rune(hits[i])]++
+		}
+		n := map[rune]int{}
+		for i := range word {
+			n[rune(word[i])]++
+		}
+		for key, val := range m {
+			if n[key] < val {
 				return false
 			}
 		}

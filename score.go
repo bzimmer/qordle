@@ -6,38 +6,48 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 )
 
 const yellow = '~'
 
-// Score generates the scoreboard after each guess of the secret word
 func Score(secret string, guesses ...string) ([]string, error) {
-	log.Debug().Str("secret", secret).Strs("guesses", guesses).Msg("score")
-	scores := make([]string, 0)
-	for _, guess := range guesses {
+	secret = strings.ToLower(secret)
+	scores := make([]string, len(guesses))
+	for n, guess := range guesses {
 		if len(secret) != len(guess) {
 			return nil, errors.New("secret and guess lengths do not match")
 		}
-		var score strings.Builder
-		for index := range strings.ToLower(guess) {
+		pass := make(map[string]int, len(guess))
+		guess = strings.ToLower(guess)
+		score := make([]string, len(secret))
+		// first pass checks for exact matches
+		for i := range guess {
+			m := string(guess[i])
 			switch {
-			case secret[index] == guess[index]:
-				if _, err := score.WriteString(strings.ToUpper(string(guess[index]))); err != nil {
-					return nil, err
-				}
-			case strings.Contains(secret, string(guess[index])):
-				if _, err := score.WriteString(fmt.Sprintf("%c%c", yellow, guess[index])); err != nil {
-					return nil, err
-				}
+			case secret[i] == guess[i]:
+				score[i] = strings.ToUpper(m)
 			default:
-				if err := score.WriteByte(guess[index]); err != nil {
-					return nil, err
-				}
+				pass[string(secret[i])]++
 			}
 		}
-		scores = append(scores, score.String())
+		// second pass checks for inexact matches
+		for i := range guess {
+			if score[i] != "" {
+				continue
+			}
+			m := string(guess[i])
+			switch val := pass[m]; val {
+			case 0:
+				// this letter doesn't exist in the secret
+				score[i] = m
+			default:
+				pass[m]--
+				score[i] = fmt.Sprintf("%c%s", yellow, m)
+			}
+		}
+		// construct the score
+		scores[n] = strings.Join(score, "")
 	}
 	return scores, nil
 }
