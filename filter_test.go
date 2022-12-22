@@ -10,6 +10,14 @@ import (
 
 type FilterFuncFunc func(string) qordle.FilterFunc
 
+func mustGuesses(guesses ...string) qordle.FilterFunc {
+	f, err := qordle.Guesses(guesses...)
+	if err != nil {
+		panic(err)
+	}
+	return f
+}
+
 func TestPattern(t *testing.T) {
 	t.Parallel()
 	for _, tt := range []struct {
@@ -85,6 +93,13 @@ func TestHitsAndMisses(t *testing.T) {
 			word:   "banana",
 			result: false,
 			ff:     qordle.Misses,
+		},
+		{
+			name:   "multiple hits of same letter",
+			input:  "cee",
+			word:   "fleck",
+			result: false,
+			ff:     qordle.Hits,
 		},
 		{
 			name:   "misses empty",
@@ -270,6 +285,12 @@ func TestFilter(t *testing.T) {
 			words:  qordle.Dictionary{"hoody", "foobar"},
 			result: qordle.Dictionary{"hoody"},
 			fns:    []qordle.FilterFunc{qordle.Length(5)},
+		},
+		{
+			name:   "double letter",
+			words:  qordle.Dictionary{"excel", "fleck", "expel", "sport"},
+			result: qordle.Dictionary{"excel", "expel"},
+			fns:    []qordle.FilterFunc{mustGuesses("brain", "south", "@l@edg@e")},
 		},
 		{
 			name:   "filter all",

@@ -22,7 +22,7 @@ func TestScore(t *testing.T) {
 			name:    "simple",
 			secret:  "buyer",
 			guesses: []string{"brain", "beret"},
-			scores:  []string{"B~rain", "B~e~rEt"},
+			scores:  []string{"B~rain", "Be~rEt"},
 		},
 		{
 			name:    "different lengths",

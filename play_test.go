@@ -117,7 +117,7 @@ func TestPlayCommand(t *testing.T) {
 		{
 			name:    "six letter word with explicit strategy",
 			args:    []string{"-s", "position", "-w", "qordle", "--start", "shadow", "treaty"},
-			guesses: []string{"sh~adow", "c~anA~an", "~a~e~rAT~e", "TREATY"},
+			guesses: []string{"sh~adow", "canAan", "a~e~rATe", "TREATY"},
 		},
 		{
 			name:    "six letter word with no implicit strategy",
