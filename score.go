@@ -18,15 +18,16 @@ func Score(secret string, guesses ...string) ([]string, error) {
 		if len(secret) != len(guess) {
 			return nil, errors.New("secret and guess lengths do not match")
 		}
-		pass := map[string]int{}
+		pass := make(map[string]int, len(guess))
 		guess = strings.ToLower(guess)
 		score := make([]string, len(secret))
 		// first pass checks for exact matches
 		for i := range guess {
 			m := string(guess[i])
-			if secret[i] == guess[i] {
+			switch {
+			case secret[i] == guess[i]:
 				score[i] = strings.ToUpper(m)
-			} else {
+			default:
 				pass[string(secret[i])]++
 			}
 		}
