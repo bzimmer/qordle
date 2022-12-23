@@ -182,7 +182,8 @@ func CommandPlay() *cli.Command { //nolint:gocognit
 				WithStart(c.String("start")))
 			enc := json.NewEncoder(c.App.Writer)
 			for _, secret := range c.Args().Slice() {
-				rounds, err := game.Play(secret)
+				var rounds *Scoreboard
+				rounds, err = game.Play(secret)
 				if err != nil {
 					return err
 				}
