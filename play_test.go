@@ -65,7 +65,7 @@ func TestGame(t *testing.T) {
 				qordle.WithStrategy(st),
 				qordle.WithDictionary(dt),
 				qordle.WithStart(tt.start))
-			words, err := game.Play(tt.secret)
+			scoreboard, err := game.Play(tt.secret)
 			if tt.errStrategy != "" {
 				a.Error(err)
 				a.Equal(tt.errStrategy, err.Error())
@@ -77,10 +77,11 @@ func TestGame(t *testing.T) {
 				return
 			}
 			a.NoError(err)
-			a.NotNil(words)
-			a.GreaterOrEqual(len(words), 1)
+			a.NotNil(scoreboard)
+			a.GreaterOrEqual(len(scoreboard.Rounds), 1)
 			upper := cases.Upper(language.English)
-			a.Equal(upper.String(tt.secret), words[len(words)-1])
+			winner := scoreboard.Rounds[len(scoreboard.Rounds)-1]
+			a.Equal(upper.String(tt.secret), winner.Scores[len(winner.Scores)-1])
 		})
 	}
 }
@@ -89,21 +90,29 @@ func TestPlayCommand(t *testing.T) {
 	for _, tt := range []struct {
 		name, err               string
 		args, guesses, wordlist []string
+		success                 bool
 	}{
 		{
 			name:    "table",
 			args:    []string{"-s", "position", "table"},
 			guesses: []string{"so~arE", "mAiLE", "cABLE", "fABLE", "gABLE", "hABLE", "TABLE"},
+			success: true,
 		},
 		{
-			name:    "first guess is the secret",
+			name:    "one word solution",
 			args:    []string{"soare"},
 			guesses: []string{"SOARE"},
+			success: true,
+		},
+		{
+			name:    "two word solution",
+			args:    []string{"-s", "frequency", "--start", "brain", "raise"},
+			guesses: []string{"b~r~a~in", "RAISE"},
+			success: true,
 		},
 		{
 			name: "failed to find secret",
 			args: []string{"12345"},
-			err:  "failed to find secret",
 		},
 		{
 			name: "secret and guess lengths do not match",
@@ -118,11 +127,13 @@ func TestPlayCommand(t *testing.T) {
 			name:    "six letter word with explicit strategy",
 			args:    []string{"-s", "position", "-w", "qordle", "--start", "shadow", "treaty"},
 			guesses: []string{"sh~adow", "canAan", "a~e~rATe", "TREATY"},
+			success: true,
 		},
 		{
 			name:    "six letter word with no implicit strategy",
 			args:    []string{"-w", "qordle", "--start", "shadow", "treaty"},
 			guesses: []string{"sh~adow", "~alin~e~r", "p~e~rAc~t", "~rugAT~e", "TREATY"},
+			success: true,
 		},
 	} {
 		tt := tt
@@ -136,13 +147,19 @@ func TestPlayCommand(t *testing.T) {
 			}
 			err := app.Run(append([]string{"qordle", "play"}, tt.args...))
 			if tt.err != "" {
+				a.Error(err)
 				a.Equal(tt.err, err.Error())
 				return
 			}
-			var res []string
+			var res qordle.Scoreboard
 			err = json.Unmarshal([]byte(builder.String()), &res)
 			a.NoError(err)
-			a.Equal(tt.guesses, res)
+			if tt.success {
+				winner := res.Rounds[len(res.Rounds)-1]
+				a.Equal(tt.guesses, winner.Scores)
+			} else {
+				a.False(tt.success)
+			}
 		})
 	}
 }
