@@ -6,11 +6,24 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
+
+type Scoreboard struct {
+	Secret   string   `json:"secret"`
+	Strategy string   `json:"strategy"`
+	Success  bool     `json:"success"`
+	Rounds   []*Round `json:"rounds"`
+}
+
+type Round struct {
+	Dictionary int      `json:"dictionary"`
+	Next       string   `json:"next,omitempty"`
+	Scores     []string `json:"scores"`
+	Words      []string `json:"words"`
+}
 
 type Game struct {
 	start      string
@@ -52,7 +65,7 @@ func WithStrategy(strategy Strategy) Option {
 }
 
 // Play the game for the secret
-func (g *Game) Play(secret string) ([]string, error) {
+func (g *Game) Play(secret string) (*Scoreboard, error) {
 	if g.strategy == nil {
 		return nil, errors.New("missing strategy")
 	}
@@ -66,10 +79,15 @@ func (g *Game) Play(secret string) ([]string, error) {
 	default:
 		words = strings.Split(g.start, ",")
 	}
-	return game(g.dictionary, g.strategy, words, secret)
+	return g.play(secret, words)
 }
 
-func game(dictionary Dictionary, strategy Strategy, words []string, secret string) ([]string, error) {
+func (g *Game) play(secret string, words []string) (*Scoreboard, error) {
+	scoreboard := &Scoreboard{
+		Secret:   secret,
+		Strategy: g.strategy.String(),
+	}
+	dictionary := g.dictionary
 	upper := cases.Upper(language.English)
 	fns := []FilterFunc{Length(len(secret)), IsLower()}
 	for {
@@ -81,31 +99,30 @@ func game(dictionary Dictionary, strategy Strategy, words []string, secret strin
 		if err != nil {
 			return nil, err
 		}
-		dictionary = strategy.Apply(Filter(dictionary, append(fns, guesses)...))
-		log.Info().
-			Int("dictionary", len(dictionary)).
-			Str("secret", secret).
-			Str("next", func() string {
-				switch {
-				case len(dictionary) == 0:
-					return ""
-				default:
-					return dictionary[0]
-				}
-			}()).
-			Strs("scores", scores).
-			Strs("words", words).
-			Msg("play")
+		dictionary = g.strategy.Apply(Filter(dictionary, append(fns, guesses)...))
+		round := &Round{
+			Dictionary: len(dictionary),
+			Scores:     scores,
+			Words:      words,
+		}
+		scoreboard.Rounds = append(scoreboard.Rounds, round)
 		switch {
 		case len(dictionary) == 0:
-			return nil, fmt.Errorf("failed to find secret")
+			return scoreboard, nil
 		case dictionary[0] == secret:
-			if len(scores) == 1 {
-				return scores, nil
+			switch {
+			case len(scores) == 1 && len(dictionary) == 1:
+				// guessed the word immediately!
+			default:
+				round.Words = append(round.Words, dictionary[0])
+				round.Scores = append(round.Scores, upper.String(dictionary[0]))
 			}
-			return append(scores, upper.String(dictionary[0])), nil
+			scoreboard.Success = true
+			return scoreboard, nil
+		default:
+			round.Next = dictionary[0]
+			words = append(words, dictionary[0])
 		}
-		words = append(words, dictionary[0])
 	}
 }
 
@@ -165,11 +182,12 @@ func CommandPlay() *cli.Command { //nolint:gocognit
 				WithStart(c.String("start")))
 			enc := json.NewEncoder(c.App.Writer)
 			for _, secret := range c.Args().Slice() {
-				words, err = game.Play(secret)
+				var rounds *Scoreboard
+				rounds, err = game.Play(secret)
 				if err != nil {
 					return err
 				}
-				if err = enc.Encode(words); err != nil {
+				if err = enc.Encode(rounds); err != nil {
 					return err
 				}
 			}

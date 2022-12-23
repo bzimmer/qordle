@@ -41,16 +41,13 @@ func play(c echo.Context) error {
 		qordle.WithStart(start),
 		qordle.WithStrategy(st))
 
-	dictionary, err = game.Play(secret)
+	scoreboard, err := game.Play(secret)
 	if err != nil {
 		return err
 	}
 	log.Debug().
-		Str("secret", secret).
-		Str("start", start).
-		Str("strategy", st.String()).
-		Strs("dictionary", dictionary).Msg("play")
-	return c.JSONPretty(http.StatusOK, dictionary, " ")
+		Interface("scoreboard", scoreboard).Msg("play")
+	return c.JSONPretty(http.StatusOK, scoreboard, " ")
 }
 
 func suggest(c echo.Context) error {
