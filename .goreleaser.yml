@@ -18,12 +18,6 @@ builds:
     main: ./cmd/qordled
     ldflags:
       - -s -w -X {{.ModulePath}}.buildVersion={{.Version}} -X {{.ModulePath}}.buildCommit={{.ShortCommit}} -X {{.ModulePath}}.buildTime={{.Date}} -X {{.ModulePath}}.buildBuilder=goreleaser
-archives:
-  - replacements:
-      darwin: Darwin
-      linux: Linux
-      386: i386
-      amd64: x86_64
 checksum:
   name_template: checksums.txt
 snapshot:
