@@ -14,7 +14,6 @@ import (
 type Scoreboard struct {
 	Secret   string   `json:"secret"`
 	Strategy string   `json:"strategy"`
-	Success  bool     `json:"success"`
 	Rounds   []*Round `json:"rounds"`
 }
 
@@ -23,6 +22,7 @@ type Round struct {
 	Next       string   `json:"next,omitempty"`
 	Scores     []string `json:"scores"`
 	Words      []string `json:"words"`
+	Success    bool     `json:"success"`
 }
 
 type Game struct {
@@ -99,12 +99,12 @@ func (g *Game) play(secret string, words []string) (*Scoreboard, error) {
 		if err != nil {
 			return nil, err
 		}
-		dictionary = g.strategy.Apply(Filter(dictionary, append(fns, guesses)...))
 		round := &Round{
 			Dictionary: len(dictionary),
 			Scores:     scores,
 			Words:      words,
 		}
+		dictionary = g.strategy.Apply(Filter(dictionary, append(fns, guesses)...))
 		scoreboard.Rounds = append(scoreboard.Rounds, round)
 		switch {
 		case len(dictionary) == 0:
@@ -114,10 +114,13 @@ func (g *Game) play(secret string, words []string) (*Scoreboard, error) {
 			case len(scores) == 1 && len(dictionary) == 1:
 				// guessed the word immediately!
 			default:
-				round.Words = append(round.Words, dictionary[0])
-				round.Scores = append(round.Scores, upper.String(dictionary[0]))
+				scoreboard.Rounds = append(scoreboard.Rounds, &Round{
+					Dictionary: len(dictionary),
+					Scores:     append(scores, upper.String(dictionary[0])),
+					Words:      append(words, dictionary[0]),
+					Success:    true,
+				})
 			}
-			scoreboard.Success = true
 			return scoreboard, nil
 		default:
 			round.Next = dictionary[0]
