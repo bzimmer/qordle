@@ -21,14 +21,20 @@ func TestGame(t *testing.T) {
 		dictionary, errDictionary string
 	}{
 		{
-			name:       "simple",
+			name:       "no startng word",
+			secret:     "shine",
+			strategy:   "frequency",
+			dictionary: "solutions",
+		},
+		{
+			name:       "starting word",
 			start:      "soare",
 			secret:     "shine",
 			strategy:   "frequency",
 			dictionary: "solutions",
 		},
 		{
-			name:       "simple",
+			name:       "simple with qordle dictionary",
 			start:      "soare",
 			secret:     "shine",
 			strategy:   "frequency",

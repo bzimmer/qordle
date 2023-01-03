@@ -86,6 +86,12 @@ func TestLetterboxCommand(t *testing.T) {
 			length:  57,
 			options: []string{"-w", "solutions", "--max", "4", "rul", "eya", "gdh", "opb"},
 		},
+		{
+			name:    "letterbox with invalid wordlist",
+			length:  3,
+			options: []string{"-w", "missing", "--max", "4"},
+			err:     true,
+		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
