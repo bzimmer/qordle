@@ -129,7 +129,7 @@ func (g *Game) play(secret string, words []string) (*Scoreboard, error) {
 	}
 }
 
-func CommandPlay() *cli.Command { //nolint:gocognit
+func CommandPlay() *cli.Command {
 	return &cli.Command{
 		Name:  "play",
 		Usage: "play wordle automatically",
@@ -139,41 +139,24 @@ func CommandPlay() *cli.Command { //nolint:gocognit
 				Aliases: []string{"t"},
 				Value:   "soare",
 			},
-			&cli.StringSliceFlag{
-				Name:    "wordlist",
-				Aliases: []string{"w"},
-				Usage:   "use the specified embedded word list",
-				Value:   nil,
-			},
 			&cli.StringFlag{
 				Name:    "strategy",
 				Aliases: []string{"s"},
 				Usage:   "use the specified strategy",
 				Value:   "frequency",
 			},
+			wordlistFlag(),
 		},
 		Before: func(c *cli.Context) error {
 			if c.NArg() == 0 {
 				return fmt.Errorf("expected at least one word to play")
 			}
-			if !c.IsSet("wordlist") || len(c.StringSlice("wordlist")) == 0 {
-				if err := c.Set("wordlist", "possible"); err != nil {
-					return err
-				}
-				if err := c.Set("wordlist", "solutions"); err != nil {
-					return err
-				}
-			}
 			return nil
 		},
 		Action: func(c *cli.Context) error {
-			var words Dictionary
-			for _, wordlist := range c.StringSlice("wordlist") {
-				t, err := DictionaryEm(wordlist)
-				if err != nil {
-					return err
-				}
-				words = append(words, t...)
+			dictionary, err := wordlists(c, "possible", "solutions")
+			if err != nil {
+				return err
 			}
 			st, err := NewStrategy(c.String("strategy"))
 			if err != nil {
@@ -181,7 +164,7 @@ func CommandPlay() *cli.Command { //nolint:gocognit
 			}
 			game := NewGame(
 				WithStrategy(st),
-				WithDictionary(words),
+				WithDictionary(dictionary),
 				WithStart(c.String("start")))
 			enc := json.NewEncoder(c.App.Writer)
 			for _, secret := range c.Args().Slice() {

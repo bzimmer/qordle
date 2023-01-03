@@ -10,8 +10,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/rs/zerolog/log"
-	"github.com/spf13/afero"
 	"github.com/urfave/cli/v2"
 )
 
@@ -37,16 +35,6 @@ func dict(r io.Reader) (Dictionary, error) {
 	return res, nil
 }
 
-func DictionaryFs(afs afero.Fs, path string) (Dictionary, error) {
-	fp, err := afs.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer fp.Close()
-	log.Info().Str("path", path).Msg("fs")
-	return dict(fp)
-}
-
 func DictionaryEm(path string) (Dictionary, error) {
 	fp, err := dataFs.Open(filepath.Join(dataFsDir, path+dottxt))
 	if err != nil {
@@ -54,6 +42,35 @@ func DictionaryEm(path string) (Dictionary, error) {
 	}
 	defer fp.Close()
 	return dict(fp)
+}
+
+func wordlistFlag() cli.Flag {
+	return &cli.StringSliceFlag{
+		Name:    "wordlist",
+		Aliases: []string{"w"},
+		Usage:   "use the specified embedded word list",
+	}
+}
+
+func wordlists(c *cli.Context, wordlists ...string) (Dictionary, error) {
+	if c.IsSet("wordlist") {
+		wordlists = c.StringSlice("wordlist")
+	}
+	w := map[string]struct{}{}
+	for _, wordlist := range wordlists {
+		t, err := DictionaryEm(wordlist)
+		if err != nil {
+			return nil, err
+		}
+		for i := range t {
+			w[t[i]] = struct{}{}
+		}
+	}
+	dictionary := Dictionary(nil)
+	for k := range w {
+		dictionary = append(dictionary, k)
+	}
+	return dictionary, nil
 }
 
 func ListEm() ([]string, error) {
