@@ -72,14 +72,19 @@ func TestLetterboxCommand(t *testing.T) {
 		length  int
 	}{
 		{
-			name:    "letterbox with a file",
-			length:  1,
-			options: []string{"--box", "'rul-eya-gdh-opb'", "--max", "3", "testdata/simple.txt"},
+			name:    "letterbox with 0 arguments",
+			length:  3,
+			options: []string{"-w", "solutions", "--max", "4"},
 		},
 		{
-			name:    "letterbox from an embedded",
+			name:    "letterbox with 1 argument",
 			length:  57,
-			options: []string{"--box", "'rul-eya-gdh-opb'", "--max", "4"},
+			options: []string{"-w", "solutions", "--max", "4", "rul-eya-gdh-opb"},
+		},
+		{
+			name:    "letterbox with 4 arguments",
+			length:  57,
+			options: []string{"-w", "solutions", "--max", "4", "rul", "eya", "gdh", "opb"},
 		},
 	} {
 		tt := tt

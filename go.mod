@@ -8,7 +8,6 @@ require (
 	github.com/kelindar/bitmap v1.4.1
 	github.com/labstack/echo/v4 v4.9.0
 	github.com/rs/zerolog v1.28.0
-	github.com/spf13/afero v1.9.2
 	github.com/stretchr/testify v1.7.2
 	github.com/urfave/cli/v2 v2.15.0
 	golang.org/x/exp v0.0.0-20220921164117-439092de6870

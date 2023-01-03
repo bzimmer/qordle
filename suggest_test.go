@@ -32,11 +32,6 @@ func TestSuggestCommand(t *testing.T) {
 			strategy: "u",
 			err:      "unknown strategy `u`",
 		},
-		{
-			name:       "invalid dictionary",
-			dictionary: "blahblahblah",
-			err:        "open blahblahblah: no such file or directory",
-		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
@@ -48,9 +43,6 @@ func TestSuggestCommand(t *testing.T) {
 				Commands: []*cli.Command{qordle.CommandSuggest()},
 			}
 			args := []string{"qordle", "suggest"}
-			if tt.dictionary != "" {
-				args = append(args, "--dictionary", tt.dictionary)
-			}
 			if tt.strategy != "" {
 				args = append(args, "-s", tt.strategy)
 			}

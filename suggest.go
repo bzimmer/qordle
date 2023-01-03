@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/afero"
 	"github.com/urfave/cli/v2"
 )
 
@@ -33,21 +32,12 @@ func CommandSuggest() *cli.Command {
 				Usage: "match against a known pattern (use '.' for all unknown letters)",
 			},
 			&cli.StringFlag{
-				Name:  "dictionary",
-				Usage: "dictionary of possible words (eg /usr/share/dict/words)",
-			},
-			&cli.StringFlag{
-				Name:    "wordlist",
-				Aliases: []string{"w"},
-				Usage:   "use the specified embedded word list",
-				Value:   "solutions",
-			},
-			&cli.StringFlag{
 				Name:    "strategy",
 				Aliases: []string{"s"},
 				Usage:   "use the specified strategy",
 				Value:   "frequency",
 			},
+			wordlistFlag(),
 		},
 		Action: func(c *cli.Context) error {
 			t := time.Now()
@@ -67,19 +57,10 @@ func CommandSuggest() *cli.Command {
 				pattern,
 				guesses,
 			}
-
-			var source string
-			var dictionary Dictionary
-			if c.IsSet("dictionary") {
-				source = c.String("dictionary")
-				dictionary, err = DictionaryFs(afero.NewOsFs(), source)
-			} else {
-				dictionary, err = DictionaryEm(c.String("wordlist"))
-			}
+			dictionary, err := wordlists(c, "possible", "solutions")
 			if err != nil {
 				return err
 			}
-
 			n := len(dictionary)
 			dictionary = Filter(dictionary, fns...)
 			q := len(dictionary)
@@ -87,7 +68,6 @@ func CommandSuggest() *cli.Command {
 				Dur("elapsed", time.Since(t)).
 				Int("master", n).
 				Int("filtered", q).
-				Str("source", source).
 				Msg("dictionary")
 
 			st, err := NewStrategy(c.String("strategy"))

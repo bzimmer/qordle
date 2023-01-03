@@ -2,6 +2,7 @@ package qordle
 
 import (
 	"encoding/json"
+	"fmt"
 	"math"
 	"runtime"
 	"strings"
@@ -10,12 +11,14 @@ import (
 
 	"github.com/kelindar/bitmap"
 	"github.com/rs/zerolog/log"
-	"github.com/spf13/afero"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/exp/slices"
 )
 
-const letters = 12
+const (
+	letters      = 12
+	defaultSides = "rme-wcl-tgk-api"
+)
 
 type Graph map[rune][]string
 
@@ -225,40 +228,39 @@ func (box *Box) Solutions(words []string) <-chan []string {
 	return solutions
 }
 
-func box(c *cli.Context) *Box {
+func box(c *cli.Context) (*Box, error) {
+	sides := defaultSides
+	switch c.NArg() {
+	case 0:
+		// use default
+	case 1:
+		sides = c.Args().First()
+	case 4:
+		sides = strings.Join(c.Args().Slice(), "-")
+	default:
+		return nil, fmt.Errorf("found %d sides", c.NArg())
+	}
+	log.Info().Str("sides", sides).Msg("using")
 	return NewBox(
-		WithSides(c.String("box")),
+		WithSides(sides),
 		WithConcurrent(c.Int("concurrent")),
 		WithMinWordLength(c.Int("min")),
-		WithMaxSolutionLength(c.Int("max")))
+		WithMaxSolutionLength(c.Int("max"))), nil
 }
 
 func trie(c *cli.Context) (int, *Trie, error) {
 	defer func(t time.Time) {
 		log.Info().Dur("elapsed", time.Since(t)).Msg("build trie")
 	}(time.Now())
-	var err error
-	var dict Dictionary
-	switch args := c.Args().Slice(); len(args) {
-	case 0:
-		if dict, err = DictionaryEm("solutions"); err != nil {
-			return 0, nil, err
-		}
-	default:
-		var m Dictionary
-		fs := afero.NewOsFs()
-		for i := 0; i < len(args); i++ {
-			if m, err = DictionaryFs(fs, args[i]); err != nil {
-				return 0, nil, err
-			}
-			dict = append(dict, m...)
-		}
+	dictionary, err := wordlists(c, "qordle")
+	if err != nil {
+		return 0, nil, err
 	}
 	trie := NewTrie()
-	for i := range dict {
-		trie.Add(dict[i])
+	for i := range dictionary {
+		trie.Add(dictionary[i])
 	}
-	return len(dict), trie, nil
+	return len(dictionary), trie, nil
 }
 
 func CommandLetterBox() *cli.Command {
@@ -266,11 +268,6 @@ func CommandLetterBox() *cli.Command {
 		Name:  "letterbox",
 		Usage: "play letterbox",
 		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:  "box",
-				Usage: "the letter box in `aaa-bbb-ccc-ddd` format",
-				Value: "rme-wcl-tgk-api",
-			},
 			&cli.IntFlag{
 				Name:  "min",
 				Usage: "minimum word size",
@@ -286,6 +283,7 @@ func CommandLetterBox() *cli.Command {
 				Usage: "number of cpus to use for concurrent solving",
 				Value: runtime.NumCPU(),
 			},
+			wordlistFlag(),
 		},
 		Action: func(c *cli.Context) error {
 			defer func(t time.Time) {
@@ -295,10 +293,12 @@ func CommandLetterBox() *cli.Command {
 			if err != nil {
 				return err
 			}
-			box := box(c)
+			box, err := box(c)
+			if err != nil {
+				return err
+			}
 			words := box.Words(t)
 			log.Info().Int("matching", len(words)).Int("possible", n).Msg("dictonary")
-
 			sol := map[int]int{}
 			enc := json.NewEncoder(c.App.Writer)
 			for solution := range box.Solutions(words) {
@@ -308,7 +308,6 @@ func CommandLetterBox() *cli.Command {
 				}
 			}
 			log.Info().Interface("solutions", sol).Msg("solutions")
-
 			return nil
 		},
 	}
