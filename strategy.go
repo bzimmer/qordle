@@ -3,6 +3,8 @@ package qordle
 import (
 	"fmt"
 	"sort"
+
+	"github.com/rs/zerolog/log"
 )
 
 func NewStrategy(code string) (Strategy, error) {
@@ -124,4 +126,77 @@ func (s *Frequency) Apply(words Dictionary) Dictionary {
 	}
 
 	return mkdict("frequency", scores)
+}
+
+// Speculate attempts to find a word which eliminates the most letters
+type Speculate struct {
+	words      Dictionary
+	strategy   Strategy
+	speculated bool
+}
+
+func (s *Speculate) String() string {
+	return "speculate"
+}
+
+func (s *Speculate) hamming(s1 string, s2 string) []rune {
+	var runes []rune
+	r1 := []rune(s1)
+	r2 := []rune(s2)
+	for i, v := range r1 {
+		if r2[i] != v {
+			runes = append(runes, v)
+		}
+	}
+	return runes
+}
+
+func (s *Speculate) with(words Dictionary) Dictionary {
+	runes := make(map[rune]struct{})
+	for i := 1; i < len(words); i++ {
+		r := s.hamming(words[i-1], words[i])
+		if len(r) != 1 {
+			// only speculate guessing games
+			return nil
+		}
+		for x := range r {
+			runes[r[x]] = struct{}{}
+		}
+	}
+
+	n := 0
+	next := make(map[int][]string)
+	for _, word := range s.words {
+		var q int
+		for _, r := range word {
+			if _, ok := runes[r]; ok {
+				q++
+			}
+		}
+		if q >= n {
+			// this check is a small optimization
+			//  only more complete words will be added
+			n = q
+			next[n] = append(next[n], word)
+		}
+	}
+
+	return Dictionary(next[n])
+}
+
+func (s *Speculate) Apply(words Dictionary) Dictionary {
+	switch {
+	case s.speculated:
+		return s.strategy.Apply(words)
+	case len(words) == 1:
+		return words
+	}
+	with := s.with(words)
+	if with == nil {
+		return s.strategy.Apply(words)
+	}
+	s.speculated = true
+	with = s.strategy.Apply(with)
+	log.Info().Strs("words", words).Strs("with", with).Msg("speculate")
+	return append(with, s.strategy.Apply(words)...)
 }

@@ -145,6 +145,12 @@ func CommandPlay() *cli.Command {
 				Usage:   "use the specified strategy",
 				Value:   "frequency",
 			},
+			&cli.BoolFlag{
+				Name:    "speculate",
+				Aliases: []string{"S"},
+				Usage:   "speculate if necessary",
+				Value:   false,
+			},
 			wordlistFlag(),
 		},
 		Before: func(c *cli.Context) error {
@@ -161,6 +167,9 @@ func CommandPlay() *cli.Command {
 			st, err := NewStrategy(c.String("strategy"))
 			if err != nil {
 				return err
+			}
+			if c.Bool("speculate") {
+				st = &Speculate{words: dictionary, strategy: st}
 			}
 			game := NewGame(
 				WithStrategy(st),
