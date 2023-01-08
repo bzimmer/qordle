@@ -169,7 +169,7 @@ func CommandPlay() *cli.Command {
 				return err
 			}
 			if c.Bool("speculate") {
-				st = &Speculate{words: dictionary, strategy: st}
+				st = NewSpeculator(dictionary, st)
 			}
 			game := NewGame(
 				WithStrategy(st),

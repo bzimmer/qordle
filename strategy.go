@@ -200,3 +200,7 @@ func (s *Speculate) Apply(words Dictionary) Dictionary {
 	log.Info().Strs("words", words).Strs("with", with).Msg("speculate")
 	return append(with, s.strategy.Apply(words)...)
 }
+
+func NewSpeculator(words Dictionary, strategy Strategy) Strategy {
+	return &Speculate{words: words, strategy: strategy}
+}
