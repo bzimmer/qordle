@@ -168,8 +168,7 @@ func (s *Speculate) with(words Dictionary) Dictionary {
 		}
 	}
 
-	n := 0
-	next := make(map[int][]string)
+	n, next := 0, make(map[int][]string)
 	for _, word := range s.words {
 		var q int
 		for _, r := range word {
@@ -188,15 +187,15 @@ func (s *Speculate) with(words Dictionary) Dictionary {
 }
 
 func (s *Speculate) Apply(words Dictionary) Dictionary {
-	if len(words) <= 1 {
+	if len(words) <= 1 || s.strategy == nil {
 		return words
 	}
 	with := s.with(words)
-	if with == nil {
+	if len(with) == 0 {
 		return s.strategy.Apply(words)
 	}
 	with = s.strategy.Apply(with)
-	log.Debug().Strs("words", words).Strs("with", with).Msg("speculate")
+	log.Debug().Strs("words", words).Strs("with", with).Msg(s.String())
 	return append(with, s.strategy.Apply(words)...)
 }
 

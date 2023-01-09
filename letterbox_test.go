@@ -92,6 +92,11 @@ func TestLetterboxCommand(t *testing.T) {
 			options: []string{"-w", "missing", "--max", "4"},
 			err:     true,
 		},
+		{
+			name:    "letterbox with 5 arguments",
+			options: []string{"-w", "solutions", "--max", "4", "rul", "eya", "gdh", "opb", "qst"},
+			err:     true,
+		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {

@@ -47,6 +47,13 @@ func TestGame(t *testing.T) {
 			strategy:      "frequency",
 			errDictionary: "missing dictionary",
 		},
+		{
+			name:        "missing strategy",
+			start:       "soare",
+			secret:      "train",
+			dictionary:  "qordle",
+			errStrategy: "missing strategy",
+		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
@@ -124,6 +131,16 @@ func TestPlayCommand(t *testing.T) {
 			name: "secret and guess lengths do not match",
 			args: []string{"123456"},
 			err:  "secret and guess lengths do not match",
+		},
+		{
+			name: "invalid strategy",
+			args: []string{"-s", "foobar", "table"},
+			err:  "unknown strategy `foobar`",
+		},
+		{
+			name: "invalid wordlist",
+			args: []string{"-w", "foobar", "table"},
+			err:  "invalid wordlist `foobar`",
 		},
 		{
 			name: "no word",
