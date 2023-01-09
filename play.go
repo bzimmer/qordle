@@ -1,20 +1,26 @@
 package qordle
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
 
+const auto = "auto"
+
 type Scoreboard struct {
 	Secret   string   `json:"secret"`
 	Strategy string   `json:"strategy"`
 	Rounds   []*Round `json:"rounds"`
+	Elapsed  int64    `json:"elapsed"`
 }
 
 type Round struct {
@@ -65,7 +71,7 @@ func WithStrategy(strategy Strategy) Option {
 }
 
 // Play the game for the secret
-func (g *Game) Play(secret string) (*Scoreboard, error) {
+func (g *Game) Play(ctx context.Context, secret string) (*Scoreboard, error) {
 	if g.strategy == nil {
 		return nil, errors.New("missing strategy")
 	}
@@ -79,18 +85,26 @@ func (g *Game) Play(secret string) (*Scoreboard, error) {
 	default:
 		words = strings.Split(g.start, ",")
 	}
-	return g.play(secret, words)
+	return g.play(ctx, secret, words)
 }
 
-func (g *Game) play(secret string, words []string) (*Scoreboard, error) {
+func (g *Game) play(ctx context.Context, secret string, words []string) (*Scoreboard, error) {
 	scoreboard := &Scoreboard{
 		Secret:   secret,
 		Strategy: g.strategy.String(),
 	}
+	defer func(t time.Time) {
+		scoreboard.Elapsed = time.Since(t).Milliseconds()
+	}(time.Now())
 	dictionary := g.dictionary
 	upper := cases.Upper(language.English)
 	fns := []FilterFunc{Length(len(secret)), IsLower()}
 	for {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+		}
 		scores, err := Score(secret, words...)
 		if err != nil {
 			return nil, err
@@ -129,6 +143,59 @@ func (g *Game) play(secret string, words []string) (*Scoreboard, error) {
 	}
 }
 
+func secrets(c *cli.Context) ([]string, error) {
+	if c.Bool(auto) {
+		log.Info().Msg("reading from stdin")
+		return read(c.App.Reader)
+	}
+	return c.Args().Slice(), nil
+}
+
+func play(c *cli.Context) error {
+	dictionary, err := wordlists(c, "possible", "solutions")
+	if err != nil {
+		return err
+	}
+	st, err := NewStrategy(c.String("strategy"))
+	if err != nil {
+		return err
+	}
+	sts, err := secrets(c)
+	if err != nil {
+		return err
+	}
+	if c.Bool("speculate") {
+		st = NewSpeculator(dictionary, st)
+	}
+	game := NewGame(
+		WithStrategy(st),
+		WithDictionary(dictionary),
+		WithStart(c.String("start")))
+	enc := json.NewEncoder(c.App.Writer)
+	for _, secret := range sts {
+		if err = func() error {
+			var board *Scoreboard
+			ctx, cancel := context.WithTimeout(c.Context, time.Second*2)
+			defer cancel()
+			board, err = game.Play(ctx, secret)
+			if err != nil {
+				if !c.Bool(auto) {
+					return err
+				}
+				if errors.Is(err, context.DeadlineExceeded) {
+					log.Error().Str("secret", secret).Msg("game never converged")
+					return nil
+				}
+				return err
+			}
+			return enc.Encode(board)
+		}(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func CommandPlay() *cli.Command {
 	return &cli.Command{
 		Name:  "play",
@@ -151,42 +218,26 @@ func CommandPlay() *cli.Command {
 				Usage:   "speculate if necessary",
 				Value:   false,
 			},
+			&cli.BoolFlag{
+				Name:    auto,
+				Aliases: []string{"A"},
+				Usage:   "auto play from stdin",
+				Value:   false,
+			},
 			wordlistFlag(),
 		},
 		Before: func(c *cli.Context) error {
+			if c.Bool(auto) {
+				if c.NArg() > 0 {
+					return fmt.Errorf("expected no secrets arguments")
+				}
+				return nil
+			}
 			if c.NArg() == 0 {
 				return fmt.Errorf("expected at least one word to play")
 			}
 			return nil
 		},
-		Action: func(c *cli.Context) error {
-			dictionary, err := wordlists(c, "possible", "solutions")
-			if err != nil {
-				return err
-			}
-			st, err := NewStrategy(c.String("strategy"))
-			if err != nil {
-				return err
-			}
-			if c.Bool("speculate") {
-				st = NewSpeculator(dictionary, st)
-			}
-			game := NewGame(
-				WithStrategy(st),
-				WithDictionary(dictionary),
-				WithStart(c.String("start")))
-			enc := json.NewEncoder(c.App.Writer)
-			for _, secret := range c.Args().Slice() {
-				var rounds *Scoreboard
-				rounds, err = game.Play(secret)
-				if err != nil {
-					return err
-				}
-				if err = enc.Encode(rounds); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+		Action: play,
 	}
 }

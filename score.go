@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 )
 
@@ -16,6 +17,7 @@ func Score(secret string, guesses ...string) ([]string, error) {
 	scores := make([]string, len(guesses))
 	for n, guess := range guesses {
 		if len(secret) != len(guess) {
+			log.Error().Str("secret", secret).Str("guess", guess).Msg("score")
 			return nil, errors.New("secret and guess lengths do not match")
 		}
 		pass := make(map[string]int, len(guess))

@@ -27,11 +27,15 @@ tasks:
       - mkdir -p {{.DIST}}
 
   test:
-    desc: Run tests
-    deps: [dist]
+    desc: Run unit tests
     cmds:
       # https://github.com/golang/go/issues/49138
       - go test {{.CLI_ARGS}} -timeout 10s -race -count=1 -covermode atomic -coverprofile {{.DIST}}/coverage.txt {{.PKG}}
+
+  fuzz:
+    desc: Run fuzz tests
+    cmds:
+      - go test -fuzz=Fuzz -fuzztime 10s
 
   cover:
     desc: Visualize test coverage
