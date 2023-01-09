@@ -7,6 +7,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+const threshold = 1 // only speculate guessing games
+
 func NewStrategy(code string) (Strategy, error) {
 	switch code {
 	case "a", "alpha":
@@ -38,7 +40,7 @@ func (s *Alpha) Apply(words Dictionary) Dictionary {
 	return dict
 }
 
-func mkdict(_ string, scores map[int][]string) Dictionary {
+func mkdict(scores map[int][]string) Dictionary {
 	// sort the words by their positional scores
 	ranks := make([]int, 0, len(scores))
 	for k := range scores {
@@ -86,7 +88,7 @@ func (s *Position) Apply(words Dictionary) Dictionary {
 		scores[s] = append(scores[s], word)
 	}
 
-	return mkdict("position", scores)
+	return mkdict(scores)
 }
 
 // Frequency orders the dictionary by words containing the most frequent letters
@@ -125,14 +127,13 @@ func (s *Frequency) Apply(words Dictionary) Dictionary {
 		scores[n] = append(scores[n], words[i])
 	}
 
-	return mkdict("frequency", scores)
+	return mkdict(scores)
 }
 
 // Speculate attempts to find a word which eliminates the most letters
 type Speculate struct {
-	words      Dictionary
-	strategy   Strategy
-	speculated bool
+	words    Dictionary
+	strategy Strategy
 }
 
 func (s *Speculate) String() string {
@@ -140,9 +141,13 @@ func (s *Speculate) String() string {
 }
 
 func (s *Speculate) hamming(s1 string, s2 string) []rune {
-	var runes []rune
 	r1 := []rune(s1)
 	r2 := []rune(s2)
+	// check the rune array as the lengths might differ after conversion
+	if len(r1) != len(r2) {
+		return nil
+	}
+	var runes []rune
 	for i, v := range r1 {
 		if r2[i] != v {
 			runes = append(runes, v)
@@ -155,8 +160,7 @@ func (s *Speculate) with(words Dictionary) Dictionary {
 	runes := make(map[rune]struct{})
 	for i := 1; i < len(words); i++ {
 		r := s.hamming(words[i-1], words[i])
-		if len(r) != 1 {
-			// only speculate guessing games
+		if len(r) > threshold {
 			return nil
 		}
 		for x := range r {
@@ -174,8 +178,7 @@ func (s *Speculate) with(words Dictionary) Dictionary {
 			}
 		}
 		if q >= n {
-			// this check is a small optimization
-			//  only more complete words will be added
+			// only add words with more information
 			n = q
 			next[n] = append(next[n], word)
 		}
@@ -185,19 +188,15 @@ func (s *Speculate) with(words Dictionary) Dictionary {
 }
 
 func (s *Speculate) Apply(words Dictionary) Dictionary {
-	switch {
-	case s.speculated:
-		return s.strategy.Apply(words)
-	case len(words) == 1:
+	if len(words) <= 1 {
 		return words
 	}
 	with := s.with(words)
 	if with == nil {
 		return s.strategy.Apply(words)
 	}
-	s.speculated = true
 	with = s.strategy.Apply(with)
-	log.Info().Strs("words", words).Strs("with", with).Msg("speculate")
+	log.Debug().Strs("words", words).Strs("with", with).Msg("speculate")
 	return append(with, s.strategy.Apply(words)...)
 }
 

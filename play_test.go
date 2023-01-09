@@ -141,6 +141,12 @@ func TestPlayCommand(t *testing.T) {
 			guesses: []string{"sh~adow", "~alin~e~r", "p~e~rAc~t", "~rugAT~e", "TREATY"},
 			success: true,
 		},
+		{
+			name:    "six letter word with no implicit strategy and speculation",
+			args:    []string{"-w", "qordle", "--start", "shadow", "-S", "treaty"},
+			guesses: []string{"sh~adow", "~alin~e~r", "p~e~rAc~t", "~rugAT~e", "TREATY"},
+			success: true,
+		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {

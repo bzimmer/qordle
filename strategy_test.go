@@ -143,3 +143,19 @@ func TestSpeculate(t *testing.T) {
 		})
 	}
 }
+
+func FuzzSpeculate(f *testing.F) {
+	for _, x := range []string{"foo", "label", "start"} {
+		f.Add(x)
+	}
+	f.Fuzz(func(t *testing.T, s string) {
+		a := assert.New(t)
+		st := qordle.NewSpeculator(
+			qordle.Dictionary{
+				"gyppy", "ghyll", "hyphy", "glyph", "layer", s}, new(qordle.Frequency))
+		dictionary := st.Apply(
+			qordle.Dictionary{
+				"fears", "gears", "hears", "lears", "pears", "wears", s, "years", "sears"})
+		a.Greater(len(dictionary), 0)
+	})
+}
