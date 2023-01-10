@@ -75,6 +75,12 @@ tasks:
     cmds:
       - "{{.DIST}}/qordled --port 8091"
 
+  auto:
+    desc: Run auto-play
+    deps: [build]
+    cmds:
+      - "{{.CWD}}/bin/auto-play.zsh"
+
   scc:
     desc: Run scc (https://github.com/boyter/scc)
     cmds:

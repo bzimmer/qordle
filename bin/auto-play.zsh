@@ -4,7 +4,6 @@ set -eo pipefail
 
 repo=$(git rev-parse --show-toplevel)
 
-task build
 games=$(
     cat $repo/data/solutions.txt |
     $repo/dist/qordle play -A -S --start "${1:-"brain"}" |
@@ -15,6 +14,7 @@ games=$(
     '
 )
 
+print -P "%F{magenta}\nFailed to find any solution!...%f\n"
 csvq --no-header '
     with
         games as
@@ -28,6 +28,7 @@ csvq --no-header '
             secret, rounds, success, elapsed from games where success is false
 ' <<< $games
 
+print -P "%F{magenta}\nFailed to find the solution in six rounds!...%f\n"
 csvq --no-header '
     with
         games as

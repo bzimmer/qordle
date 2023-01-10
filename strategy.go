@@ -7,8 +7,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const threshold = 1 // only speculate guessing games
-
 func NewStrategy(code string) (Strategy, error) {
 	switch code {
 	case "a", "alpha":
@@ -140,32 +138,50 @@ func (s *Speculate) String() string {
 	return "speculate"
 }
 
-func (s *Speculate) hamming(s1 string, s2 string) []rune {
+func (s *Speculate) hamming(s1 string, s2 string) int {
 	r1 := []rune(s1)
 	r2 := []rune(s2)
 	// check the rune array as the lengths might differ after conversion
 	if len(r1) != len(r2) {
-		return nil
+		return -1
 	}
-	var runes []rune
+	index := -1
 	for i, v := range r1 {
 		if r2[i] != v {
-			runes = append(runes, v)
+			switch {
+			case index == -1:
+				// no index has been seen yet
+				index = i
+			case index != i:
+				// an index has been seen and this one is different
+				return -1
+			}
 		}
 	}
-	return runes
+	return index
 }
 
 func (s *Speculate) with(words Dictionary) Dictionary {
-	runes := make(map[rune]struct{})
+	index := -1
 	for i := 1; i < len(words); i++ {
-		r := s.hamming(words[i-1], words[i])
-		if len(r) > threshold {
+		x := s.hamming(words[i-1], words[i])
+		switch {
+		case index == -1:
+			// no index has been seen yet
+			index = x
+		case index != x:
+			// an index has been seen and this one is different
 			return nil
 		}
-		for x := range r {
-			runes[r[x]] = struct{}{}
-		}
+	}
+
+	if index == -1 {
+		return nil
+	}
+
+	runes := make(map[rune]struct{}, len(words))
+	for i := range words {
+		runes[rune(words[i][index])] = struct{}{}
 	}
 
 	n, next := 0, make(map[int][]string)
