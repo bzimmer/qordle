@@ -227,13 +227,7 @@ func CommandPlay() *cli.Command {
 			wordlistFlag(),
 		},
 		Before: func(c *cli.Context) error {
-			if c.Bool(auto) {
-				if c.NArg() > 0 {
-					return fmt.Errorf("expected no secrets arguments")
-				}
-				return nil
-			}
-			if c.NArg() == 0 {
+			if !c.Bool(auto) && c.NArg() == 0 {
 				return fmt.Errorf("expected at least one word to play")
 			}
 			return nil

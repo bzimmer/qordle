@@ -14,7 +14,7 @@ games=$(
     '
 )
 
-print -P "%F{magenta}\nFailed to find any solution!...%f\n"
+print -P "%F{magenta}\nFailed to find any solution!%f\n"
 csvq --no-header '
     with
         games as
@@ -28,7 +28,7 @@ csvq --no-header '
             secret, rounds, success, elapsed from games where success is false
 ' <<< $games
 
-print -P "%F{magenta}\nFailed to find the solution in six rounds!...%f\n"
+print -P "%F{magenta}\nFailed to find the solution in six rounds!%f\n"
 csvq --no-header '
     with
         games as
