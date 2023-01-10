@@ -107,9 +107,6 @@ func (g *Game) play(secret string, words []string) (*Scoreboard, error) {
 			return nil, err
 		}
 		dictionary = g.strategy.Apply(Filter(dictionary, append(fns, guesses)...))
-		if len(dictionary) == 0 {
-			return scoreboard, nil
-		}
 
 		round := &Round{
 			Dictionary: len(dictionary),
@@ -118,7 +115,10 @@ func (g *Game) play(secret string, words []string) (*Scoreboard, error) {
 		}
 		scoreboard.Rounds = append(scoreboard.Rounds, round)
 
-		if round.Words[len(round.Words)-1] == secret {
+		switch {
+		case len(dictionary) == 0:
+			return scoreboard, nil
+		case round.Words[len(round.Words)-1] == secret:
 			round.Success = true
 			return scoreboard, nil
 		}
