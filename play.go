@@ -7,8 +7,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cheggaaa/pb/v3"
 	"github.com/rs/zerolog/log"
-	"github.com/schollz/progressbar/v3"
+
 	"github.com/urfave/cli/v2"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -167,9 +168,10 @@ func play(c *cli.Context) error {
 		WithDictionary(dictionary),
 		WithStart(c.String("start")))
 	enc := json.NewEncoder(c.App.Writer)
-	bar := progressbar.Default(int64(len(secrets)))
+	bar := pb.StartNew(len(secrets))
+	defer bar.Finish()
 	for i := range secrets {
-		bar.Add(1)
+		bar.Increment()
 		board, err := game.Play(secrets[i])
 		if err != nil {
 			return err
