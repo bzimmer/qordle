@@ -47,6 +47,13 @@ func TestGame(t *testing.T) {
 			strategy:      "frequency",
 			errDictionary: "missing dictionary",
 		},
+		{
+			name:        "missing strategy",
+			start:       "soare",
+			secret:      "train",
+			dictionary:  "qordle",
+			errStrategy: "missing strategy",
+		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
@@ -63,7 +70,7 @@ func TestGame(t *testing.T) {
 			}
 			var dt qordle.Dictionary
 			if tt.dictionary != "" {
-				dt, err = qordle.DictionaryEm(tt.dictionary)
+				dt, err = qordle.Read(tt.dictionary)
 				a.NoError(err)
 				a.NotNil(dt)
 			}
@@ -126,6 +133,16 @@ func TestPlayCommand(t *testing.T) {
 			err:  "secret and guess lengths do not match",
 		},
 		{
+			name: "invalid strategy",
+			args: []string{"-s", "foobar", "table"},
+			err:  "unknown strategy `foobar`",
+		},
+		{
+			name: "invalid wordlist",
+			args: []string{"-w", "foobar", "table"},
+			err:  "invalid wordlist `foobar`",
+		},
+		{
 			name: "no word",
 			err:  "expected at least one word to play",
 		},
@@ -138,6 +155,12 @@ func TestPlayCommand(t *testing.T) {
 		{
 			name:    "six letter word with no implicit strategy",
 			args:    []string{"-w", "qordle", "--start", "shadow", "treaty"},
+			guesses: []string{"sh~adow", "~alin~e~r", "p~e~rAc~t", "~rugAT~e", "TREATY"},
+			success: true,
+		},
+		{
+			name:    "six letter word with no implicit strategy and speculation",
+			args:    []string{"-w", "qordle", "--start", "shadow", "-S", "treaty"},
 			guesses: []string{"sh~adow", "~alin~e~r", "p~e~rAc~t", "~rugAT~e", "TREATY"},
 			success: true,
 		},

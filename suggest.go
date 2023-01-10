@@ -37,6 +37,12 @@ func CommandSuggest() *cli.Command {
 				Usage:   "use the specified strategy",
 				Value:   "frequency",
 			},
+			&cli.BoolFlag{
+				Name:    "speculate",
+				Aliases: []string{"S"},
+				Usage:   "speculate if necessary",
+				Value:   false,
+			},
 			wordlistFlag(),
 		},
 		Action: func(c *cli.Context) error {
@@ -69,10 +75,12 @@ func CommandSuggest() *cli.Command {
 				Int("master", n).
 				Int("filtered", q).
 				Msg("dictionary")
-
 			st, err := NewStrategy(c.String("strategy"))
 			if err != nil {
 				return err
+			}
+			if c.Bool("speculate") {
+				st = NewSpeculator(dictionary, st)
 			}
 			dictionary = st.Apply(dictionary)
 			enc := json.NewEncoder(c.App.Writer)

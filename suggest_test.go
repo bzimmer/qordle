@@ -14,6 +14,7 @@ func TestSuggestCommand(t *testing.T) {
 	t.Parallel()
 	for _, tt := range []struct {
 		name, strategy, dictionary, err string
+		speculate                       bool
 	}{
 		{
 			name:     "alpha",
@@ -32,6 +33,10 @@ func TestSuggestCommand(t *testing.T) {
 			strategy: "u",
 			err:      "unknown strategy `u`",
 		},
+		{
+			name:      "speculate",
+			speculate: true,
+		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
@@ -45,6 +50,9 @@ func TestSuggestCommand(t *testing.T) {
 			args := []string{"qordle", "suggest"}
 			if tt.strategy != "" {
 				args = append(args, "-s", tt.strategy)
+			}
+			if tt.speculate {
+				args = append(args, "-S")
 			}
 			args = append(args, "raise", "fol~l~y")
 			err := app.Run(args)

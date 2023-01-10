@@ -3,6 +3,8 @@ package qordle
 import (
 	"fmt"
 	"sort"
+
+	"github.com/rs/zerolog/log"
 )
 
 func NewStrategy(code string) (Strategy, error) {
@@ -36,7 +38,7 @@ func (s *Alpha) Apply(words Dictionary) Dictionary {
 	return dict
 }
 
-func mkdict(_ string, scores map[int][]string) Dictionary {
+func mkdict(scores map[int][]string) Dictionary {
 	// sort the words by their positional scores
 	ranks := make([]int, 0, len(scores))
 	for k := range scores {
@@ -84,7 +86,7 @@ func (s *Position) Apply(words Dictionary) Dictionary {
 		scores[s] = append(scores[s], word)
 	}
 
-	return mkdict("position", scores)
+	return mkdict(scores)
 }
 
 // Frequency orders the dictionary by words containing the most frequent letters
@@ -123,5 +125,96 @@ func (s *Frequency) Apply(words Dictionary) Dictionary {
 		scores[n] = append(scores[n], words[i])
 	}
 
-	return mkdict("frequency", scores)
+	return mkdict(scores)
+}
+
+// Speculate attempts to find a word which eliminates the most letters
+type Speculate struct {
+	words    Dictionary
+	strategy Strategy
+}
+
+func (s *Speculate) String() string {
+	return "speculate"
+}
+
+func (s *Speculate) hamming(s1 string, s2 string) int {
+	r1 := []rune(s1)
+	r2 := []rune(s2)
+	// check the rune array as the lengths might differ after conversion
+	if len(r1) != len(r2) {
+		return -1
+	}
+	index := -1
+	for i, v := range r1 {
+		if r2[i] != v {
+			switch {
+			case index == -1:
+				// no index has been seen yet
+				index = i
+			case index != i:
+				// an index has been seen and this one is different
+				return -1
+			}
+		}
+	}
+	return index
+}
+
+func (s *Speculate) with(words Dictionary) Dictionary {
+	index := -1
+	for i := 1; i < len(words); i++ {
+		x := s.hamming(words[i-1], words[i])
+		switch {
+		case index == -1:
+			// no index has been seen yet
+			index = x
+		case index != x:
+			// an index has been seen and this one is different
+			return nil
+		}
+	}
+
+	if index == -1 {
+		return nil
+	}
+
+	runes := make(map[rune]struct{}, len(words))
+	for i := range words {
+		runes[rune(words[i][index])] = struct{}{}
+	}
+
+	n, next := 0, make(map[int][]string)
+	for _, word := range s.words {
+		var q int
+		for _, r := range word {
+			if _, ok := runes[r]; ok {
+				q++
+			}
+		}
+		if q >= n {
+			// only add words with more information
+			n = q
+			next[n] = append(next[n], word)
+		}
+	}
+
+	return Dictionary(next[n])
+}
+
+func (s *Speculate) Apply(words Dictionary) Dictionary {
+	if len(words) <= 1 || s.strategy == nil {
+		return words
+	}
+	with := s.with(words)
+	if len(with) == 0 {
+		return s.strategy.Apply(words)
+	}
+	with = s.strategy.Apply(with)
+	log.Debug().Strs("words", words).Strs("with", with).Msg(s.String())
+	return append(with, s.strategy.Apply(words)...)
+}
+
+func NewSpeculator(words Dictionary, strategy Strategy) Strategy {
+	return &Speculate{words: words, strategy: strategy}
 }

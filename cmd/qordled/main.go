@@ -23,7 +23,7 @@ import (
 )
 
 func play(c echo.Context) error {
-	dictionary, err := qordle.DictionaryEm("solutions")
+	dictionary, err := qordle.Read("solutions")
 	if err != nil {
 		return err
 	}
@@ -51,7 +51,7 @@ func play(c echo.Context) error {
 }
 
 func suggest(c echo.Context) error {
-	dictionary, err := qordle.DictionaryEm("solutions")
+	dictionary, err := qordle.Read("solutions")
 	if err != nil {
 		return err
 	}

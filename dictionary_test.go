@@ -30,7 +30,7 @@ func TestDictionaryEm(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			a := assert.New(t)
-			dictionary, err := qordle.DictionaryEm(tt.path)
+			dictionary, err := qordle.Read(tt.path)
 			switch tt.err {
 			case true:
 				a.Error(err)
@@ -41,13 +41,6 @@ func TestDictionaryEm(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestListEm(t *testing.T) {
-	a := assert.New(t)
-	list, err := qordle.ListEm()
-	a.NoError(err)
-	a.NotEmpty(list)
 }
 
 func TestCommandWordlists(t *testing.T) {

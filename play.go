@@ -5,16 +5,23 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
+
+	"github.com/cheggaaa/pb/v3"
+	"github.com/rs/zerolog/log"
 
 	"github.com/urfave/cli/v2"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
 
+const auto = "auto"
+
 type Scoreboard struct {
 	Secret   string   `json:"secret"`
 	Strategy string   `json:"strategy"`
 	Rounds   []*Round `json:"rounds"`
+	Elapsed  int64    `json:"elapsed"`
 }
 
 type Round struct {
@@ -87,6 +94,9 @@ func (g *Game) play(secret string, words []string) (*Scoreboard, error) {
 		Secret:   secret,
 		Strategy: g.strategy.String(),
 	}
+	defer func(t time.Time) {
+		scoreboard.Elapsed = time.Since(t).Milliseconds()
+	}(time.Now())
 	dictionary := g.dictionary
 	upper := cases.Upper(language.English)
 	fns := []FilterFunc{Length(len(secret)), IsLower()}
@@ -129,6 +139,51 @@ func (g *Game) play(secret string, words []string) (*Scoreboard, error) {
 	}
 }
 
+func secrets(c *cli.Context) ([]string, error) {
+	if c.Bool(auto) {
+		log.Info().Msg("reading from stdin")
+		return read(c.App.Reader)
+	}
+	return c.Args().Slice(), nil
+}
+
+func play(c *cli.Context) error {
+	dictionary, err := wordlists(c, "possible", "solutions")
+	if err != nil {
+		return err
+	}
+	strategy, err := NewStrategy(c.String("strategy"))
+	if err != nil {
+		return err
+	}
+	secrets, err := secrets(c)
+	if err != nil {
+		return err
+	}
+	if c.Bool("speculate") {
+		strategy = NewSpeculator(dictionary, strategy)
+	}
+	game := NewGame(
+		WithStrategy(strategy),
+		WithDictionary(dictionary),
+		WithStart(c.String("start")))
+	enc := json.NewEncoder(c.App.Writer)
+	bar := pb.StartNew(len(secrets))
+	defer bar.Finish()
+	for i := range secrets {
+		bar.Increment()
+		var board *Scoreboard
+		board, err = game.Play(secrets[i])
+		if err != nil {
+			return err
+		}
+		if err = enc.Encode(board); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func CommandPlay() *cli.Command {
 	return &cli.Command{
 		Name:  "play",
@@ -145,39 +200,26 @@ func CommandPlay() *cli.Command {
 				Usage:   "use the specified strategy",
 				Value:   "frequency",
 			},
+			&cli.BoolFlag{
+				Name:    "speculate",
+				Aliases: []string{"S"},
+				Usage:   "speculate if necessary",
+				Value:   false,
+			},
+			&cli.BoolFlag{
+				Name:    auto,
+				Aliases: []string{"A"},
+				Usage:   "auto play from stdin",
+				Value:   false,
+			},
 			wordlistFlag(),
 		},
 		Before: func(c *cli.Context) error {
-			if c.NArg() == 0 {
+			if !c.Bool(auto) && c.NArg() == 0 {
 				return fmt.Errorf("expected at least one word to play")
 			}
 			return nil
 		},
-		Action: func(c *cli.Context) error {
-			dictionary, err := wordlists(c, "possible", "solutions")
-			if err != nil {
-				return err
-			}
-			st, err := NewStrategy(c.String("strategy"))
-			if err != nil {
-				return err
-			}
-			game := NewGame(
-				WithStrategy(st),
-				WithDictionary(dictionary),
-				WithStart(c.String("start")))
-			enc := json.NewEncoder(c.App.Writer)
-			for _, secret := range c.Args().Slice() {
-				var rounds *Scoreboard
-				rounds, err = game.Play(secret)
-				if err != nil {
-					return err
-				}
-				if err = enc.Encode(rounds); err != nil {
-					return err
-				}
-			}
-			return nil
-		},
+		Action: play,
 	}
 }

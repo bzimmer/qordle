@@ -25,6 +25,11 @@ func main() {
 				Usage: "enable debug log level",
 				Value: false,
 			},
+			&cli.BoolFlag{
+				Name:  "monochrome",
+				Usage: "disable color output",
+				Value: false,
+			},
 		},
 		ExitErrHandler: func(c *cli.Context, err error) {
 			if err == nil {
@@ -44,7 +49,7 @@ func main() {
 			log.Logger = log.Output(
 				zerolog.ConsoleWriter{
 					Out:        c.App.ErrWriter,
-					NoColor:    false,
+					NoColor:    c.Bool("monochrome"),
 					TimeFormat: time.RFC3339,
 				},
 			)
