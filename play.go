@@ -8,25 +8,22 @@ import (
 	"time"
 
 	"github.com/cheggaaa/pb/v3"
-	"github.com/rs/zerolog/log"
 
 	"github.com/urfave/cli/v2"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 const auto = "auto"
 
 type Scoreboard struct {
-	Secret   string   `json:"secret"`
-	Strategy string   `json:"strategy"`
-	Rounds   []*Round `json:"rounds"`
-	Elapsed  int64    `json:"elapsed"`
+	Secret     string   `json:"secret"`
+	Strategy   string   `json:"strategy"`
+	Dictionary int      `json:"dictionary"`
+	Rounds     []*Round `json:"rounds"`
+	Elapsed    int64    `json:"elapsed"`
 }
 
 type Round struct {
 	Dictionary int      `json:"dictionary"`
-	Next       string   `json:"next,omitempty"`
 	Scores     []string `json:"scores"`
 	Words      []string `json:"words"`
 	Success    bool     `json:"success"`
@@ -90,15 +87,15 @@ func (g *Game) Play(secret string) (*Scoreboard, error) {
 }
 
 func (g *Game) play(secret string, words []string) (*Scoreboard, error) {
+	dictionary := g.dictionary
 	scoreboard := &Scoreboard{
-		Secret:   secret,
-		Strategy: g.strategy.String(),
+		Secret:     secret,
+		Strategy:   g.strategy.String(),
+		Dictionary: len(dictionary),
 	}
 	defer func(t time.Time) {
 		scoreboard.Elapsed = time.Since(t).Milliseconds()
 	}(time.Now())
-	dictionary := g.dictionary
-	upper := cases.Upper(language.English)
 	fns := []FilterFunc{Length(len(secret)), IsLower()}
 	for {
 		scores, err := Score(secret, words...)
@@ -109,39 +106,28 @@ func (g *Game) play(secret string, words []string) (*Scoreboard, error) {
 		if err != nil {
 			return nil, err
 		}
+		dictionary = g.strategy.Apply(Filter(dictionary, append(fns, guesses)...))
+		if len(dictionary) == 0 {
+			return scoreboard, nil
+		}
+
 		round := &Round{
 			Dictionary: len(dictionary),
 			Scores:     scores,
 			Words:      words,
 		}
-		dictionary = g.strategy.Apply(Filter(dictionary, append(fns, guesses)...))
 		scoreboard.Rounds = append(scoreboard.Rounds, round)
-		switch {
-		case len(dictionary) == 0:
+
+		if round.Words[len(round.Words)-1] == secret {
+			round.Success = true
 			return scoreboard, nil
-		case dictionary[0] == secret:
-			switch {
-			case len(scores) == 1 && len(dictionary) == 1:
-				// guessed the word immediately!
-			default:
-				scoreboard.Rounds = append(scoreboard.Rounds, &Round{
-					Dictionary: len(dictionary),
-					Scores:     append(scores, upper.String(dictionary[0])),
-					Words:      append(words, dictionary[0]),
-					Success:    true,
-				})
-			}
-			return scoreboard, nil
-		default:
-			round.Next = dictionary[0]
-			words = append(words, dictionary[0])
 		}
+		words = append(words, dictionary[0])
 	}
 }
 
 func secrets(c *cli.Context) ([]string, error) {
 	if c.Bool(auto) {
-		log.Info().Msg("reading from stdin")
 		return read(c.App.Reader)
 	}
 	return c.Args().Slice(), nil
@@ -168,10 +154,16 @@ func play(c *cli.Context) error {
 		WithDictionary(dictionary),
 		WithStart(c.String("start")))
 	enc := json.NewEncoder(c.App.Writer)
-	bar := pb.StartNew(len(secrets))
-	defer bar.Finish()
+
+	var bar *pb.ProgressBar
+	if c.Bool(auto) {
+		bar = pb.New(len(secrets)).SetWriter(c.App.ErrWriter).Start()
+		defer bar.Finish()
+	}
 	for i := range secrets {
-		bar.Increment()
+		if bar != nil {
+			bar.Increment()
+		}
 		var board *Scoreboard
 		board, err = game.Play(secrets[i])
 		if err != nil {

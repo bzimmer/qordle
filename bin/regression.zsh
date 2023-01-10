@@ -15,7 +15,7 @@ games=$(
 )
 
 print -P "%F{magenta}\nFailed to find any solution!%f\n"
-csvq --no-header '
+csvq -c --no-header '
     with
         games as
         (
@@ -29,7 +29,7 @@ csvq --no-header '
 ' <<< $games
 
 print -P "%F{magenta}\nFailed to find the solution in six rounds!%f\n"
-csvq --no-header '
+csvq -c --no-header '
     with
         games as
         (
