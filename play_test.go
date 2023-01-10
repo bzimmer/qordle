@@ -1,7 +1,6 @@
 package qordle_test
 
 import (
-	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -79,7 +78,7 @@ func TestGame(t *testing.T) {
 				qordle.WithStrategy(st),
 				qordle.WithDictionary(dt),
 				qordle.WithStart(tt.start))
-			scoreboard, err := game.Play(context.TODO(), tt.secret)
+			scoreboard, err := game.Play(tt.secret)
 			if tt.errStrategy != "" {
 				a.Error(err)
 				a.Equal(tt.errStrategy, err.Error())

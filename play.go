@@ -1,7 +1,6 @@
 package qordle
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +8,7 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+	"github.com/schollz/progressbar/v3"
 	"github.com/urfave/cli/v2"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -71,7 +71,7 @@ func WithStrategy(strategy Strategy) Option {
 }
 
 // Play the game for the secret
-func (g *Game) Play(ctx context.Context, secret string) (*Scoreboard, error) {
+func (g *Game) Play(secret string) (*Scoreboard, error) {
 	if g.strategy == nil {
 		return nil, errors.New("missing strategy")
 	}
@@ -85,10 +85,10 @@ func (g *Game) Play(ctx context.Context, secret string) (*Scoreboard, error) {
 	default:
 		words = strings.Split(g.start, ",")
 	}
-	return g.play(ctx, secret, words)
+	return g.play(secret, words)
 }
 
-func (g *Game) play(ctx context.Context, secret string, words []string) (*Scoreboard, error) {
+func (g *Game) play(secret string, words []string) (*Scoreboard, error) {
 	scoreboard := &Scoreboard{
 		Secret:   secret,
 		Strategy: g.strategy.String(),
@@ -100,11 +100,6 @@ func (g *Game) play(ctx context.Context, secret string, words []string) (*Scoreb
 	upper := cases.Upper(language.English)
 	fns := []FilterFunc{Length(len(secret)), IsLower()}
 	for {
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		default:
-		}
 		scores, err := Score(secret, words...)
 		if err != nil {
 			return nil, err
@@ -156,40 +151,30 @@ func play(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	st, err := NewStrategy(c.String("strategy"))
+	strategy, err := NewStrategy(c.String("strategy"))
 	if err != nil {
 		return err
 	}
-	sts, err := secrets(c)
+	secrets, err := secrets(c)
 	if err != nil {
 		return err
 	}
 	if c.Bool("speculate") {
-		st = NewSpeculator(dictionary, st)
+		strategy = NewSpeculator(dictionary, strategy)
 	}
 	game := NewGame(
-		WithStrategy(st),
+		WithStrategy(strategy),
 		WithDictionary(dictionary),
 		WithStart(c.String("start")))
 	enc := json.NewEncoder(c.App.Writer)
-	for _, secret := range sts {
-		if err = func() error {
-			var board *Scoreboard
-			ctx, cancel := context.WithTimeout(c.Context, time.Second*2)
-			defer cancel()
-			board, err = game.Play(ctx, secret)
-			if err != nil {
-				if !c.Bool(auto) {
-					return err
-				}
-				if errors.Is(err, context.DeadlineExceeded) {
-					log.Error().Str("secret", secret).Msg("game never converged")
-					return nil
-				}
-				return err
-			}
-			return enc.Encode(board)
-		}(); err != nil {
+	bar := progressbar.Default(int64(len(secrets)))
+	for i := range secrets {
+		bar.Add(1)
+		board, err := game.Play(secrets[i])
+		if err != nil {
+			return err
+		}
+		if err := enc.Encode(board); err != nil {
 			return err
 		}
 	}

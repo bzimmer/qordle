@@ -25,7 +25,7 @@ csvq --no-header '
                 stdin
         )
     select
-            secret, rounds, success, elapsed from games where success is false
+        secret, rounds, success, elapsed from games where success is false
 ' <<< $games
 
 print -P "%F{magenta}\nFailed to find the solution in six rounds!%f\n"
