@@ -172,11 +172,12 @@ func play(c *cli.Context) error {
 	defer bar.Finish()
 	for i := range secrets {
 		bar.Increment()
-		board, err := game.Play(secrets[i])
+		var board *Scoreboard
+		board, err = game.Play(secrets[i])
 		if err != nil {
 			return err
 		}
-		if err := enc.Encode(board); err != nil {
+		if err = enc.Encode(board); err != nil {
 			return err
 		}
 	}
