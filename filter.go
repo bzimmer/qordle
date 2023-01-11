@@ -115,7 +115,7 @@ func parse(guess string) ([]FilterFunc, error) {
 	misses := make(map[int]string, 0)
 	for i := 0; i < len(x); i++ {
 		switch {
-		case x[i] == ' ':
+		case unicode.IsSpace(x[i]):
 			fallthrough
 		case unicode.IsNumber(x[i]):
 			fallthrough
