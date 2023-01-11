@@ -159,13 +159,17 @@ func TestSpeculate(t *testing.T) {
 			s := qordle.NewSpeculator(tt.words, tt.strategy)
 			dictionary := s.Apply(tt.guessing)
 			a.Equal(tt.result, dictionary)
-			a.Equal("speculate", s.String())
+			if tt.strategy == nil {
+				a.Equal("speculate;", s.String())
+			} else {
+				a.Equal("speculate;"+tt.strategy.String(), s.String())
+			}
 		})
 	}
 }
 
 func FuzzSpeculate(f *testing.F) {
-	for _, x := range []string{"foo", "label", "start"} {
+	for _, x := range []string{"foo", "label", "start", "12345"} {
 		f.Add(x)
 	}
 	f.Fuzz(func(t *testing.T, s string) {

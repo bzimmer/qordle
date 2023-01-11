@@ -1,6 +1,7 @@
 package qordle_test
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -78,7 +79,7 @@ func TestGame(t *testing.T) {
 				qordle.WithStrategy(st),
 				qordle.WithDictionary(dt),
 				qordle.WithStart(tt.start))
-			scoreboard, err := game.Play(tt.secret)
+			scoreboard, err := game.Play(context.TODO(), tt.secret)
 			if tt.errStrategy != "" {
 				a.Error(err)
 				a.Equal(tt.errStrategy, err.Error())
@@ -143,12 +144,14 @@ func TestPlayCommand(t *testing.T) {
 			err:  "invalid wordlist `foobar`",
 		},
 		{
-			name: "no word",
-			err:  "expected at least one word to play",
-		},
-		{
 			name:    "six letter word with explicit strategy",
 			args:    []string{"-s", "position", "-w", "qordle", "--start", "shadow", "treaty"},
+			guesses: []string{"sh~adow", "canAan", "a~e~rATe", "TREATY"},
+			success: true,
+		},
+		{
+			name:    "auto play",
+			args:    []string{"-A", "-s", "position", "-w", "qordle", "--start", "shadow", "treaty"},
 			guesses: []string{"sh~adow", "canAan", "a~e~rATe", "TREATY"},
 			success: true,
 		},
@@ -174,7 +177,7 @@ func TestPlayCommand(t *testing.T) {
 				Writer:   &builder,
 				Commands: []*cli.Command{qordle.CommandPlay()},
 			}
-			err := app.Run(append([]string{"qordle", "play"}, tt.args...))
+			err := app.Run(append([]string{"qordle", "play", "--timeout", "1m"}, tt.args...))
 			if tt.err != "" {
 				a.Error(err)
 				a.Equal(tt.err, err.Error())

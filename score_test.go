@@ -36,6 +36,12 @@ func TestScore(t *testing.T) {
 			guesses: []string{},
 			scores:  []string{},
 		},
+		{
+			name:    "alphanumeric",
+			secret:  "humph",
+			guesses: []string{"12345"},
+			scores:  []string{"12345"},
+		},
 	} {
 		tt := tt
 		t.Run(tt.secret, func(t *testing.T) {

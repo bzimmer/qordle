@@ -41,7 +41,7 @@ func play(c echo.Context) error {
 		qordle.WithStart(start),
 		qordle.WithStrategy(st))
 
-	scoreboard, err := game.Play(secret)
+	scoreboard, err := game.Play(c.Request().Context(), secret)
 	if err != nil {
 		return err
 	}

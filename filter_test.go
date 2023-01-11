@@ -239,6 +239,12 @@ func TestGuesses(t *testing.T) {
 			result:  false,
 		},
 		{
+			name:    "guess with numbers",
+			word:    "dusty",
+			guesses: []string{"12345"},
+			result:  true,
+		},
+		{
 			name:    "guesses with one match out of order but also legal",
 			word:    "pleat",
 			guesses: []string{"br~ain", "~l~egAl"},
@@ -271,6 +277,15 @@ func TestGuesses(t *testing.T) {
 			a.Equal(tt.result, p(tt.word))
 		})
 	}
+}
+
+func FuzzGuesses(f *testing.F) {
+	for _, x := range []string{"br#ain", "#l#EgAl", "foo", "start", "12345"} {
+		f.Add(x)
+	}
+	f.Fuzz(func(t *testing.T, s string) {
+		_, _ = qordle.Guesses(s)
+	})
 }
 
 func TestFilter(t *testing.T) {

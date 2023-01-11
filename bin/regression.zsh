@@ -5,10 +5,10 @@ set -eo pipefail
 repo=$(git rev-parse --show-toplevel)
 
 games=$(
-    cat $repo/data/solutions.txt |
+    cat $repo/data/possible.txt |
     $repo/dist/qordle play -A -S --start "${1:-"brain"}" |
     jq -r -s '
-        map([.secret, (.rounds|length), (.rounds|last|.success), .elapsed])
+        map([.secret, (.rounds|length), (.rounds|last|.success), (.rounds|last|.dictionary), .elapsed])
         | .[] 
         | @csv
     '
@@ -20,7 +20,7 @@ csvq -c --no-header '
         games as
         (
             select
-                c1 as secret, c2 as rounds, c3 as success, c4 as elapsed
+                c1 as secret, c2 as rounds, c3 as success, c4 as dictionary, c5 as elapsed
             from
                 stdin
         )
@@ -34,7 +34,7 @@ csvq -c --no-header '
         games as
         (
             select
-                c1 as secret, c2 as rounds, c3 as success, c4 as elapsed
+                c1 as secret, c2 as rounds, c3 as success, c4 as dictionary, c5 as elapsed
             from
                 stdin
         )

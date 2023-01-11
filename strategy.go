@@ -135,7 +135,10 @@ type Speculate struct {
 }
 
 func (s *Speculate) String() string {
-	return "speculate"
+	if s.strategy == nil {
+		return "speculate;"
+	}
+	return "speculate;" + s.strategy.String()
 }
 
 func (s *Speculate) hamming(s1 string, s2 string) int {

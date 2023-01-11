@@ -1,18 +1,16 @@
 package qordle
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"strings"
 	"time"
 
 	"github.com/cheggaaa/pb/v3"
+	"github.com/rs/zerolog/log"
 
 	"github.com/urfave/cli/v2"
 )
-
-const auto = "auto"
 
 type Scoreboard struct {
 	Secret     string   `json:"secret"`
@@ -69,24 +67,22 @@ func WithStrategy(strategy Strategy) Option {
 }
 
 // Play the game for the secret
-func (g *Game) Play(secret string) (*Scoreboard, error) {
+func (g *Game) Play(ctx context.Context, secret string) (*Scoreboard, error) {
 	if g.strategy == nil {
 		return nil, errors.New("missing strategy")
 	}
 	if len(g.dictionary) == 0 {
 		return nil, errors.New("missing dictionary")
 	}
-	var words []string
-	switch g.start {
-	case "":
-		words = []string{g.strategy.Apply(g.dictionary)[0]}
-	default:
-		words = strings.Split(g.start, ",")
+	start := g.start
+	if start == "" {
+		start = g.strategy.Apply(g.dictionary)[0]
 	}
-	return g.play(secret, words)
+	return g.play(ctx, secret, start)
 }
 
-func (g *Game) play(secret string, words []string) (*Scoreboard, error) {
+func (g *Game) play(ctx context.Context, secret string, start string) (*Scoreboard, error) {
+	words := []string{start}
 	dictionary := g.dictionary
 	scoreboard := &Scoreboard{
 		Secret:     secret,
@@ -97,7 +93,14 @@ func (g *Game) play(secret string, words []string) (*Scoreboard, error) {
 		scoreboard.Elapsed = time.Since(t).Milliseconds()
 	}(time.Now())
 	fns := []FilterFunc{Length(len(secret)), IsLower()}
+
 	for {
+		select {
+		case <-ctx.Done():
+			return scoreboard, ctx.Err()
+		default:
+		}
+
 		scores, err := Score(secret, words...)
 		if err != nil {
 			return nil, err
@@ -116,21 +119,32 @@ func (g *Game) play(secret string, words []string) (*Scoreboard, error) {
 		scoreboard.Rounds = append(scoreboard.Rounds, round)
 
 		switch {
-		case len(dictionary) == 0:
+		case round.Dictionary == 0:
 			return scoreboard, nil
 		case round.Words[len(round.Words)-1] == secret:
 			round.Success = true
 			return scoreboard, nil
+		default:
+			for _, w := range dictionary {
+				for j := 0; j < len(words) && w != ""; j++ {
+					if words[j] == w {
+						w = ""
+					}
+				}
+				if w != "" {
+					words = append(words, w)
+					break
+				}
+			}
 		}
-		words = append(words, dictionary[0])
 	}
 }
 
 func secrets(c *cli.Context) ([]string, error) {
-	if c.Bool(auto) {
-		return read(c.App.Reader)
+	if c.NArg() > 0 {
+		return c.Args().Slice(), nil
 	}
-	return c.Args().Slice(), nil
+	return read(c.App.Reader)
 }
 
 func play(c *cli.Context) error {
@@ -156,20 +170,28 @@ func play(c *cli.Context) error {
 	enc := json.NewEncoder(c.App.Writer)
 
 	var bar *pb.ProgressBar
-	if c.Bool(auto) {
+	if c.Bool("auto") {
 		bar = pb.New(len(secrets)).SetWriter(c.App.ErrWriter).Start()
 		defer bar.Finish()
 	}
+	dur := c.Duration("timeout")
 	for i := range secrets {
 		if bar != nil {
 			bar.Increment()
 		}
-		var board *Scoreboard
-		board, err = game.Play(secrets[i])
-		if err != nil {
-			return err
-		}
-		if err = enc.Encode(board); err != nil {
+		if err := func() error {
+			ctx, cancel := context.WithTimeout(c.Context, dur)
+			defer cancel()
+			var board *Scoreboard
+			board, err = game.Play(ctx, secrets[i])
+			if err != nil {
+				if !errors.Is(err, context.DeadlineExceeded) {
+					return err
+				}
+				log.Error().Str("secret", secrets[i]).Msg("failed to converge")
+			}
+			return enc.Encode(board)
+		}(); err != nil {
 			return err
 		}
 	}
@@ -199,18 +221,19 @@ func CommandPlay() *cli.Command {
 				Value:   false,
 			},
 			&cli.BoolFlag{
-				Name:    auto,
+				Name:    "auto",
 				Aliases: []string{"A"},
 				Usage:   "auto play from stdin",
 				Value:   false,
 			},
+			&cli.DurationFlag{
+				Name:    "timeout",
+				Aliases: []string{},
+				Usage:   "timeout per iteration in auto play mode",
+				Value:   time.Millisecond * 10,
+				Hidden:  true,
+			},
 			wordlistFlag(),
-		},
-		Before: func(c *cli.Context) error {
-			if !c.Bool(auto) && c.NArg() == 0 {
-				return fmt.Errorf("expected at least one word to play")
-			}
-			return nil
 		},
 		Action: play,
 	}
