@@ -14,11 +14,14 @@ jobs:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
+            ${{ runner.os }}-go-${{ env.cache-name }}-
             ${{ runner.os }}-go-
+            ${{ runner.os }}-
       - name: Install Go
         uses: actions/setup-go@v3
         with:
           go-version: ${{ matrix.go-version }}
+          latest: version
       - name: Checkout code
         uses: actions/checkout@v3
       - name: Install Task
