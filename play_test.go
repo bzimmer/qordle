@@ -1,7 +1,6 @@
 package qordle_test
 
 import (
-	"context"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -79,7 +78,7 @@ func TestGame(t *testing.T) {
 				qordle.WithStrategy(st),
 				qordle.WithDictionary(dt),
 				qordle.WithStart(tt.start))
-			scoreboard, err := game.Play(context.TODO(), tt.secret)
+			scoreboard, err := game.Play(tt.secret)
 			if tt.errStrategy != "" {
 				a.Error(err)
 				a.Equal(tt.errStrategy, err.Error())
@@ -177,7 +176,7 @@ func TestPlayCommand(t *testing.T) {
 				Writer:   &builder,
 				Commands: []*cli.Command{qordle.CommandPlay()},
 			}
-			err := app.Run(append([]string{"qordle", "play", "--timeout", "1m"}, tt.args...))
+			err := app.Run(append([]string{"qordle", "play"}, tt.args...))
 			if tt.err != "" {
 				a.Error(err)
 				a.Equal(tt.err, err.Error())

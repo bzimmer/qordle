@@ -41,12 +41,11 @@ func play(c echo.Context) error {
 		qordle.WithStart(start),
 		qordle.WithStrategy(st))
 
-	scoreboard, err := game.Play(c.Request().Context(), secret)
+	scoreboard, err := game.Play(secret)
 	if err != nil {
 		return err
 	}
-	log.Debug().
-		Interface("scoreboard", scoreboard).Msg("play")
+	log.Debug().Interface("scoreboard", scoreboard).Msg("play")
 	return c.JSONPretty(http.StatusOK, scoreboard, " ")
 }
 

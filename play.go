@@ -1,7 +1,6 @@
 package qordle
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"time"
@@ -11,6 +10,11 @@ import (
 
 	"github.com/urfave/cli/v2"
 )
+
+// roundsMultiplier is the multiplier for the number of rounds to attempt
+const roundsMultiplier int = 3
+
+var ErrConvergence = errors.New("failed to converge")
 
 type Scoreboard struct {
 	Secret     string   `json:"secret"`
@@ -67,7 +71,7 @@ func WithStrategy(strategy Strategy) Option {
 }
 
 // Play the game for the secret
-func (g *Game) Play(ctx context.Context, secret string) (*Scoreboard, error) {
+func (g *Game) Play(secret string) (*Scoreboard, error) {
 	if g.strategy == nil {
 		return nil, errors.New("missing strategy")
 	}
@@ -78,10 +82,10 @@ func (g *Game) Play(ctx context.Context, secret string) (*Scoreboard, error) {
 	if start == "" {
 		start = g.strategy.Apply(g.dictionary)[0]
 	}
-	return g.play(ctx, secret, start)
+	return g.play(secret, start)
 }
 
-func (g *Game) play(ctx context.Context, secret string, start string) (*Scoreboard, error) {
+func (g *Game) play(secret string, start string) (*Scoreboard, error) {
 	words := []string{start}
 	dictionary := g.dictionary
 	scoreboard := &Scoreboard{
@@ -92,15 +96,10 @@ func (g *Game) play(ctx context.Context, secret string, start string) (*Scoreboa
 	defer func(t time.Time) {
 		scoreboard.Elapsed = time.Since(t).Milliseconds()
 	}(time.Now())
+
+	n := len(secret) * roundsMultiplier
 	fns := []FilterFunc{Length(len(secret)), IsLower()}
-
-	for {
-		select {
-		case <-ctx.Done():
-			return scoreboard, ctx.Err()
-		default:
-		}
-
+	for len(scoreboard.Rounds) < n {
 		scores, err := Score(secret, words...)
 		if err != nil {
 			return nil, err
@@ -125,19 +124,10 @@ func (g *Game) play(ctx context.Context, secret string, start string) (*Scoreboa
 			round.Success = true
 			return scoreboard, nil
 		default:
-			for _, w := range dictionary {
-				for j := 0; j < len(words) && w != ""; j++ {
-					if words[j] == w {
-						w = ""
-					}
-				}
-				if w != "" {
-					words = append(words, w)
-					break
-				}
-			}
+			words = append(words, dictionary[0])
 		}
 	}
+	return scoreboard, ErrConvergence
 }
 
 func secrets(c *cli.Context) ([]string, error) {
@@ -174,24 +164,19 @@ func play(c *cli.Context) error {
 		bar = pb.New(len(secrets)).SetWriter(c.App.ErrWriter).Start()
 		defer bar.Finish()
 	}
-	dur := c.Duration("timeout")
+	var board *Scoreboard
 	for i := range secrets {
 		if bar != nil {
 			bar.Increment()
 		}
-		if err := func() error {
-			ctx, cancel := context.WithTimeout(c.Context, dur)
-			defer cancel()
-			var board *Scoreboard
-			board, err = game.Play(ctx, secrets[i])
-			if err != nil {
-				if !errors.Is(err, context.DeadlineExceeded) {
-					return err
-				}
-				log.Error().Str("secret", secrets[i]).Msg("failed to converge")
+		board, err = game.Play(secrets[i])
+		if err != nil {
+			if !errors.Is(err, ErrConvergence) {
+				return err
 			}
-			return enc.Encode(board)
-		}(); err != nil {
+			log.Error().Str("secret", secrets[i]).Msg(err.Error())
+		}
+		if err = enc.Encode(board); err != nil {
 			return err
 		}
 	}
@@ -225,13 +210,6 @@ func CommandPlay() *cli.Command {
 				Aliases: []string{"A"},
 				Usage:   "auto play from stdin",
 				Value:   false,
-			},
-			&cli.DurationFlag{
-				Name:    "timeout",
-				Aliases: []string{},
-				Usage:   "timeout per iteration in auto play mode",
-				Value:   time.Millisecond * 10,
-				Hidden:  true,
 			},
 			wordlistFlag(),
 		},
