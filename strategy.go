@@ -7,6 +7,10 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// minimumSpeculation required to speculate
+// four words was chosen emperically as the cut off for being useful
+const minimumSpeculation int = 4
+
 func NewStrategy(code string) (Strategy, error) {
 	switch code {
 	case "a", "alpha":
@@ -206,7 +210,7 @@ func (s *Speculate) with(words Dictionary) Dictionary {
 }
 
 func (s *Speculate) Apply(words Dictionary) Dictionary {
-	if len(words) <= 1 || s.strategy == nil {
+	if len(words) <= minimumSpeculation || s.strategy == nil {
 		return words
 	}
 	with := s.with(words)

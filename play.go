@@ -130,13 +130,6 @@ func (g *Game) play(secret string, start string) (*Scoreboard, error) {
 	return scoreboard, ErrConvergence
 }
 
-func secrets(c *cli.Context) ([]string, error) {
-	if c.NArg() > 0 {
-		return c.Args().Slice(), nil
-	}
-	return read(c.App.Reader)
-}
-
 func play(c *cli.Context) error {
 	dictionary, err := wordlists(c, "possible", "solutions")
 	if err != nil {
@@ -146,12 +139,15 @@ func play(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	secrets, err := secrets(c)
-	if err != nil {
-		return err
-	}
 	if c.Bool("speculate") {
 		strategy = NewSpeculator(dictionary, strategy)
+	}
+	secrets := c.Args().Slice()
+	if len(secrets) == 0 {
+		secrets, err = read(c.App.Reader)
+		if err != nil {
+			return err
+		}
 	}
 	game := NewGame(
 		WithStrategy(strategy),
