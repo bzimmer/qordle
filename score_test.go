@@ -36,6 +36,12 @@ func TestScore(t *testing.T) {
 			guesses: []string{},
 			scores:  []string{},
 		},
+		{
+			name:    "alphanumeric",
+			secret:  "humph",
+			guesses: []string{"12345"},
+			scores:  []string{"12345"},
+		},
 	} {
 		tt := tt
 		t.Run(tt.secret, func(t *testing.T) {
@@ -54,7 +60,6 @@ func TestScore(t *testing.T) {
 }
 
 func TestScoreCommand(t *testing.T) {
-	t.Parallel()
 	for _, tt := range []struct {
 		name         string
 		words, score []string
@@ -73,7 +78,6 @@ func TestScoreCommand(t *testing.T) {
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
 			a := assert.New(t)
 			var builder strings.Builder
 			app := &cli.App{

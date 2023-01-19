@@ -1,6 +1,7 @@
 package qordle
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -108,49 +109,64 @@ func join(hits []string, misses map[int]string, idx int) string {
 	return s
 }
 
-func Guesses(guesses ...string) (FilterFunc, error) { //nolint:gocognit
+func parse(guess string) ([]FilterFunc, error) {
+	x := []rune(guess)
+	var hits, pattern []string
+	misses := make(map[int]string, 0)
+	for i := 0; i < len(x); i++ {
+		switch {
+		case unicode.IsSpace(x[i]):
+			fallthrough
+		case unicode.IsNumber(x[i]):
+			fallthrough
+		case unicode.IsLower(x[i]):
+			misses[len(pattern)] = string(x[i])
+			pattern = append(pattern, "")
+		case unicode.IsUpper(x[i]):
+			hit := string(unicode.ToLower(x[i]))
+			hits = append(hits, hit)
+			pattern = append(pattern, hit)
+		default:
+			i++
+			if i >= len(x) {
+				return nil, errors.New("too few characters")
+			}
+			w := string(unicode.ToLower(x[i]))
+			hits = append(hits, w)
+			misses[len(pattern)] = w
+			pattern = append(pattern, "[^")
+		}
+	}
+
+	var re string
+	for i, s := range pattern {
+		switch {
+		case s == "":
+			re += fmt.Sprintf("[^%s]", join(hits, misses, i))
+		case s[0] == '[':
+			re += fmt.Sprintf("%s%s]", s, join(hits, misses, i))
+		default:
+			re += s
+		}
+	}
+	p, err := Pattern(re)
+	if err != nil {
+		return nil, err
+	}
+	return []FilterFunc{Hits(strings.Join(hits, "")), p}, nil
+}
+
+func Guesses(guesses ...string) (FilterFunc, error) {
 	var fns []FilterFunc
 	for _, guess := range guesses {
 		if guess == "" {
 			continue
 		}
-		x := []rune(guess)
-		var hits, pattern []string
-		misses := make(map[int]string, 0)
-		for i := 0; i < len(x); i++ {
-			switch {
-			case unicode.IsUpper(x[i]):
-				hit := string(unicode.ToLower(x[i]))
-				hits = append(hits, hit)
-				pattern = append(pattern, hit)
-			case unicode.IsLower(x[i]):
-				misses[len(pattern)] = string(x[i])
-				pattern = append(pattern, "")
-			default:
-				i++
-				w := string(unicode.ToLower(x[i]))
-				hits = append(hits, w)
-				misses[len(pattern)] = w
-				pattern = append(pattern, "[^")
-			}
-		}
-
-		var re string
-		for i, s := range pattern {
-			switch {
-			case s == "":
-				re += fmt.Sprintf("[^%s]", join(hits, misses, i))
-			case s[0] == '[':
-				re += fmt.Sprintf("%s%s]", s, join(hits, misses, i))
-			default:
-				re += s
-			}
-		}
-		p, err := Pattern(re)
+		f, err := parse(guess)
 		if err != nil {
 			return nil, err
 		}
-		fns = append(fns, Hits(strings.Join(hits, "")), p)
+		fns = append(fns, f...)
 	}
 	if len(fns) == 0 {
 		return NoOp, nil
