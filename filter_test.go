@@ -280,7 +280,7 @@ func TestGuesses(t *testing.T) {
 }
 
 func FuzzGuesses(f *testing.F) {
-	for _, x := range []string{"br#ain", "#l#EgAl", "foo", "start", "12345"} {
+	for _, x := range []string{"br#ain", "#l#EgAl", "foo", "start", "12345", "rüsch"} {
 		f.Add(x)
 	}
 	f.Fuzz(func(t *testing.T, s string) {

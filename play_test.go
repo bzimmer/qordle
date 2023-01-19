@@ -101,7 +101,7 @@ func TestGame(t *testing.T) {
 
 func TestPlayCommand(t *testing.T) {
 	for _, tt := range []struct {
-		name, err               string
+		name, input, err        string
 		args, guesses, wordlist []string
 		success                 bool
 	}{
@@ -166,14 +166,23 @@ func TestPlayCommand(t *testing.T) {
 			guesses: []string{"sh~adow", "~alin~e~r", "p~e~rAc~t", "~rugAT~e", "TREATY"},
 			success: true,
 		},
+		{
+			name:    "autoplay",
+			input:   "train",
+			args:    []string{"-w", "qordle", "-S", "-A"},
+			guesses: []string{"soA~re", "~r~iA~n~t", "TRAIN"},
+			success: true,
+		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			a := assert.New(t)
-			var builder strings.Builder
+			input := strings.NewReader(tt.input)
+			var output strings.Builder
 			app := &cli.App{
 				Name:     tt.name,
-				Writer:   &builder,
+				Reader:   input,
+				Writer:   &output,
 				Commands: []*cli.Command{qordle.CommandPlay()},
 			}
 			err := app.Run(append([]string{"qordle", "play"}, tt.args...))
@@ -183,7 +192,7 @@ func TestPlayCommand(t *testing.T) {
 				return
 			}
 			var res qordle.Scoreboard
-			err = json.Unmarshal([]byte(builder.String()), &res)
+			err = json.Unmarshal([]byte(output.String()), &res)
 			a.NoError(err)
 			if tt.success {
 				winner := res.Rounds[len(res.Rounds)-1]
