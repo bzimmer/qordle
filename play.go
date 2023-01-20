@@ -3,6 +3,7 @@ package qordle
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"time"
 
 	"github.com/cheggaaa/pb/v3"
@@ -155,16 +156,17 @@ func play(c *cli.Context) error {
 		WithStart(c.String("start")))
 	enc := json.NewEncoder(c.App.Writer)
 
-	var bar *pb.ProgressBar
+	writer := io.Discard
 	if c.Bool("auto") {
-		bar = pb.New(len(secrets)).SetWriter(c.App.ErrWriter).Start()
-		defer bar.Finish()
+		writer = c.App.ErrWriter
 	}
+
+	bar := pb.New(len(secrets)).SetWriter(writer).Start()
+	defer bar.Finish()
+
 	var board *Scoreboard
 	for i := range secrets {
-		if bar != nil {
-			bar.Increment()
-		}
+		bar.Increment()
 		board, err = game.Play(secrets[i])
 		if err != nil {
 			if !errors.Is(err, ErrConvergence) {

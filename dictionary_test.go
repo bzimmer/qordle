@@ -11,7 +11,8 @@ import (
 	"github.com/bzimmer/qordle"
 )
 
-func TestDictionaryEm(t *testing.T) {
+func TestRead(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		name, path string
 		err        bool
@@ -29,6 +30,7 @@ func TestDictionaryEm(t *testing.T) {
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			a := assert.New(t)
 			dictionary, err := qordle.Read(tt.path)
 			switch tt.err {
@@ -43,7 +45,7 @@ func TestDictionaryEm(t *testing.T) {
 	}
 }
 
-func TestCommandWordlists(t *testing.T) {
+func TestWordlistsCommand(t *testing.T) {
 	for _, tt := range []struct {
 		name         string
 		dictionaries []string
