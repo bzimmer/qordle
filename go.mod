@@ -1,6 +1,6 @@
 module github.com/bzimmer/qordle
 
-go 1.18
+go 1.19
 
 require (
 	github.com/aws/aws-lambda-go v1.37.0
@@ -11,7 +11,7 @@ require (
 	github.com/rs/zerolog v1.28.0
 	github.com/stretchr/testify v1.8.1
 	github.com/urfave/cli/v2 v2.23.7
-	golang.org/x/exp v0.0.0-20230111222715-75897c7a292a
+	golang.org/x/exp v0.0.0-20230118134722-a68e582fa157
 	golang.org/x/text v0.6.0
 )
 
