@@ -1,7 +1,6 @@
 package qordle
 
 import (
-	"encoding/json"
 	"errors"
 	"io"
 	"time"
@@ -154,13 +153,11 @@ func play(c *cli.Context) error {
 		WithStrategy(strategy),
 		WithDictionary(dictionary),
 		WithStart(c.String("start")))
-	enc := json.NewEncoder(c.App.Writer)
-
+	enc := Runtime(c).Encoder
 	writer := io.Discard
 	if c.Bool("auto") {
 		writer = c.App.ErrWriter
 	}
-
 	bar := pb.New(len(secrets)).SetWriter(writer).Start()
 	defer bar.Finish()
 

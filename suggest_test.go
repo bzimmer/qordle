@@ -1,78 +1,48 @@
 package qordle_test
 
 import (
-	"strings"
 	"testing"
-
-	"github.com/stretchr/testify/assert"
-	"github.com/urfave/cli/v2"
 
 	"github.com/bzimmer/qordle"
 )
 
 func TestSuggestCommand(t *testing.T) {
-	for _, tt := range []struct {
-		name, strategy, dictionary, err string
-		speculate                       bool
-		args                            []string
-	}{
+	for _, tt := range []harness{
 		{
-			name:     "alpha",
-			strategy: "a",
+			name: "alpha",
+			args: []string{"suggest", "--strategy", "a", "raise", "fol.l.y"},
 		},
 		{
-			name:     "frequency",
-			strategy: "f",
+			name: "frequency",
+			args: []string{"suggest", "--strategy", "f", "raise", "fol.l.y"},
 		},
 		{
-			name:     "position",
-			strategy: "p",
+			name: "position",
+			args: []string{"suggest", "--strategy", "p", "raise", "fol.l.y"},
 		},
 		{
-			name:     "unknown",
-			strategy: "u",
-			err:      "unknown strategy `u`",
+			name: "unknown",
+			args: []string{"suggest", "--strategy", "u", "raise", "fol.l.y"},
+			err:  "unknown strategy `u`",
 		},
 		{
-			name:      "speculate",
-			speculate: true,
+			name: "speculate",
+			args: []string{"suggest", "-S", "raise", "fol.l.y"},
 		},
 		{
 			name: "bad pattern",
-			args: []string{"--pattern", "[A-Z"},
+			args: []string{"suggest", "--pattern", "[A-Z", "raise", "fol.l.y"},
 			err:  "error parsing regexp: missing closing ]: `[A-Z`",
 		},
 		{
 			name: "bad wordlist",
-			args: []string{"-w", "foobar"},
+			args: []string{"suggest", "-w", "foobar", "raise", "fol.l.y"},
 			err:  "invalid wordlist `foobar`",
 		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			a := assert.New(t)
-			app := &cli.App{
-				Name:     tt.name,
-				Writer:   &strings.Builder{},
-				Commands: []*cli.Command{qordle.CommandSuggest()},
-			}
-			args := []string{"qordle", "suggest"}
-			if tt.strategy != "" {
-				args = append(args, "-s", tt.strategy)
-			}
-			if tt.speculate {
-				args = append(args, "-S")
-			}
-			if len(tt.args) > 0 {
-				args = append(args, tt.args...)
-			}
-			args = append(args, "raise", "fol~l~y")
-			err := app.Run(args)
-			if tt.err != "" {
-				a.Equal(tt.err, err.Error())
-				return
-			}
-			a.NoError(err)
+			run(t, &tt, qordle.CommandSuggest)
 		})
 	}
 }

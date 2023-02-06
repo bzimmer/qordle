@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"net/http"
 	"os"
 	"time"
 
@@ -53,9 +55,19 @@ func main() {
 					TimeFormat: time.RFC3339,
 				},
 			)
+
+			c.App.Metadata = map[string]any{
+				qordle.RuntimeKey: &qordle.Rt{
+					Grab:    &http.Client{Timeout: 2 * time.Second},
+					Encoder: json.NewEncoder(c.App.Writer),
+					Start:   time.Now(),
+				},
+			}
+
 			return nil
 		},
 		Commands: []*cli.Command{
+			qordle.CommandBee(),
 			qordle.CommandLetterBox(),
 			qordle.CommandPlay(),
 			qordle.CommandScore(),

@@ -1,7 +1,6 @@
 package qordle
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -83,8 +82,7 @@ func CommandSuggest() *cli.Command {
 				st = NewSpeculator(dictionary, st)
 			}
 			dictionary = st.Apply(dictionary)
-			enc := json.NewEncoder(c.App.Writer)
-			return enc.Encode(dictionary)
+			return Runtime(c).Encoder.Encode(dictionary)
 		},
 	}
 }

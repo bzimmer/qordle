@@ -2,7 +2,7 @@ package qordle_test
 
 import (
 	"encoding/json"
-	"strings"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -46,30 +46,23 @@ func TestRead(t *testing.T) {
 }
 
 func TestWordlistsCommand(t *testing.T) {
-	for _, tt := range []struct {
-		name         string
-		dictionaries []string
-	}{
+	a := assert.New(t)
+	for _, tt := range []harness{
 		{
-			name:         "wordlists",
-			dictionaries: []string{"possible", "qordle", "solutions"},
+			name: "wordlists",
+			args: []string{"wordlists"},
+			after: func(c *cli.Context) error {
+				var res []string
+				dec := json.NewDecoder(c.App.Writer.(io.Reader))
+				a.NoError(dec.Decode(&res))
+				a.Equal([]string{"possible", "qordle", "solutions"}, res)
+				return nil
+			},
 		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			a := assert.New(t)
-			builder := &strings.Builder{}
-			app := &cli.App{
-				Name:     tt.name,
-				Writer:   builder,
-				Commands: []*cli.Command{qordle.CommandWordlists()},
-			}
-			err := app.Run([]string{"qordle", "wordlists"})
-			a.NoError(err)
-			res := []string{}
-			err = json.Unmarshal([]byte(builder.String()), &res)
-			a.NoError(err)
-			a.Equal(tt.dictionaries, res)
+			run(t, &tt, qordle.CommandWordlists)
 		})
 	}
 }

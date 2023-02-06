@@ -3,6 +3,7 @@ module github.com/bzimmer/qordle
 go 1.19
 
 require (
+	github.com/PuerkitoBio/goquery v1.8.0
 	github.com/aws/aws-lambda-go v1.37.0
 	github.com/awslabs/aws-lambda-go-api-proxy v0.13.3
 	github.com/cheggaaa/pb/v3 v3.1.0
@@ -17,6 +18,7 @@ require (
 
 require (
 	github.com/VividCortex/ewma v1.2.0 // indirect
+	github.com/andybalholm/cascadia v1.3.1 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fatih/color v1.13.0 // indirect

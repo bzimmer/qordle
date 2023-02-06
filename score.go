@@ -1,7 +1,6 @@
 package qordle
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -10,7 +9,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-const yellow = '~'
+const yellow = '.'
 
 func Score(secret string, guesses ...string) ([]string, error) {
 	secret = strings.ToLower(secret)
@@ -64,8 +63,7 @@ func CommandScore() *cli.Command {
 			if err != nil {
 				return err
 			}
-			enc := json.NewEncoder(c.App.Writer)
-			return enc.Encode(scores)
+			return Runtime(c).Encoder.Encode(scores)
 		},
 	}
 }

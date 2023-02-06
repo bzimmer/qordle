@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -65,66 +64,61 @@ func TestTrie(t *testing.T) {
 }
 
 func TestLetterboxCommand(t *testing.T) {
-	for _, tt := range []struct {
-		name    string
-		options []string
-		err     bool
-		length  int
-	}{
+	a := assert.New(t)
+	decode := func(c *cli.Context) [][]string {
+		var results [][]string
+		dec := json.NewDecoder(c.App.Writer.(io.Reader))
+		for {
+			var res []string
+			err := dec.Decode(&res)
+			if err != nil {
+				if errors.Is(err, io.EOF) {
+					return results
+				}
+				a.FailNow(err.Error())
+			}
+			results = append(results, res)
+		}
+	}
+	for _, tt := range []harness{
 		{
-			name:    "letterbox with 0 arguments",
-			length:  3,
-			options: []string{"-w", "solutions", "--max", "4"},
+			name: "letterbox with 0 arguments",
+			args: []string{"letterbox", "-w", "solutions", "--max", "4"},
+			after: func(c *cli.Context) error {
+				a.Equal(3, len(decode(c)))
+				return nil
+			},
 		},
 		{
-			name:    "letterbox with 1 argument",
-			length:  57,
-			options: []string{"-w", "solutions", "--max", "4", "rul-eya-gdh-opb"},
+			name: "letterbox with 1 argument",
+			args: []string{"letterbox", "-w", "solutions", "--max", "4", "rul-eya-gdh-opb"},
+			after: func(c *cli.Context) error {
+				a.Equal(57, len(decode(c)))
+				return nil
+			},
 		},
 		{
-			name:    "letterbox with 4 arguments",
-			length:  57,
-			options: []string{"-w", "solutions", "--max", "4", "rul", "eya", "gdh", "opb"},
+			name: "letterbox with 4 arguments",
+			args: []string{"letterbox", "-w", "solutions", "--max", "4", "rul", "eya", "gdh", "opb"},
+			after: func(c *cli.Context) error {
+				a.Equal(57, len(decode(c)))
+				return nil
+			},
 		},
 		{
-			name:    "letterbox with invalid wordlist",
-			length:  3,
-			options: []string{"-w", "missing", "--max", "4"},
-			err:     true,
+			name: "letterbox with invalid wordlist",
+			args: []string{"letterbox", "-w", "missing", "--max", "4"},
+			err:  "invalid wordlist `missing`",
 		},
 		{
-			name:    "letterbox with 5 arguments",
-			options: []string{"-w", "solutions", "--max", "4", "rul", "eya", "gdh", "opb", "qst"},
-			err:     true,
+			name: "letterbox with 5 arguments",
+			args: []string{"letterbox", "-w", "solutions", "--max", "4", "rul", "eya", "gdh", "opb", "qst"},
+			err:  "found 5 sides",
 		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			a := assert.New(t)
-			var builder strings.Builder
-			app := &cli.App{
-				Name:     tt.name,
-				Writer:   &builder,
-				Commands: []*cli.Command{qordle.CommandLetterBox()},
-			}
-			err := app.Run(append([]string{"qordle", "letterbox"}, tt.options...))
-			if tt.err {
-				a.Error(err)
-				return
-			}
-			a.NoError(err)
-			var n int
-			dec := json.NewDecoder(strings.NewReader(builder.String()))
-			for {
-				var res []string
-				if err = dec.Decode(&res); errors.Is(err, io.EOF) {
-					break
-				} else if err != nil {
-					a.Error(err)
-				}
-				n++
-			}
-			a.Equal(tt.length, n)
+			run(t, &tt, qordle.CommandLetterBox)
 		})
 	}
 }

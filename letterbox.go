@@ -1,10 +1,9 @@
 package qordle
 
 import (
-	"encoding/json"
 	"fmt"
 	"math"
-	"runtime"
+	sys "runtime"
 	"strings"
 	"sync"
 	"time"
@@ -281,7 +280,7 @@ func CommandLetterBox() *cli.Command {
 			&cli.IntFlag{
 				Name:  "concurrent",
 				Usage: "number of cpus to use for concurrent solving",
-				Value: runtime.NumCPU(),
+				Value: sys.NumCPU(),
 			},
 			wordlistFlag(),
 		},
@@ -300,7 +299,7 @@ func CommandLetterBox() *cli.Command {
 			words := box.Words(t)
 			log.Info().Int("matching", len(words)).Int("possible", n).Msg("dictonary")
 			sol := map[int]int{}
-			enc := json.NewEncoder(c.App.Writer)
+			enc := Runtime(c).Encoder
 			for solution := range box.Solutions(words) {
 				sol[len(solution)]++
 				if err = enc.Encode(solution); err != nil {
