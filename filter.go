@@ -53,11 +53,11 @@ func Hits(hits string) FilterFunc {
 	if hits == "" {
 		return NoOp
 	}
+	m := map[rune]int{}
+	for i := range hits {
+		m[rune(hits[i])]++
+	}
 	return func(word string) bool {
-		m := map[rune]int{}
-		for i := range hits {
-			m[rune(hits[i])]++
-		}
 		n := map[rune]int{}
 		for i := range word {
 			n[rune(word[i])]++
