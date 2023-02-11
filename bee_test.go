@@ -12,8 +12,9 @@ import (
 )
 
 type grab struct {
-	err    error
-	status int
+	err      error
+	status   int
+	filename string
 }
 
 func (g grab) Do(req *http.Request) (*http.Response, error) {
@@ -24,8 +25,7 @@ func (g grab) Do(req *http.Request) (*http.Response, error) {
 	w.WriteHeader(g.status)
 	switch g.status {
 	case http.StatusOK:
-		file := "testdata/spelling-bee.html"
-		http.ServeFile(w, req, file)
+		http.ServeFile(w, req, g.filename)
 	default:
 	}
 	return w.Result(), nil
@@ -38,7 +38,20 @@ func TestBeeCommand(t *testing.T) {
 			args: []string{"bee", "today"},
 			before: func(c *cli.Context) error {
 				qordle.Runtime(c).Grab = grab{
-					status: http.StatusOK,
+					status:   http.StatusOK,
+					filename: "testdata/spelling-bee.html",
+				}
+				return nil
+			},
+		},
+		{
+			name: "bad decode",
+			args: []string{"bee", "today"},
+			err:  "failed to decode",
+			before: func(c *cli.Context) error {
+				qordle.Runtime(c).Grab = grab{
+					status:   http.StatusOK,
+					filename: "testdata/spelling-bee-decode.html",
 				}
 				return nil
 			},
