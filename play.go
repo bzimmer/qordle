@@ -155,14 +155,16 @@ func play(c *cli.Context) error {
 			return err
 		}
 	}
+	enc := Runtime(c).Encoder
+
 	game := NewGame(
 		WithStrategy(strategy),
 		WithDictionary(dictionary),
 		WithStart(c.String("start")),
 		WithRounds(c.Int("rounds")))
-	enc := Runtime(c).Encoder
+
 	writer := io.Discard
-	if c.Bool("auto") {
+	if c.Bool("progress") {
 		writer = c.App.ErrWriter
 	}
 	bar := pb.New(len(secrets)).SetWriter(writer).Start()
@@ -205,9 +207,9 @@ func CommandPlay() *cli.Command {
 				Value:   false,
 			},
 			&cli.BoolFlag{
-				Name:    "auto",
-				Aliases: []string{"A"},
-				Usage:   "auto play from stdin",
+				Name:    "progress",
+				Aliases: []string{"B"},
+				Usage:   "display a progress bar",
 				Value:   false,
 			},
 			&cli.IntFlag{

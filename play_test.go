@@ -176,8 +176,8 @@ func TestPlayCommand(t *testing.T) {
 			err:  "invalid wordlist `foobar`",
 		},
 		{
-			name: "auto play",
-			args: []string{"play", "-A", "-s", "position", "-w", "qordle", "--start", "shadow", "treaty"},
+			name: "display a progress bar",
+			args: []string{"play", "-B", "-s", "position", "-w", "qordle", "--start", "shadow", "treaty"},
 			after: func(c *cli.Context) error {
 				round := decode(c)
 				a.True(round.Success)
@@ -206,8 +206,8 @@ func TestPlayCommand(t *testing.T) {
 			},
 		},
 		{
-			name: "autoplay",
-			args: []string{"play", "-w", "qordle", "-S", "-A"},
+			name: "read from stdin and display a progress bar",
+			args: []string{"play", "-w", "qordle", "-S"},
 			before: func(c *cli.Context) error {
 				c.App.Reader = strings.NewReader("train")
 				return nil
