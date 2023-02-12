@@ -103,14 +103,14 @@ func TestGame(t *testing.T) {
 func TestPlayCommand(t *testing.T) {
 	a := assert.New(t)
 
-	decode := func(c *cli.Context) []string {
+	decode := func(c *cli.Context) *qordle.Round {
 		var res qordle.Scoreboard
 		dec := json.NewDecoder(c.App.Writer.(io.Reader))
 		err := dec.Decode(&res)
 		if err != nil {
 			a.FailNow(err.Error())
 		}
-		return res.Rounds[len(res.Rounds)-1].Scores
+		return res.Rounds[len(res.Rounds)-1]
 	}
 
 	for _, tt := range []harness{
@@ -118,9 +118,11 @@ func TestPlayCommand(t *testing.T) {
 			name: "table",
 			args: []string{"play", "-s", "position", "table"},
 			after: func(c *cli.Context) error {
+				round := decode(c)
+				a.True(round.Success)
 				a.Equal(
 					[]string{"so.arE", "mAiLE", "cABLE", "fABLE", "gABLE", "hABLE", "TABLE"},
-					decode(c))
+					round.Scores)
 				return nil
 			},
 		},
@@ -128,7 +130,9 @@ func TestPlayCommand(t *testing.T) {
 			name: "one word solution",
 			args: []string{"play", "soare"},
 			after: func(c *cli.Context) error {
-				a.Equal([]string{"SOARE"}, decode(c))
+				round := decode(c)
+				a.True(round.Success)
+				a.Equal([]string{"SOARE"}, round.Scores)
 				return nil
 			},
 		},
@@ -136,7 +140,9 @@ func TestPlayCommand(t *testing.T) {
 			name: "two word solution",
 			args: []string{"play", "-s", "frequency", "--start", "brain", "raise"},
 			after: func(c *cli.Context) error {
-				a.Equal([]string{"b.r.a.in", "RAISE"}, decode(c))
+				round := decode(c)
+				a.True(round.Success)
+				a.Equal([]string{"b.r.a.in", "RAISE"}, round.Scores)
 				return nil
 			},
 		},
@@ -144,7 +150,9 @@ func TestPlayCommand(t *testing.T) {
 			name: "six letter word with explicit strategy",
 			args: []string{"play", "-s", "position", "-w", "qordle", "--start", "shadow", "treaty"},
 			after: func(c *cli.Context) error {
-				a.Equal([]string{"sh.adow", "canAan", "a.e.rATe", "TREATY"}, decode(c))
+				round := decode(c)
+				a.True(round.Success)
+				a.Equal([]string{"sh.adow", "canAan", "a.e.rATe", "TREATY"}, round.Scores)
 				return nil
 			},
 		},
@@ -171,7 +179,9 @@ func TestPlayCommand(t *testing.T) {
 			name: "auto play",
 			args: []string{"play", "-A", "-s", "position", "-w", "qordle", "--start", "shadow", "treaty"},
 			after: func(c *cli.Context) error {
-				a.Equal([]string{"sh.adow", "canAan", "a.e.rATe", "TREATY"}, decode(c))
+				round := decode(c)
+				a.True(round.Success)
+				a.Equal([]string{"sh.adow", "canAan", "a.e.rATe", "TREATY"}, round.Scores)
 				return nil
 			},
 		},
@@ -179,7 +189,9 @@ func TestPlayCommand(t *testing.T) {
 			name: "six letter word with no implicit strategy",
 			args: []string{"play", "-w", "qordle", "--start", "shadow", "treaty"},
 			after: func(c *cli.Context) error {
-				a.Equal([]string{"sh.adow", ".alin.e.r", "p.e.rAc.t", ".rugAT.e", "TREATY"}, decode(c))
+				round := decode(c)
+				a.True(round.Success)
+				a.Equal([]string{"sh.adow", ".alin.e.r", "p.e.rAc.t", ".rugAT.e", "TREATY"}, round.Scores)
 				return nil
 			},
 		},
@@ -187,7 +199,9 @@ func TestPlayCommand(t *testing.T) {
 			name: "six letter word with no implicit strategy and speculation",
 			args: []string{"play", "-w", "qordle", "--start", "shadow", "-S", "treaty"},
 			after: func(c *cli.Context) error {
-				a.Equal([]string{"sh.adow", ".alin.e.r", "p.e.rAc.t", ".rugAT.e", "TREATY"}, decode(c))
+				round := decode(c)
+				a.True(round.Success)
+				a.Equal([]string{"sh.adow", ".alin.e.r", "p.e.rAc.t", ".rugAT.e", "TREATY"}, round.Scores)
 				return nil
 			},
 		},
@@ -199,7 +213,32 @@ func TestPlayCommand(t *testing.T) {
 				return nil
 			},
 			after: func(c *cli.Context) error {
-				a.Equal([]string{"soA.re", ".r.iA.n.t", "TRAIN"}, decode(c))
+				round := decode(c)
+				a.True(round.Success)
+				a.Equal([]string{"soA.re", ".r.iA.n.t", "TRAIN"}, round.Scores)
+				return nil
+			},
+		},
+		{
+			name: "exceed the number of rounds",
+			args: []string{"play", "--start", "brain", "-S", "-r", "2", "sills"},
+			after: func(c *cli.Context) error {
+				round := decode(c)
+				a.False(round.Success)
+				a.Equal([]string{
+					"bra.in", ".i.sLet", "kILoS", "mILdS", "hILuS",
+					"gyp.sy", "f.locS", "jowLS", "vILLS", "zILLS"},
+					round.Scores)
+				return nil
+			},
+		},
+		{
+			name: "fail to find the solution",
+			args: []string{"play", "qwert"},
+			after: func(c *cli.Context) error {
+				round := decode(c)
+				a.False(round.Success)
+				a.Equal([]string{"soaR.e", ".en.tRy", "piERT", "blERT", "chERT"}, round.Scores)
 				return nil
 			},
 		},

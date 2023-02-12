@@ -50,7 +50,6 @@ func today(c *cli.Context) error {
 		return err
 	}
 
-	var serr error
 	enc := Runtime(c).Encoder
 	re := regexp.MustCompile(spellingBeeGameData)
 	doc.Find("script").EachWithBreak(func(i int, s *goquery.Selection) bool {
@@ -61,21 +60,21 @@ func today(c *cli.Context) error {
 				// Yesterday *Bee `json:"yesterday"`
 			}
 			dec := json.NewDecoder(strings.NewReader(res[i][1]))
-			serr = dec.Decode(&bees)
-			if serr != nil {
-				serr = errors.Wrap(serr, "failed to decode")
+			err = dec.Decode(&bees)
+			if err != nil {
+				err = errors.Wrap(err, "failed to decode")
 				return false
 			}
-			serr = enc.Encode(bees.Today)
-			if serr != nil {
-				serr = errors.Wrap(serr, "failed to encode")
+			err = enc.Encode(bees.Today)
+			if err != nil {
+				err = errors.Wrap(err, "failed to encode")
 				return false
 			}
 		}
 		return true
 	})
 
-	return serr
+	return err
 }
 
 func CommandBee() *cli.Command {
