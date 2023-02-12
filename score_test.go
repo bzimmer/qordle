@@ -2,7 +2,7 @@ package qordle_test
 
 import (
 	"encoding/json"
-	"strings"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -22,7 +22,7 @@ func TestScore(t *testing.T) {
 			name:    "simple",
 			secret:  "buyer",
 			guesses: []string{"brain", "beret"},
-			scores:  []string{"B~rain", "Be~rEt"},
+			scores:  []string{"B.rain", "Be.rEt"},
 		},
 		{
 			name:    "different lengths",
@@ -60,41 +60,28 @@ func TestScore(t *testing.T) {
 }
 
 func TestScoreCommand(t *testing.T) {
-	for _, tt := range []struct {
-		name         string
-		words, score []string
-		err          bool
-	}{
+	a := assert.New(t)
+	for _, tt := range []harness{
 		{
-			name:  "score",
-			words: []string{"table", "cable"},
-			score: []string{"cABLE"},
+			name: "score",
+			args: []string{"score", "table", "cable"},
+			after: func(c *cli.Context) error {
+				var res []string
+				dec := json.NewDecoder(c.App.Writer.(io.Reader))
+				a.NoError(dec.Decode(&res))
+				a.Equal([]string{"cABLE"}, res)
+				return nil
+			},
 		},
 		{
-			name:  "score with error",
-			words: []string{"tableau", "cable"},
-			err:   true,
+			name: "score with error",
+			err:  "secret and guess lengths do not match",
+			args: []string{"score", "tableau", "cable"},
 		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			a := assert.New(t)
-			var builder strings.Builder
-			app := &cli.App{
-				Name:     tt.name,
-				Writer:   &builder,
-				Commands: []*cli.Command{qordle.CommandScore()},
-			}
-			err := app.Run(append([]string{"qordle", "score"}, tt.words...))
-			if tt.err {
-				a.Error(err)
-				return
-			}
-			a.NoError(err)
-			var res []string
-			err = json.Unmarshal([]byte(builder.String()), &res)
-			a.NoError(err)
-			a.Equal(tt.score, res)
+			run(t, &tt, qordle.CommandScore)
 		})
 	}
 }

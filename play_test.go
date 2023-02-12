@@ -2,6 +2,7 @@ package qordle_test
 
 import (
 	"encoding/json"
+	"io"
 	"strings"
 	"testing"
 
@@ -100,106 +101,151 @@ func TestGame(t *testing.T) {
 }
 
 func TestPlayCommand(t *testing.T) {
-	for _, tt := range []struct {
-		name, input, err        string
-		args, guesses, wordlist []string
-		success                 bool
-	}{
+	a := assert.New(t)
+
+	decode := func(c *cli.Context) *qordle.Round {
+		var res qordle.Scoreboard
+		dec := json.NewDecoder(c.App.Writer.(io.Reader))
+		err := dec.Decode(&res)
+		if err != nil {
+			a.FailNow(err.Error())
+		}
+		return res.Rounds[len(res.Rounds)-1]
+	}
+
+	for _, tt := range []harness{
 		{
-			name:    "table",
-			args:    []string{"-s", "position", "table"},
-			guesses: []string{"so~arE", "mAiLE", "cABLE", "fABLE", "gABLE", "hABLE", "TABLE"},
-			success: true,
+			name: "table",
+			args: []string{"play", "-s", "position", "table"},
+			after: func(c *cli.Context) error {
+				round := decode(c)
+				a.True(round.Success)
+				a.Equal(
+					[]string{"so.arE", "mAiLE", "cABLE", "fABLE", "gABLE", "hABLE", "TABLE"},
+					round.Scores)
+				return nil
+			},
 		},
 		{
-			name:    "one word solution",
-			args:    []string{"soare"},
-			guesses: []string{"SOARE"},
-			success: true,
+			name: "one word solution",
+			args: []string{"play", "soare"},
+			after: func(c *cli.Context) error {
+				round := decode(c)
+				a.True(round.Success)
+				a.Equal([]string{"SOARE"}, round.Scores)
+				return nil
+			},
 		},
 		{
-			name:    "two word solution",
-			args:    []string{"-s", "frequency", "--start", "brain", "raise"},
-			guesses: []string{"b~r~a~in", "RAISE"},
-			success: true,
+			name: "two word solution",
+			args: []string{"play", "-s", "frequency", "--start", "brain", "raise"},
+			after: func(c *cli.Context) error {
+				round := decode(c)
+				a.True(round.Success)
+				a.Equal([]string{"b.r.a.in", "RAISE"}, round.Scores)
+				return nil
+			},
+		},
+		{
+			name: "six letter word with explicit strategy",
+			args: []string{"play", "-s", "position", "-w", "qordle", "--start", "shadow", "treaty"},
+			after: func(c *cli.Context) error {
+				round := decode(c)
+				a.True(round.Success)
+				a.Equal([]string{"sh.adow", "canAan", "a.e.rATe", "TREATY"}, round.Scores)
+				return nil
+			},
 		},
 		{
 			name: "failed to find secret",
-			args: []string{"12345"},
+			args: []string{"play", "12345"},
 		},
 		{
 			name: "secret and guess lengths do not match",
-			args: []string{"123456"},
+			args: []string{"play", "123456"},
 			err:  "secret and guess lengths do not match",
 		},
 		{
 			name: "invalid strategy",
-			args: []string{"-s", "foobar", "table"},
+			args: []string{"play", "-s", "foobar", "table"},
 			err:  "unknown strategy `foobar`",
 		},
 		{
 			name: "invalid wordlist",
-			args: []string{"-w", "foobar", "table"},
+			args: []string{"play", "-w", "foobar", "table"},
 			err:  "invalid wordlist `foobar`",
 		},
 		{
-			name:    "six letter word with explicit strategy",
-			args:    []string{"-s", "position", "-w", "qordle", "--start", "shadow", "treaty"},
-			guesses: []string{"sh~adow", "canAan", "a~e~rATe", "TREATY"},
-			success: true,
+			name: "auto play",
+			args: []string{"play", "-A", "-s", "position", "-w", "qordle", "--start", "shadow", "treaty"},
+			after: func(c *cli.Context) error {
+				round := decode(c)
+				a.True(round.Success)
+				a.Equal([]string{"sh.adow", "canAan", "a.e.rATe", "TREATY"}, round.Scores)
+				return nil
+			},
 		},
 		{
-			name:    "auto play",
-			args:    []string{"-A", "-s", "position", "-w", "qordle", "--start", "shadow", "treaty"},
-			guesses: []string{"sh~adow", "canAan", "a~e~rATe", "TREATY"},
-			success: true,
+			name: "six letter word with no implicit strategy",
+			args: []string{"play", "-w", "qordle", "--start", "shadow", "treaty"},
+			after: func(c *cli.Context) error {
+				round := decode(c)
+				a.True(round.Success)
+				a.Equal([]string{"sh.adow", ".alin.e.r", "p.e.rAc.t", ".rugAT.e", "TREATY"}, round.Scores)
+				return nil
+			},
 		},
 		{
-			name:    "six letter word with no implicit strategy",
-			args:    []string{"-w", "qordle", "--start", "shadow", "treaty"},
-			guesses: []string{"sh~adow", "~alin~e~r", "p~e~rAc~t", "~rugAT~e", "TREATY"},
-			success: true,
+			name: "six letter word with no implicit strategy and speculation",
+			args: []string{"play", "-w", "qordle", "--start", "shadow", "-S", "treaty"},
+			after: func(c *cli.Context) error {
+				round := decode(c)
+				a.True(round.Success)
+				a.Equal([]string{"sh.adow", ".alin.e.r", "p.e.rAc.t", ".rugAT.e", "TREATY"}, round.Scores)
+				return nil
+			},
 		},
 		{
-			name:    "six letter word with no implicit strategy and speculation",
-			args:    []string{"-w", "qordle", "--start", "shadow", "-S", "treaty"},
-			guesses: []string{"sh~adow", "~alin~e~r", "p~e~rAc~t", "~rugAT~e", "TREATY"},
-			success: true,
+			name: "autoplay",
+			args: []string{"play", "-w", "qordle", "-S", "-A"},
+			before: func(c *cli.Context) error {
+				c.App.Reader = strings.NewReader("train")
+				return nil
+			},
+			after: func(c *cli.Context) error {
+				round := decode(c)
+				a.True(round.Success)
+				a.Equal([]string{"soA.re", ".r.iA.n.t", "TRAIN"}, round.Scores)
+				return nil
+			},
 		},
 		{
-			name:    "autoplay",
-			input:   "train",
-			args:    []string{"-w", "qordle", "-S", "-A"},
-			guesses: []string{"soA~re", "~r~iA~n~t", "TRAIN"},
-			success: true,
+			name: "exceed the number of rounds",
+			args: []string{"play", "--start", "brain", "-S", "-r", "2", "sills"},
+			after: func(c *cli.Context) error {
+				round := decode(c)
+				a.False(round.Success)
+				a.Equal([]string{
+					"bra.in", ".i.sLet", "kILoS", "mILdS", "hILuS",
+					"gyp.sy", "f.locS", "jowLS", "vILLS", "zILLS"},
+					round.Scores)
+				return nil
+			},
+		},
+		{
+			name: "fail to find the solution",
+			args: []string{"play", "qwert"},
+			after: func(c *cli.Context) error {
+				round := decode(c)
+				a.False(round.Success)
+				a.Equal([]string{"soaR.e", ".en.tRy", "piERT", "blERT", "chERT"}, round.Scores)
+				return nil
+			},
 		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			a := assert.New(t)
-			input := strings.NewReader(tt.input)
-			var output strings.Builder
-			app := &cli.App{
-				Name:     tt.name,
-				Reader:   input,
-				Writer:   &output,
-				Commands: []*cli.Command{qordle.CommandPlay()},
-			}
-			err := app.Run(append([]string{"qordle", "play"}, tt.args...))
-			if tt.err != "" {
-				a.Error(err)
-				a.Equal(tt.err, err.Error())
-				return
-			}
-			var res qordle.Scoreboard
-			err = json.Unmarshal([]byte(output.String()), &res)
-			a.NoError(err)
-			if tt.success {
-				winner := res.Rounds[len(res.Rounds)-1]
-				a.Equal(tt.guesses, winner.Scores)
-			} else {
-				a.False(tt.success)
-			}
+			run(t, &tt, qordle.CommandPlay)
 		})
 	}
 }

@@ -223,7 +223,7 @@ func TestGuesses(t *testing.T) {
 		{
 			name:    "guesses with match",
 			word:    "hoody",
-			guesses: []string{"s~hOut"},
+			guesses: []string{"s.hOut"},
 			result:  true,
 		},
 		{
@@ -235,7 +235,7 @@ func TestGuesses(t *testing.T) {
 		{
 			name:    "guesses with one match out of order",
 			word:    "dusty",
-			guesses: []string{"brain", "clov~e"},
+			guesses: []string{"brain", "clov.e"},
 			result:  false,
 		},
 		{
@@ -247,7 +247,7 @@ func TestGuesses(t *testing.T) {
 		{
 			name:    "guesses with one match out of order but also legal",
 			word:    "pleat",
-			guesses: []string{"br~ain", "~l~egAl"},
+			guesses: []string{"br.ain", ".l.egAl"},
 			result:  true,
 		},
 		{

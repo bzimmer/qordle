@@ -1,21 +1,16 @@
 package qordle
 
 import (
-	"encoding/json"
-	"errors"
 	"io"
 	"time"
 
 	"github.com/cheggaaa/pb/v3"
-	"github.com/rs/zerolog/log"
-
+	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 )
 
-// roundsMultiplier is the multiplier for the number of rounds to attempt
-const roundsMultiplier int = 3
-
-var ErrConvergence = errors.New("failed to converge")
+// rounds is the multiplier for the number of rounds to attempt
+const rounds int = 3
 
 type Scoreboard struct {
 	Secret     string   `json:"secret"`
@@ -36,6 +31,7 @@ type Game struct {
 	start      string
 	strategy   Strategy
 	dictionary Dictionary
+	rounds     int
 }
 
 // Option provides a configuration mechanism for a Game
@@ -71,6 +67,12 @@ func WithStrategy(strategy Strategy) Option {
 	}
 }
 
+func WithRounds(rounds int) Option {
+	return func(g *Game) {
+		g.rounds = rounds
+	}
+}
+
 // Play the game for the secret
 func (g *Game) Play(secret string) (*Scoreboard, error) {
 	if g.strategy == nil {
@@ -82,6 +84,9 @@ func (g *Game) Play(secret string) (*Scoreboard, error) {
 	start := g.start
 	if start == "" {
 		start = g.strategy.Apply(g.dictionary)[0]
+	}
+	if g.rounds <= 0 {
+		g.rounds = rounds
 	}
 	return g.play(secret, start)
 }
@@ -98,7 +103,7 @@ func (g *Game) play(secret string, start string) (*Scoreboard, error) {
 		scoreboard.Elapsed = time.Since(t).Milliseconds()
 	}(time.Now())
 
-	n := len(secret) * roundsMultiplier
+	n := len(secret) * g.rounds
 	fns := []FilterFunc{Length(len(secret)), IsLower()}
 	for len(scoreboard.Rounds) < n {
 		scores, err := Score(secret, words...)
@@ -128,7 +133,7 @@ func (g *Game) play(secret string, start string) (*Scoreboard, error) {
 			words = append(words, dictionary[0])
 		}
 	}
-	return scoreboard, ErrConvergence
+	return scoreboard, nil
 }
 
 func play(c *cli.Context) error {
@@ -153,14 +158,13 @@ func play(c *cli.Context) error {
 	game := NewGame(
 		WithStrategy(strategy),
 		WithDictionary(dictionary),
-		WithStart(c.String("start")))
-	enc := json.NewEncoder(c.App.Writer)
-
+		WithStart(c.String("start")),
+		WithRounds(c.Int("rounds")))
+	enc := Runtime(c).Encoder
 	writer := io.Discard
 	if c.Bool("auto") {
 		writer = c.App.ErrWriter
 	}
-
 	bar := pb.New(len(secrets)).SetWriter(writer).Start()
 	defer bar.Finish()
 
@@ -169,10 +173,7 @@ func play(c *cli.Context) error {
 		bar.Increment()
 		board, err = game.Play(secrets[i])
 		if err != nil {
-			if !errors.Is(err, ErrConvergence) {
-				return err
-			}
-			log.Error().Str("secret", secrets[i]).Msg(err.Error())
+			return errors.Wrapf(err, "secret: %s ", secrets[i])
 		}
 		if err = enc.Encode(board); err != nil {
 			return err
@@ -208,6 +209,12 @@ func CommandPlay() *cli.Command {
 				Aliases: []string{"A"},
 				Usage:   "auto play from stdin",
 				Value:   false,
+			},
+			&cli.IntFlag{
+				Name:    "rounds",
+				Aliases: []string{"r"},
+				Usage:   "max rounds not to exceed `rounds` * len(secret)",
+				Value:   rounds,
 			},
 			wordlistFlag(),
 		},

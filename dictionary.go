@@ -3,7 +3,6 @@ package qordle
 import (
 	"bufio"
 	"embed"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -95,8 +94,7 @@ func CommandWordlists() *cli.Command {
 				return err
 			}
 			sort.Strings(lists)
-			enc := json.NewEncoder(c.App.Writer)
-			return enc.Encode(lists)
+			return Runtime(c).Encoder.Encode(lists)
 		},
 	}
 }
