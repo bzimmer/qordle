@@ -6,7 +6,7 @@ repo=$(git rev-parse --show-toplevel)
 
 games=$(
     cat $repo/data/possible.txt |
-    $repo/dist/qordle play -A -S --start "${1:-"brain"}" |
+    $repo/dist/qordle play -B -S --start "${1:-"brain"}" |
     jq -r -s '
         map([.secret, (.rounds|length), (.rounds|last|.success), (.rounds|last|.dictionary), .elapsed])
         | .[] 
