@@ -27,25 +27,19 @@ func play(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	st, err := qordle.NewStrategy(c.QueryParam("strategy"))
+	strategy, err := qordle.NewStrategy(c.QueryParam("strategy"))
 	if err != nil {
 		return err
 	}
 	secret := c.Param("secret")
-	start := c.QueryParam("start")
-	if start == "" {
-		start = "brain"
-	}
 	game := qordle.NewGame(
 		qordle.WithDictionary(dictionary),
-		qordle.WithStart(start),
-		qordle.WithStrategy(st))
-
+		qordle.WithStart(c.QueryParam("start")),
+		qordle.WithStrategy(strategy))
 	scoreboard, err := game.Play(secret)
 	if err != nil {
 		return err
 	}
-	log.Debug().Interface("scoreboard", scoreboard).Msg("play")
 	return c.JSONPretty(http.StatusOK, scoreboard, " ")
 }
 
@@ -54,20 +48,16 @@ func suggest(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	gss := strings.Split(c.Param("guesses"), ",")
-	ff, err := qordle.Guesses(gss...)
+	strategy, err := qordle.NewStrategy(c.QueryParam("strategy"))
 	if err != nil {
 		return err
 	}
-	dictionary = qordle.Filter(dictionary, ff)
-	st, err := qordle.NewStrategy(c.QueryParam("strategy"))
+	strategy = qordle.NewSpeculator(dictionary, strategy)
+	guesses, err := qordle.Guesses(strings.Split(c.Param("guesses"), " ")...)
 	if err != nil {
 		return err
 	}
-	dictionary = st.Apply(dictionary)
-	log.Debug().
-		Str("strategy", st.String()).
-		Strs("dictionary", dictionary).Msg("play")
+	dictionary = strategy.Apply(qordle.Filter(dictionary, guesses))
 	return c.JSONPretty(http.StatusOK, dictionary, " ")
 }
 

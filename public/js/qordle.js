@@ -1,7 +1,7 @@
 
 function suggest() {
     var guess = $("#guess").val();
-    var url = "/qordle/suggest/" + guess.split(" ").join(",");
+    var url = "/qordle/suggest/" + guess.split(" ").join(" ");
 
     $.ajax({
         url: url,

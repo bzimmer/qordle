@@ -78,22 +78,18 @@ func (g *Game) Play(secret string) (*Scoreboard, error) {
 	if g.strategy == nil {
 		return nil, errors.New("missing strategy")
 	}
-	if len(g.dictionary) == 0 {
-		return nil, errors.New("missing dictionary")
+	dictionary := Filter(g.dictionary, Length(len(secret)), IsLower())
+	if len(dictionary) == 0 {
+		return nil, errors.New("empty dictionary")
 	}
 	start := g.start
 	if start == "" {
-		start = g.strategy.Apply(g.dictionary)[0]
+		start = g.strategy.Apply(dictionary)[0]
 	}
-	if g.rounds <= 0 {
-		g.rounds = rounds
-	}
-	return g.play(secret, start)
+	return g.play(dictionary, secret, []string{start})
 }
 
-func (g *Game) play(secret string, start string) (*Scoreboard, error) {
-	words := []string{start}
-	dictionary := g.dictionary
+func (g *Game) play(dictionary Dictionary, secret string, words []string) (*Scoreboard, error) {
 	scoreboard := &Scoreboard{
 		Secret:     secret,
 		Strategy:   g.strategy.String(),
@@ -103,8 +99,11 @@ func (g *Game) play(secret string, start string) (*Scoreboard, error) {
 		scoreboard.Elapsed = time.Since(t).Milliseconds()
 	}(time.Now())
 
-	n := len(secret) * g.rounds
-	fns := []FilterFunc{Length(len(secret)), IsLower()}
+	r := g.rounds
+	if r <= 0 {
+		r = rounds
+	}
+	n := len(secret) * r
 	for len(scoreboard.Rounds) < n {
 		scores, err := Score(secret, words...)
 		if err != nil {
@@ -114,7 +113,7 @@ func (g *Game) play(secret string, start string) (*Scoreboard, error) {
 		if err != nil {
 			return nil, err
 		}
-		dictionary = g.strategy.Apply(Filter(dictionary, append(fns, guesses)...))
+		dictionary = g.strategy.Apply(Filter(dictionary, guesses))
 
 		round := &Round{
 			Dictionary: len(dictionary),
@@ -192,7 +191,7 @@ func CommandPlay() *cli.Command {
 			&cli.StringFlag{
 				Name:    "start",
 				Aliases: []string{"t"},
-				Value:   "soare",
+				Value:   "",
 			},
 			&cli.StringFlag{
 				Name:    "strategy",

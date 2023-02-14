@@ -42,11 +42,11 @@ func TestGame(t *testing.T) {
 			dictionary: "qordle",
 		},
 		{
-			name:          "missing dictionary",
+			name:          "empty dictionary",
 			start:         "soare",
 			secret:        "train",
 			strategy:      "frequency",
-			errDictionary: "missing dictionary",
+			errDictionary: "empty dictionary",
 		},
 		{
 			name:        "missing strategy",
@@ -107,16 +107,14 @@ func TestPlayCommand(t *testing.T) {
 		var res qordle.Scoreboard
 		dec := json.NewDecoder(c.App.Writer.(io.Reader))
 		err := dec.Decode(&res)
-		if err != nil {
-			a.FailNow(err.Error())
-		}
+		a.NoError(err)
 		return res.Rounds[len(res.Rounds)-1]
 	}
 
 	for _, tt := range []harness{
 		{
 			name: "table",
-			args: []string{"play", "-s", "position", "table"},
+			args: []string{"play", "-s", "position", "--start", "soare", "table"},
 			after: func(c *cli.Context) error {
 				round := decode(c)
 				a.True(round.Success)
@@ -128,7 +126,7 @@ func TestPlayCommand(t *testing.T) {
 		},
 		{
 			name: "one word solution",
-			args: []string{"play", "soare"},
+			args: []string{"play", "--start", "soare", "soare"},
 			after: func(c *cli.Context) error {
 				round := decode(c)
 				a.True(round.Success)
@@ -161,9 +159,14 @@ func TestPlayCommand(t *testing.T) {
 			args: []string{"play", "12345"},
 		},
 		{
-			name: "secret and guess lengths do not match",
+			name: "unable to acquire starting word",
 			args: []string{"play", "123456"},
-			err:  "secret and guess lengths do not match",
+			err:  "empty dictionary",
+		},
+		{
+			name: "secret and guess lengths do not match",
+			args: []string{"play", "--start", "soare", "123456"},
+			err:  "empty dictionary",
 		},
 		{
 			name: "invalid strategy",
@@ -206,8 +209,17 @@ func TestPlayCommand(t *testing.T) {
 			},
 		},
 		{
+			name: "read from nil stdin",
+			args: []string{"play", "-w", "qordle"},
+			err:  "invalid reader",
+			before: func(c *cli.Context) error {
+				c.App.Reader = nil
+				return nil
+			},
+		},
+		{
 			name: "read from stdin and display a progress bar",
-			args: []string{"play", "-w", "qordle", "-S"},
+			args: []string{"play", "-w", "qordle", "-S", "--start", "soare"},
 			before: func(c *cli.Context) error {
 				c.App.Reader = strings.NewReader("train")
 				return nil
@@ -234,7 +246,7 @@ func TestPlayCommand(t *testing.T) {
 		},
 		{
 			name: "fail to find the solution",
-			args: []string{"play", "qwert"},
+			args: []string{"play", "--start", "soare", "qwert"},
 			after: func(c *cli.Context) error {
 				round := decode(c)
 				a.False(round.Success)
