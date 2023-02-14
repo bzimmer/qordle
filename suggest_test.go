@@ -1,12 +1,18 @@
 package qordle_test
 
 import (
+	"encoding/json"
+	"io"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/urfave/cli/v2"
 
 	"github.com/bzimmer/qordle"
 )
 
 func TestSuggestCommand(t *testing.T) {
+	a := assert.New(t)
 	for _, tt := range []harness{
 		{
 			name: "alpha",
@@ -30,6 +36,11 @@ func TestSuggestCommand(t *testing.T) {
 			args: []string{"suggest", "-S", "raise", "fol.l.y"},
 		},
 		{
+			name: "bad guesses",
+			args: []string{"suggest", "fol.l."},
+			err:  "too few characters",
+		},
+		{
 			name: "bad pattern",
 			args: []string{"suggest", "--pattern", "[A-Z", "raise", "fol.l.y"},
 			err:  "error parsing regexp: missing closing ]: `[A-Z`",
@@ -38,6 +49,21 @@ func TestSuggestCommand(t *testing.T) {
 			name: "bad wordlist",
 			args: []string{"suggest", "-w", "foobar", "raise", "fol.l.y"},
 			err:  "invalid wordlist `foobar`",
+		},
+		{
+			name: "speculate for ?ound",
+			args: []string{"suggest", "-w", "solutions", "-S", "--strategy", "frequency", "trai.n", ".o.u.nce", "bOUND"},
+			after: func(c *cli.Context) error {
+				var res []string
+				dec := json.NewDecoder(c.App.Writer.(io.Reader))
+				err := dec.Decode(&res)
+				a.NoError(err)
+				a.Equal([]string{
+					"swamp", "smash", "swash", "swish", "spasm", "humph", "shush",
+					"whiff", "found", "hound", "mound", "pound", "sound", "wound"},
+					res)
+				return nil
+			},
 		},
 	} {
 		tt := tt

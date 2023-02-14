@@ -22,6 +22,9 @@ const data = "data"
 var dataFs embed.FS
 
 func read(r io.Reader) (Dictionary, error) {
+	if r == nil {
+		return nil, errors.New("invalid reader")
+	}
 	var res []string
 	scanner := bufio.NewScanner(r)
 	for scanner.Scan() {

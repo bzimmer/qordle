@@ -46,6 +46,17 @@ func CommandSuggest() *cli.Command {
 		},
 		Action: func(c *cli.Context) error {
 			t := time.Now()
+			dictionary, err := wordlists(c, "possible", "solutions")
+			if err != nil {
+				return err
+			}
+			strategy, err := NewStrategy(c.String("strategy"))
+			if err != nil {
+				return err
+			}
+			if c.Bool("speculate") {
+				strategy = NewSpeculator(dictionary, strategy)
+			}
 			pattern, err := Pattern(c.String("pattern"))
 			if err != nil {
 				return err
@@ -54,34 +65,17 @@ func CommandSuggest() *cli.Command {
 			if err != nil {
 				return err
 			}
-			fns := []FilterFunc{
-				IsLower(),
-				Length(c.Int("length")),
-				Hits(c.String("hits")),
-				Misses(c.String("misses")),
-				pattern,
-				guesses,
-			}
-			dictionary, err := wordlists(c, "possible", "solutions")
-			if err != nil {
-				return err
-			}
 			n := len(dictionary)
-			dictionary = Filter(dictionary, fns...)
+			dictionary = Filter(dictionary,
+				IsLower(), Length(c.Int("length")), Hits(c.String("hits")),
+				Misses(c.String("misses")), pattern, guesses)
 			q := len(dictionary)
 			log.Debug().
 				Dur("elapsed", time.Since(t)).
-				Int("master", n).
+				Int("original", n).
 				Int("filtered", q).
 				Msg("dictionary")
-			st, err := NewStrategy(c.String("strategy"))
-			if err != nil {
-				return err
-			}
-			if c.Bool("speculate") {
-				st = NewSpeculator(dictionary, st)
-			}
-			dictionary = st.Apply(dictionary)
+			dictionary = strategy.Apply(dictionary)
 			return Runtime(c).Encoder.Encode(dictionary)
 		},
 	}
