@@ -110,46 +110,61 @@ func TestPosition(t *testing.T) {
 func TestSpeculate(t *testing.T) {
 	t.Parallel()
 	for _, tt := range []struct {
-		name                    string
-		strategy                qordle.Strategy
-		words, result, guessing qordle.Dictionary
+		name                 string
+		strategy             qordle.Strategy
+		words, result, round qordle.Dictionary
 	}{
 		{
 			name:     "no guessing game",
 			words:    qordle.Dictionary{"easle", "false", "fause", "halse", "haste"},
-			guessing: qordle.Dictionary{"easle", "false", "fause", "halse", "haste"},
+			round:    qordle.Dictionary{"easle", "false", "fause", "halse", "haste"},
 			result:   qordle.Dictionary{"false", "halse", "easle", "fause", "haste"},
 			strategy: new(qordle.Frequency),
 		},
 		{
-			name:  "guessing",
-			words: qordle.Dictionary{"gyppy", "ghyll", "hyphy", "glyph", "layer"},
-			result: qordle.Dictionary{"glyph", "ghyll", "gyppy", "hyphy", "fears",
-				"gears", "hears", "lears", "pears", "wears", "years", "sears"},
-			guessing: qordle.Dictionary{"fears", "gears", "hears", "lears", "pears",
-				"wears", "years", "sears"},
+			name: "guessing",
+			words: qordle.Dictionary{
+				"gyppy", "ghyll", "hyphy", "glyph", "layer"},
+			result: qordle.Dictionary{
+				"glyph", "fears", "gears", "hears",
+				"lears", "pears", "wears", "years", "sears"},
+			round: qordle.Dictionary{
+				"fears", "gears", "hears", "lears",
+				"pears", "wears", "years", "sears"},
 			strategy: new(qordle.Frequency),
 		},
 		{
 			name:     "one word",
 			words:    qordle.Dictionary{"layer"},
 			result:   qordle.Dictionary{"layer"},
-			guessing: qordle.Dictionary{"layer"},
+			round:    qordle.Dictionary{"layer"},
 			strategy: new(qordle.Frequency),
 		},
 		{
 			name:     "empty",
 			words:    qordle.Dictionary{},
 			result:   qordle.Dictionary{},
-			guessing: qordle.Dictionary{},
+			round:    qordle.Dictionary{},
 			strategy: new(qordle.Frequency),
 		},
 		{
 			name:     "no strategy",
-			words:    qordle.Dictionary{"easle", "false", "fause", "halse", "haste"},
-			guessing: qordle.Dictionary{"easle", "false", "fause", "halse", "haste"},
+			words:    qordle.Dictionary{"branch", "brain", "soare"},
+			round:    qordle.Dictionary{"easle", "false", "fause", "halse", "haste"},
 			result:   qordle.Dictionary{"easle", "false", "fause", "halse", "haste"},
 			strategy: nil,
+		},
+		{
+			name: "main dictionary has words of different lengths",
+			// the second word would be the ideal guess but it's the wrong length
+			words: qordle.Dictionary{"glyph", "glyphf"},
+			result: qordle.Dictionary{
+				"glyph", "fears", "gears", "hears",
+				"lears", "pears", "wears", "years", "sears"},
+			round: qordle.Dictionary{
+				"fears", "gears", "hears", "lears",
+				"pears", "wears", "years", "sears"},
+			strategy: new(qordle.Frequency),
 		},
 	} {
 		tt := tt
@@ -157,7 +172,7 @@ func TestSpeculate(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
 			s := qordle.NewSpeculator(tt.words, tt.strategy)
-			dictionary := s.Apply(tt.guessing)
+			dictionary := s.Apply(tt.round)
 			a.Equal(tt.result, dictionary)
 			if tt.strategy == nil {
 				a.Equal("speculate;", s.String())

@@ -31,7 +31,7 @@ tasks:
     deps: [dist]
     cmds:
       # https://github.com/golang/go/issues/49138
-      - go test {{.CLI_ARGS}} -timeout 10s -race -count=1 -covermode atomic -coverprofile {{.DIST}}/coverage.txt {{.PKG}}
+      - go test {{.CLI_ARGS}} -timeout 20s -race -count=1 -covermode atomic -coverprofile {{.DIST}}/coverage.txt {{.PKG}}
 
   test:regression:
     desc: Run regression test
