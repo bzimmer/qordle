@@ -58,10 +58,7 @@ func TestSuggestCommand(t *testing.T) {
 				dec := json.NewDecoder(c.App.Writer.(io.Reader))
 				err := dec.Decode(&res)
 				a.NoError(err)
-				a.Equal([]string{
-					"swamp", "smash", "swash", "swish", "spasm", "humph", "shush",
-					"whiff", "found", "hound", "mound", "pound", "sound", "wound"},
-					res)
+				a.Equal([]string{"swamp", "found", "hound", "mound", "pound", "sound", "wound"}, res)
 				return nil
 			},
 		},

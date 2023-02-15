@@ -192,7 +192,8 @@ func (s *Speculate) with(words Dictionary) Dictionary {
 	}
 
 	n, next := 0, make(map[int][]string)
-	for _, word := range s.words {
+	// filter the main dictionary to words of the same length
+	for _, word := range Filter(s.words, Length(len(words[0]))) {
 		var q int
 		for _, r := range word {
 			if _, ok := runes[r]; ok {
@@ -219,7 +220,7 @@ func (s *Speculate) Apply(words Dictionary) Dictionary {
 	}
 	with = s.strategy.Apply(with)
 	log.Debug().Strs("words", words).Strs("with", with).Msg(s.String())
-	return append(with, s.strategy.Apply(words)...)
+	return append(with[:1], s.strategy.Apply(words)...)
 }
 
 func NewSpeculator(words Dictionary, strategy Strategy) Strategy {
