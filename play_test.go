@@ -277,7 +277,8 @@ func BenchmarkPlay(b *testing.B) {
 	for _, secret := range []string{"board", "brain", "mound", "lills", "qwert"} {
 		b.Run("secret::"+secret, func(b *testing.B) {
 			for i := 0; i < b.N; i++ {
-				board, err := game.Play(secret)
+				var board *qordle.Scoreboard
+				board, err = game.Play(secret)
 				a.NoError(err)
 				a.Greater(len(board.Rounds), 0)
 			}

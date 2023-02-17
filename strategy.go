@@ -7,10 +7,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// minimumSpeculation required to speculate
-// four words was chosen emperically as the cut off for being useful
-const minimumSpeculation int = 4
-
 func NewStrategy(code string) (Strategy, error) {
 	switch code {
 	case "a", "alpha":
@@ -134,8 +130,9 @@ func (s *Frequency) Apply(words Dictionary) Dictionary {
 
 // Speculate attempts to find a word which eliminates the most letters
 type Speculate struct {
-	words    Dictionary
-	strategy Strategy
+	words       Dictionary
+	strategy    Strategy
+	speculation int
 }
 
 func (s *Speculate) String() string {
@@ -175,13 +172,13 @@ func (s *Speculate) with(words Dictionary) Dictionary {
 		switch {
 		case x == -1:
 			// the words do not have a common index
-			//  the result of moving the check for -1 from after the loop to the head of the loop
+			//  faster to check as a case than after the loop
 			//
 			// goos: darwin
 			// goarch: arm64
 			// pkg: github.com/bzimmer/qordle
-			// 							  │  tmp/if.txt   │            tmp/case.txt             │
-			// 							  │    sec/op     │   sec/op     vs base                │
+			//                            │  tmp/if.txt   │            tmp/case.txt             │
+			//                            │    sec/op     │   sec/op     vs base                │
 			// Speculate/wordlist::middle-10     4.460µ ± 0%   4.465µ ± 1%        ~ (p=0.255 n=10)
 			// Speculate/wordlist::none-10       95.38µ ± 1%   97.93µ ± 0%   +2.68% (p=0.000 n=10)
 			// Speculate/wordlist::head-10     140.820µ ± 0%   4.386µ ± 0%  -96.89% (p=0.000 n=10)
@@ -210,8 +207,8 @@ func (s *Speculate) with(words Dictionary) Dictionary {
 		// goos: darwin
 		// goarch: arm64
 		// pkg: github.com/bzimmer/qordle
-		// 					  │ tmp/filter.txt │           tmp/inline.txt            │
-		// 					  │     sec/op     │   sec/op     vs base                │
+		//                    │ tmp/filter.txt │           tmp/inline.txt            │
+		//                    │     sec/op     │   sec/op     vs base                │
 		// Play/secret::board-10      1.417m ± 2%   1.408m ± 1%        ~ (p=0.123 n=10)
 		// Play/secret::brain-10      1.355m ± 1%   1.326m ± 0%   -2.14% (p=0.000 n=10)
 		// Play/secret::mound-10      3.953m ± 4%   2.845m ± 1%  -28.04% (p=0.000 n=10)
@@ -237,7 +234,7 @@ func (s *Speculate) with(words Dictionary) Dictionary {
 }
 
 func (s *Speculate) Apply(words Dictionary) Dictionary {
-	if len(words) <= minimumSpeculation || s.strategy == nil {
+	if len(words) <= s.speculation || s.strategy == nil {
 		return words
 	}
 	with := s.with(words)
@@ -250,5 +247,7 @@ func (s *Speculate) Apply(words Dictionary) Dictionary {
 }
 
 func NewSpeculator(words Dictionary, strategy Strategy) Strategy {
-	return &Speculate{words: words, strategy: strategy}
+	// four words was chosen emperically as the cut off for being useful
+	const speculation = 4
+	return &Speculate{words: words, strategy: strategy, speculation: speculation}
 }

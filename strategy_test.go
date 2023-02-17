@@ -107,6 +107,16 @@ func TestPosition(t *testing.T) {
 	}
 }
 
+type identity struct{}
+
+func (s *identity) String() string {
+	return "identity"
+}
+
+func (s *identity) Apply(words qordle.Dictionary) qordle.Dictionary {
+	return words
+}
+
 func TestSpeculate(t *testing.T) {
 	t.Parallel()
 	for _, tt := range []struct {
@@ -132,6 +142,13 @@ func TestSpeculate(t *testing.T) {
 				"fears", "gears", "hears", "lears",
 				"pears", "wears", "years", "sears"},
 			strategy: new(qordle.Frequency),
+		},
+		{
+			name:     "single letter changes",
+			words:    qordle.Dictionary{"bcdef", "defab"},
+			result:   qordle.Dictionary{"abcde", "abcee", "bbcee", "bccee", "bcdee"},
+			round:    qordle.Dictionary{"abcde", "abcee", "bbcee", "bccee", "bcdee"},
+			strategy: new(identity),
 		},
 		{
 			name:     "one word",
