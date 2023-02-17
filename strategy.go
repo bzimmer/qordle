@@ -173,6 +173,21 @@ func (s *Speculate) with(words Dictionary) Dictionary {
 	for i := 1; i < len(words); i++ {
 		x := s.hamming(words[i-1], words[i])
 		switch {
+		case x == -1:
+			// the words do not have a common index
+			//  the result of moving the check for -1 from after the loop to the head of the loop
+			//
+			// goos: darwin
+			// goarch: arm64
+			// pkg: github.com/bzimmer/qordle
+			// 							  │  tmp/if.txt   │            tmp/case.txt             │
+			// 							  │    sec/op     │   sec/op     vs base                │
+			// Speculate/wordlist::middle-10     4.460µ ± 0%   4.465µ ± 1%        ~ (p=0.255 n=10)
+			// Speculate/wordlist::none-10       95.38µ ± 1%   97.93µ ± 0%   +2.68% (p=0.000 n=10)
+			// Speculate/wordlist::head-10     140.820µ ± 0%   4.386µ ± 0%  -96.89% (p=0.000 n=10)
+			// Speculate/wordlist::tail-10       4.535µ ± 0%   4.545µ ± 0%   +0.23% (p=0.027 n=10)
+			// geomean                           22.83µ        9.662µ       -57.68%
+			return nil
 		case index == -1:
 			// no index has been seen yet
 			index = x
@@ -182,28 +197,39 @@ func (s *Speculate) with(words Dictionary) Dictionary {
 		}
 	}
 
-	if index == -1 {
-		return nil
-	}
-
 	runes := make(map[rune]struct{}, len(words))
 	for i := range words {
 		runes[rune(words[i][index])] = struct{}{}
 	}
 
-	n, next := 0, make(map[int][]string)
-	// filter the main dictionary to words of the same length
-	for _, word := range Filter(s.words, Length(len(words[0]))) {
-		var q int
-		for _, r := range word {
-			if _, ok := runes[r]; ok {
-				q++
+	n, next, length := 0, make(map[int][]string), len(words[0])
+	for _, word := range s.words {
+		// when filtering the main dictionary to words of the same length
+		//  inlining the length check and not using Filter is significantly more performant
+		//
+		// goos: darwin
+		// goarch: arm64
+		// pkg: github.com/bzimmer/qordle
+		// 					  │ tmp/filter.txt │           tmp/inline.txt            │
+		// 					  │     sec/op     │   sec/op     vs base                │
+		// Play/secret::board-10      1.417m ± 2%   1.408m ± 1%        ~ (p=0.123 n=10)
+		// Play/secret::brain-10      1.355m ± 1%   1.326m ± 0%   -2.14% (p=0.000 n=10)
+		// Play/secret::mound-10      3.953m ± 4%   2.845m ± 1%  -28.04% (p=0.000 n=10)
+		// Play/secret::lills-10      1.587m ± 1%   1.595m ± 1%        ~ (p=0.436 n=10)
+		// Play/secret::qwert-10      1.415m ± 1%   1.400m ± 1%        ~ (p=0.063 n=10)
+		// geomean                    1.763m        1.640m        -7.00%
+		if len(word) == length {
+			var q int
+			for _, r := range word {
+				if _, ok := runes[r]; ok {
+					q++
+				}
 			}
-		}
-		if q >= n {
-			// only add words with more information
-			n = q
-			next[n] = append(next[n], word)
+			if q >= n {
+				// only add words with more information
+				n = q
+				next[n] = append(next[n], word)
+			}
 		}
 	}
 

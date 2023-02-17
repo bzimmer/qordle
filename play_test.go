@@ -261,3 +261,26 @@ func TestPlayCommand(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkPlay(b *testing.B) {
+	a := assert.New(b)
+	solutions, err := qordle.Read("solutions")
+	a.NoError(err)
+	dictionary, err := qordle.Read("qordle")
+	a.NoError(err)
+	strategy := qordle.NewSpeculator(dictionary, new(qordle.Frequency))
+
+	game := qordle.NewGame(
+		qordle.WithDictionary(solutions),
+		qordle.WithStrategy(strategy),
+	)
+	for _, secret := range []string{"board", "brain", "mound", "lills", "qwert"} {
+		b.Run("secret::"+secret, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				board, err := game.Play(secret)
+				a.NoError(err)
+				a.Greater(len(board.Rounds), 0)
+			}
+		})
+	}
+}

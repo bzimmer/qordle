@@ -200,3 +200,35 @@ func FuzzSpeculate(f *testing.F) {
 		a.Greater(len(dictionary), 0)
 	})
 }
+
+func BenchmarkSpeculate(b *testing.B) {
+	wordlists := map[string]qordle.Dictionary{
+		"none": {
+			"fears", "gears", "hears", "lears",
+			"pears", "wears", "years", "sears",
+		},
+		"head": {
+			"glyph", "fears", "gears", "hears", "zears",
+			"lears", "pears", "wears", "years", "sears",
+		},
+		"tail": {
+			"fears", "gears", "hears", "lears", "zears",
+			"pears", "wears", "years", "sears", "glyph",
+		},
+		"middle": {
+			"fears", "gears", "hears", "lears", "zears",
+			"pears", "glyph", "years", "sears", "wears",
+		},
+	}
+	a := assert.New(b)
+	solutions, err := qordle.Read("solutions")
+	a.NoError(err)
+	strategy := qordle.NewSpeculator(solutions, new(qordle.Frequency))
+	for key, val := range wordlists {
+		b.Run("wordlist::"+key, func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				a.Greater(len(strategy.Apply(val)), 0)
+			}
+		})
+	}
+}
