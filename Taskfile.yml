@@ -101,7 +101,7 @@ tasks:
       binaries:
         ./dist/qordle,/opt/homebrew/bin/qordle
       options:
-        -S -w solutions -w possible
+        -S -w solutions -w possible -w qordle
       secrets:
         mound board brain lills qwert 12345
     cmds:

@@ -11,17 +11,19 @@ import (
 type FilterFunc func(string) bool
 
 func Filter(words Dictionary, fns ...FilterFunc) Dictionary {
-	res := make([]string, 0)
+	var count int
+	res := make([]string, len(words))
 	for _, word := range words {
 		matches := true
 		for i := 0; matches && i < len(fns); i++ {
 			matches = fns[i](word)
 		}
 		if matches {
-			res = append(res, word)
+			res[count] = word
+			count++
 		}
 	}
-	return res
+	return res[:count]
 }
 
 func NoOp(word string) bool {
