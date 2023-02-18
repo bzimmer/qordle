@@ -7,10 +7,6 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-// minimumSpeculation required to speculate
-// four words was chosen emperically as the cut off for being useful
-const minimumSpeculation int = 4
-
 func NewStrategy(code string) (Strategy, error) {
 	switch code {
 	case "a", "alpha":
@@ -56,6 +52,7 @@ func mkdict(scores map[int][]string) Dictionary {
 		// alpha sort to ensure stability in the output
 		q := scores[ranks[i]]
 		sort.Strings(q)
+		// log.Debug().Int("rank", ranks[i]).Strs("words", q).Msg("mkdict")
 		dict = append(dict, q...)
 	}
 	return dict
@@ -105,12 +102,8 @@ func (s *Frequency) Apply(words Dictionary) Dictionary {
 	freq := make(map[rune]int)
 	for i := range words {
 		w := []rune(words[i])
-		s := make(map[rune]bool, 0)
 		for j := range w {
-			if _, ok := s[w[j]]; !ok {
-				s[w[j]] = true
-				freq[w[j]]++
-			}
+			freq[w[j]]++
 		}
 	}
 
@@ -134,8 +127,9 @@ func (s *Frequency) Apply(words Dictionary) Dictionary {
 
 // Speculate attempts to find a word which eliminates the most letters
 type Speculate struct {
-	words    Dictionary
-	strategy Strategy
+	words       Dictionary
+	strategy    Strategy
+	speculation int
 }
 
 func (s *Speculate) String() string {
@@ -173,6 +167,9 @@ func (s *Speculate) with(words Dictionary) Dictionary {
 	for i := 1; i < len(words); i++ {
 		x := s.hamming(words[i-1], words[i])
 		switch {
+		case x == -1:
+			// the words do not have a common index
+			return nil
 		case index == -1:
 			// no index has been seen yet
 			index = x
@@ -182,28 +179,26 @@ func (s *Speculate) with(words Dictionary) Dictionary {
 		}
 	}
 
-	if index == -1 {
-		return nil
-	}
-
 	runes := make(map[rune]struct{}, len(words))
 	for i := range words {
 		runes[rune(words[i][index])] = struct{}{}
 	}
 
-	n, next := 0, make(map[int][]string)
-	// filter the main dictionary to words of the same length
-	for _, word := range Filter(s.words, Length(len(words[0]))) {
-		var q int
-		for _, r := range word {
-			if _, ok := runes[r]; ok {
-				q++
+	n, next, length := 0, make(map[int][]string), len(words[0])
+	for _, word := range s.words {
+		// only use words of the same length
+		if len(word) == length {
+			var q int
+			for _, r := range word {
+				if _, ok := runes[r]; ok {
+					q++
+				}
 			}
-		}
-		if q >= n {
-			// only add words with more information
-			n = q
-			next[n] = append(next[n], word)
+			if q >= n {
+				// only add words with more information
+				n = q
+				next[n] = append(next[n], word)
+			}
 		}
 	}
 
@@ -211,7 +206,7 @@ func (s *Speculate) with(words Dictionary) Dictionary {
 }
 
 func (s *Speculate) Apply(words Dictionary) Dictionary {
-	if len(words) <= minimumSpeculation || s.strategy == nil {
+	if len(words) <= s.speculation || s.strategy == nil {
 		return words
 	}
 	with := s.with(words)
@@ -224,5 +219,7 @@ func (s *Speculate) Apply(words Dictionary) Dictionary {
 }
 
 func NewSpeculator(words Dictionary, strategy Strategy) Strategy {
-	return &Speculate{words: words, strategy: strategy}
+	// four words was chosen emperically as the cut off for being useful
+	const speculation = 4
+	return &Speculate{words: words, strategy: strategy, speculation: speculation}
 }

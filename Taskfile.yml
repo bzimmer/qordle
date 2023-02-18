@@ -93,3 +93,23 @@ tasks:
         sh: go mod edit -json | jq -r .Module.Path
     cmds:
       - goimports -w -local "{{.Module}}" .
+
+  hyperfine:
+    desc: Run hyperfine
+    deps: [build]
+    vars:
+      binaries:
+        ./dist/qordle,/opt/homebrew/bin/qordle
+      options:
+        -S -w solutions -w possible
+      secrets:
+        mound board brain lills qwert 12345
+    cmds:
+      - |
+        hyperfine -N -w 3 --runs=75 -L binary {{.binaries}} "{binary} play {{.options}} {{.secrets}}"
+
+  profile:
+    desc: Run the profiler
+    cmds:
+      - go test -outputdir {{.DIST}} -cpuprofile cpu.prof -memprofile mem.prof -bench .
+      - go tool pprof -http=":8000" ./qordle.test {{.DIST}}/mem.prof

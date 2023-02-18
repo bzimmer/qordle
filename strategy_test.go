@@ -107,6 +107,16 @@ func TestPosition(t *testing.T) {
 	}
 }
 
+type identity struct{}
+
+func (s *identity) String() string {
+	return "identity"
+}
+
+func (s *identity) Apply(words qordle.Dictionary) qordle.Dictionary {
+	return words
+}
+
 func TestSpeculate(t *testing.T) {
 	t.Parallel()
 	for _, tt := range []struct {
@@ -132,6 +142,13 @@ func TestSpeculate(t *testing.T) {
 				"fears", "gears", "hears", "lears",
 				"pears", "wears", "years", "sears"},
 			strategy: new(qordle.Frequency),
+		},
+		{
+			name:     "single letter changes",
+			words:    qordle.Dictionary{"bcdef", "defab"},
+			result:   qordle.Dictionary{"abcde", "abcee", "bbcee", "bccee", "bcdee"},
+			round:    qordle.Dictionary{"abcde", "abcee", "bbcee", "bccee", "bcdee"},
+			strategy: new(identity),
 		},
 		{
 			name:     "one word",
@@ -199,4 +216,36 @@ func FuzzSpeculate(f *testing.F) {
 				"years", "sears"})
 		a.Greater(len(dictionary), 0)
 	})
+}
+
+func BenchmarkSpeculate(b *testing.B) {
+	wordlists := map[string]qordle.Dictionary{
+		"none": {
+			"fears", "gears", "hears", "lears",
+			"pears", "wears", "years", "sears",
+		},
+		"head": {
+			"glyph", "fears", "gears", "hears", "zears",
+			"lears", "pears", "wears", "years", "sears",
+		},
+		"tail": {
+			"fears", "gears", "hears", "lears", "zears",
+			"pears", "wears", "years", "sears", "glyph",
+		},
+		"middle": {
+			"fears", "gears", "hears", "lears", "zears",
+			"pears", "glyph", "years", "sears", "wears",
+		},
+	}
+	a := assert.New(b)
+	solutions, err := qordle.Read("solutions")
+	a.NoError(err)
+	strategy := qordle.NewSpeculator(solutions, new(qordle.Frequency))
+	for key, val := range wordlists {
+		b.Run("wordlist::"+key, func(b *testing.B) {
+			for n := 0; n < b.N; n++ {
+				a.Greater(len(strategy.Apply(val)), 0)
+			}
+		})
+	}
 }
