@@ -93,3 +93,17 @@ tasks:
         sh: go mod edit -json | jq -r .Module.Path
     cmds:
       - goimports -w -local "{{.Module}}" .
+
+  hyperfine:
+    desc: Run hyperfine
+    deps: [build]
+    vars:
+      options:
+        -S -w qordle
+      secrets:
+        mound board brain lills qwert 12345
+    cmds:
+      - |
+        hyperfine -w 3 --runs=50 \
+          "./dist/qordle play {{.options}} {{.secrets}}" \
+          "/opt/homebrew/bin/qordle play {{.options}} {{.secrets}}"
