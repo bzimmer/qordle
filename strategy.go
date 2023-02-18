@@ -52,6 +52,7 @@ func mkdict(scores map[int][]string) Dictionary {
 		// alpha sort to ensure stability in the output
 		q := scores[ranks[i]]
 		sort.Strings(q)
+		// log.Debug().Int("rank", ranks[i]).Strs("words", q).Msg("mkdict")
 		dict = append(dict, q...)
 	}
 	return dict
@@ -101,12 +102,8 @@ func (s *Frequency) Apply(words Dictionary) Dictionary {
 	freq := make(map[rune]int)
 	for i := range words {
 		w := []rune(words[i])
-		s := make(map[rune]bool, 0)
 		for j := range w {
-			if _, ok := s[w[j]]; !ok {
-				s[w[j]] = true
-				freq[w[j]]++
-			}
+			freq[w[j]]++
 		}
 	}
 
