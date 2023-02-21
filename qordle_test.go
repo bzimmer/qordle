@@ -82,18 +82,33 @@ func run(t *testing.T, tt *harness, cmd func() *cli.Command) {
 			return nil
 		}
 	}
-
 	ctx := context.Background()
 	if tt.context != nil {
 		ctx = tt.context(ctx)
 	}
-	err := app.RunContext(ctx, append([]string{app.Name}, tt.args...))
-	if tt.err == "" {
-		a.NoError(err)
-		return
-	}
-	a.Error(err)
-	if err != nil { // avoids a panic if err is nil
-		a.Contains(err.Error(), tt.err)
-	}
+	var err error
+	defer func() {
+		if r := recover(); r != nil {
+			switch v := r.(type) {
+			case error:
+				if tt.err != "" {
+					a.EqualError(v, tt.err)
+				}
+			case string:
+				if tt.err != "" {
+					a.Equal(v, tt.err)
+				}
+			default:
+				a.FailNowf("unknown failure", "%v", v)
+			}
+			return
+		}
+		switch tt.err {
+		case "":
+			a.NoError(err)
+		default:
+			a.ErrorContains(err, tt.err)
+		}
+	}()
+	err = app.RunContext(ctx, append([]string{app.Name}, tt.args...))
 }

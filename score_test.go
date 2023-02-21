@@ -2,6 +2,7 @@ package qordle_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
 	"testing"
 
@@ -11,12 +12,37 @@ import (
 	"github.com/bzimmer/qordle"
 )
 
+func TestMarks(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+	for _, tt := range []struct {
+		marks qordle.Marks
+		key   int
+	}{
+		{
+			marks: qordle.Marks{qordle.MarkExact, qordle.MarkMiss, qordle.MarkExact, qordle.MarkMisplaced, qordle.MarkMiss},
+			key:   20210,
+		},
+		{
+			marks: qordle.Marks{qordle.MarkMiss, qordle.MarkMiss, qordle.MarkExact, qordle.MarkMisplaced, qordle.MarkMiss},
+			key:   210,
+		},
+	} {
+		tt := tt
+		name := fmt.Sprintf("%v", tt.marks)
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			a.Equal(tt.key, tt.marks.Key())
+		})
+	}
+}
+
 func TestScore(t *testing.T) {
 	t.Parallel()
 	for _, tt := range []struct {
 		name, secret    string
 		guesses, scores []string
-		err             bool
+		panic           bool
 	}{
 		{
 			name:    "simple",
@@ -28,7 +54,7 @@ func TestScore(t *testing.T) {
 			name:    "different lengths",
 			secret:  "humph",
 			guesses: []string{"table", "tables"},
-			err:     true,
+			panic:   true,
 		},
 		{
 			name:    "empty",
@@ -44,17 +70,16 @@ func TestScore(t *testing.T) {
 		},
 	} {
 		tt := tt
-		t.Run(tt.secret, func(t *testing.T) {
+		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
-			scores, err := qordle.Score(tt.secret, tt.guesses...)
-			if tt.err {
-				a.Error(err)
-				a.Nil(scores)
+			if tt.panic {
+				a.Panics(func() {
+					qordle.Score(tt.secret, tt.guesses...)
+				})
 				return
 			}
-			a.NoError(err)
-			a.Equal(tt.scores, scores)
+			a.Equal(tt.scores, qordle.Score(tt.secret, tt.guesses...))
 		})
 	}
 }

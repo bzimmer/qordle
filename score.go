@@ -1,7 +1,6 @@
 package qordle
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -9,48 +8,90 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-const yellow = '.'
+type Mark uint8
+type Marks []Mark
 
-func Score(secret string, guesses ...string) ([]string, error) {
+const (
+	yellow = '.'
+
+	MarkMiss      Mark = 0
+	MarkMisplaced Mark = 1
+	MarkExact     Mark = 2
+)
+
+func (m Marks) Key() int {
+	i, n := 0, 0
+	for x := len(m) - 1; x >= 0; x-- {
+		switch i {
+		case 0:
+			n = int(m[x])
+			i = 10
+		default:
+			n += (i * int(m[x]))
+			i *= 10
+		}
+	}
+	return n
+}
+
+func Check(secret string, guesses ...string) []Marks {
 	secret = strings.ToLower(secret)
-	scores := make([]string, len(guesses))
+	scores := make([]Marks, len(guesses))
 	for n, guess := range guesses {
 		if len(secret) != len(guess) {
 			log.Error().Str("secret", secret).Str("guess", guess).Msg("score")
-			return nil, errors.New("secret and guess lengths do not match")
+			panic("secret and guess lengths do not match")
 		}
-		pass := make(map[string]int, len(guess))
 		guess = strings.ToLower(guess)
-		score := make([]string, len(secret))
+		score := make(Marks, len(secret))
+		round := make(map[string]int, len(secret))
 		// first pass checks for exact matches
 		for i := range guess {
-			m := string(guess[i])
 			switch {
 			case secret[i] == guess[i]:
-				score[i] = strings.ToUpper(m)
+				score[i] = MarkExact
 			default:
-				pass[string(secret[i])]++
+				round[string(secret[i])]++
 			}
 		}
-		// second pass checks for inexact matches
+		// second pass checks for misplaced matches
 		for i := range guess {
-			if score[i] != "" {
-				continue
-			}
-			m := string(guess[i])
-			switch val := pass[m]; val {
-			case 0:
-				// this letter doesn't exist in the secret
-				score[i] = m
-			default:
-				pass[m]--
-				score[i] = fmt.Sprintf("%c%s", yellow, m)
+			if score[i] != MarkExact {
+				m := string(guess[i])
+				switch val := round[m]; val {
+				case 0:
+					// this letter doesn't exist in the secret
+					score[i] = MarkMiss
+				default:
+					round[m]--
+					score[i] = MarkMisplaced
+				}
 			}
 		}
-		// construct the score
-		scores[n] = strings.Join(score, "")
+		scores[n] = score
 	}
-	return scores, nil
+	return scores
+}
+
+func Score(secret string, guesses ...string) []string {
+	checks := Check(secret, guesses...)
+	scores := make([]string, len(checks))
+	for i := range checks {
+		var pattern string
+		score, guess := checks[i], guesses[i]
+		for j := range score {
+			switch score[j] {
+			case MarkExact:
+				pattern += strings.ToUpper(string(guess[j]))
+			case MarkMiss:
+				pattern += strings.ToLower(string(guess[j]))
+			case MarkMisplaced:
+				pattern += fmt.Sprintf("%c%s", yellow, strings.ToLower(string(guess[j])))
+			}
+		}
+		scores[i] = pattern
+	}
+	return scores
 }
 
 func CommandScore() *cli.Command {
@@ -59,10 +100,7 @@ func CommandScore() *cli.Command {
 		Usage:     "score the guesses against the secret",
 		ArgsUsage: "<secret> <guess> [, <guess>]",
 		Action: func(c *cli.Context) error {
-			scores, err := Score(c.Args().First(), c.Args().Tail()...)
-			if err != nil {
-				return err
-			}
+			scores := Score(c.Args().First(), c.Args().Tail()...)
 			return Runtime(c).Encoder.Encode(scores)
 		},
 	}

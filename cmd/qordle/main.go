@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"os"
 	"time"
@@ -75,8 +76,22 @@ func main() {
 			qordle.CommandWordlists(),
 		},
 	}
-	if err := app.RunContext(context.Background(), os.Args); err != nil {
-		os.Exit(1)
-	}
-	os.Exit(0)
+	var err error
+	defer func() {
+		if r := recover(); r != nil {
+			switch v := r.(type) {
+			case error:
+				log.Error().Err(v).Msg(app.Name)
+			case string:
+				log.Error().Err(errors.New(v)).Msg(app.Name)
+			default:
+			}
+			os.Exit(1)
+		}
+		if err != nil {
+			os.Exit(1)
+		}
+		os.Exit(0)
+	}()
+	err = app.RunContext(context.Background(), os.Args)
 }

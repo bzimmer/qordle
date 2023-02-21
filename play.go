@@ -1,11 +1,11 @@
 package qordle
 
 import (
+	"errors"
 	"io"
 	"time"
 
 	"github.com/cheggaaa/pb/v3"
-	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 )
 
@@ -105,10 +105,7 @@ func (g *Game) play(dictionary Dictionary, secret string, words []string) (*Scor
 	}
 	n := len(secret) * r
 	for len(scoreboard.Rounds) < n {
-		scores, err := Score(secret, words...)
-		if err != nil {
-			return nil, err
-		}
+		scores := Score(secret, words...)
 		guesses, err := Guesses(scores...)
 		if err != nil {
 			return nil, err
@@ -174,7 +171,7 @@ func play(c *cli.Context) error {
 		bar.Increment()
 		board, err = game.Play(secrets[i])
 		if err != nil {
-			return errors.Wrapf(err, "secret: %s ", secrets[i])
+			return err
 		}
 		if err = enc.Encode(board); err != nil {
 			return err
