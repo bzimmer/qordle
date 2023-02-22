@@ -37,6 +37,77 @@ func TestAlpha(t *testing.T) {
 	}
 }
 
+func TestBigram(t *testing.T) {
+	t.Parallel()
+	for _, tt := range []struct {
+		name          string
+		words, result qordle.Dictionary
+	}{
+		{
+			name:   "simple",
+			words:  qordle.Dictionary{"easle", "fause", "false", "haste", "halse"},
+			result: qordle.Dictionary{"haste", "halse", "easle", "false", "fause"},
+		},
+		{
+			name:   "one letter word",
+			words:  qordle.Dictionary{"a", "b"},
+			result: qordle.Dictionary{"a", "b"},
+		},
+	} {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			a := assert.New(t)
+			s := new(qordle.Bigram)
+			dictionary := s.Apply(tt.words)
+			a.Equal(tt.result, dictionary)
+			a.Equal("bigram", s.String())
+		})
+	}
+}
+
+func TestChain(t *testing.T) {
+	t.Parallel()
+	for _, tt := range []struct {
+		name          string
+		strategies    []qordle.Strategy
+		words, result qordle.Dictionary
+	}{
+		{
+			name:   "no strategies",
+			words:  qordle.Dictionary{"easle", "false", "fause", "halse", "haste"},
+			result: qordle.Dictionary{"easle", "false", "fause", "halse", "haste"},
+		},
+		{
+			name:       "one strategy",
+			strategies: []qordle.Strategy{new(qordle.Alpha)},
+			words:      qordle.Dictionary{"maths", "sport", "brain", "raise"},
+			result:     qordle.Dictionary{"brain", "maths", "raise", "sport"},
+		},
+		{
+			name:   "empty words",
+			words:  qordle.Dictionary{},
+			result: qordle.Dictionary{},
+		},
+		{
+			name:       "position & frequency",
+			strategies: []qordle.Strategy{new(qordle.Position), new(qordle.Frequency)},
+			words:      qordle.Dictionary{"maths", "sport", "brain", "raise"},
+			result:     qordle.Dictionary{"raise", "maths", "brain", "sport"},
+		},
+	} {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			a := assert.New(t)
+			s := qordle.NewChain(tt.strategies...)
+			dictionary := s.Apply(tt.words)
+			a.Equal(tt.result, dictionary)
+			a.Equal("chain", s.String())
+		})
+	}
+}
+
 func TestFrequency(t *testing.T) {
 	t.Parallel()
 	for _, tt := range []struct {
@@ -192,7 +263,7 @@ func TestSpeculate(t *testing.T) {
 			dictionary := s.Apply(tt.round)
 			a.Equal(tt.result, dictionary)
 			if tt.strategy == nil {
-				a.Equal("speculate;", s.String())
+				a.Equal("speculate", s.String())
 			} else {
 				a.Equal("speculate;"+tt.strategy.String(), s.String())
 			}
@@ -240,12 +311,29 @@ func BenchmarkSpeculate(b *testing.B) {
 	a := assert.New(b)
 	solutions, err := qordle.Read("solutions")
 	a.NoError(err)
-	strategy := qordle.NewSpeculator(solutions, new(qordle.Frequency))
-	for key, val := range wordlists {
-		b.Run("wordlist::"+key, func(b *testing.B) {
-			for n := 0; n < b.N; n++ {
-				a.Greater(len(strategy.Apply(val)), 0)
-			}
-		})
+	frequency, position := new(qordle.Frequency), new(qordle.Position)
+	chain := qordle.NewChain(frequency, position)
+	for _, strategy := range []qordle.Strategy{frequency, position, chain} {
+		strategy = qordle.NewSpeculator(solutions, strategy)
+		for key, val := range wordlists {
+			b.Run("wordlist::"+strategy.String()+"::"+key, func(b *testing.B) {
+				for n := 0; n < b.N; n++ {
+					a.Greater(len(strategy.Apply(val)), 0)
+				}
+			})
+		}
 	}
+}
+
+func BenchmarkChain(b *testing.B) {
+	a := assert.New(b)
+	solutions, err := qordle.Read("solutions")
+	a.NoError(err)
+	frequency, position := new(qordle.Frequency), new(qordle.Position)
+	strategy := qordle.NewChain(frequency, position)
+	b.Run(strategy.String(), func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			a.Equal(len(solutions), len(strategy.Apply(solutions)))
+		}
+	})
 }

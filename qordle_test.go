@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -43,6 +44,24 @@ func newTestApp(tt *harness, cmd *cli.Command) *cli.App {
 				qordle.RuntimeKey: &qordle.Rt{
 					Encoder: json.NewEncoder(c.App.Writer),
 					Start:   time.Now(),
+					Strategy: func() func(string) (qordle.Strategy, error) {
+						trie := &qordle.Trie[qordle.Strategy]{}
+						position := new(qordle.Position)
+						frequency := new(qordle.Frequency)
+						for _, strategy := range []qordle.Strategy{
+							new(qordle.Alpha), position, frequency,
+							qordle.NewChain(frequency, position),
+						} {
+							trie.Add(strategy.String(), strategy)
+						}
+						return func(code string) (qordle.Strategy, error) {
+							strategy := trie.Value(code)
+							if strategy != nil {
+								return strategy, nil
+							}
+							return nil, fmt.Errorf("unknown strategy `%s`", code)
+						}
+					}(),
 				},
 			}
 			return nil

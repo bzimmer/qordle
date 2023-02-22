@@ -137,7 +137,7 @@ func play(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	strategy, err := NewStrategy(c.String("strategy"))
+	strategy, err := Runtime(c).Strategy((c.String("strategy")))
 	if err != nil {
 		return err
 	}
@@ -184,38 +184,28 @@ func CommandPlay() *cli.Command {
 	return &cli.Command{
 		Name:  "play",
 		Usage: "play wordle automatically",
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name:    "start",
-				Aliases: []string{"t"},
-				Value:   "",
+		Flags: append(
+			[]cli.Flag{
+				&cli.StringFlag{
+					Name:    "start",
+					Aliases: []string{"t"},
+					Value:   "",
+				},
+				&cli.BoolFlag{
+					Name:    "progress",
+					Aliases: []string{"B"},
+					Usage:   "display a progress bar",
+					Value:   false,
+				},
+				&cli.IntFlag{
+					Name:    "rounds",
+					Aliases: []string{"r"},
+					Usage:   "max rounds not to exceed `rounds` * len(secret)",
+					Value:   rounds,
+				},
 			},
-			&cli.StringFlag{
-				Name:    "strategy",
-				Aliases: []string{"s"},
-				Usage:   "use the specified strategy",
-				Value:   "frequency",
-			},
-			&cli.BoolFlag{
-				Name:    "speculate",
-				Aliases: []string{"S"},
-				Usage:   "speculate if necessary",
-				Value:   false,
-			},
-			&cli.BoolFlag{
-				Name:    "progress",
-				Aliases: []string{"B"},
-				Usage:   "display a progress bar",
-				Value:   false,
-			},
-			&cli.IntFlag{
-				Name:    "rounds",
-				Aliases: []string{"r"},
-				Usage:   "max rounds not to exceed `rounds` * len(secret)",
-				Value:   rounds,
-			},
-			wordlistFlag(),
-		},
+			append(wordlistFlags(), strategyFlags()...)...,
+		),
 		Action: play,
 	}
 }
