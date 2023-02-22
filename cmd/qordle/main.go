@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -33,12 +34,6 @@ func main() {
 				Usage: "disable color output",
 				Value: false,
 			},
-		},
-		ExitErrHandler: func(c *cli.Context, err error) {
-			if err == nil {
-				return
-			}
-			log.Error().Stack().Err(err).Msg(c.App.Name)
 		},
 		Before: func(c *cli.Context) error {
 			level := zerolog.InfoLevel
@@ -85,10 +80,12 @@ func main() {
 			case string:
 				log.Error().Err(errors.New(v)).Msg(app.Name)
 			default:
+				log.Error().Err(fmt.Errorf("%v", v)).Msg(app.Name)
 			}
 			os.Exit(1)
 		}
 		if err != nil {
+			log.Error().Err(err).Msg(app.Name)
 			os.Exit(1)
 		}
 		os.Exit(0)

@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/pkg/errors"
 	"github.com/urfave/cli/v2"
 )
 
@@ -62,12 +61,12 @@ func today(c *cli.Context) error {
 			dec := json.NewDecoder(strings.NewReader(res[i][1]))
 			err = dec.Decode(&bees)
 			if err != nil {
-				err = errors.Wrap(err, "failed to decode")
+				err = fmt.Errorf("failed to decode %w", err)
 				return false
 			}
 			err = enc.Encode(bees.Today)
 			if err != nil {
-				err = errors.Wrap(err, "failed to encode")
+				err = fmt.Errorf("failed to encode %w", err)
 				return false
 			}
 		}
