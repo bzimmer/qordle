@@ -64,7 +64,7 @@ var _ = map[rune]map[int]float64{
 
 // bigram frequencies
 // all bigrams with zero frequencies are omitted
-var bigrams = map[string]float64{
+var bigrams = map[string]float64{ //nolint:gochecknoglobals
 	"aa": 0.003,
 	"ba": 0.146,
 	"ca": 0.538,
