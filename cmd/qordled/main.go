@@ -27,10 +27,8 @@ func play(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	strategy, err := qordle.NewStrategy(c.QueryParam("strategy"))
-	if err != nil {
-		return err
-	}
+	strategy := qordle.NewChain(new(qordle.Frequency), new(qordle.Position))
+	strategy = qordle.NewSpeculator(dictionary, strategy)
 	secret := c.Param("secret")
 	game := qordle.NewGame(
 		qordle.WithDictionary(dictionary),
@@ -48,10 +46,7 @@ func suggest(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	strategy, err := qordle.NewStrategy(c.QueryParam("strategy"))
-	if err != nil {
-		return err
-	}
+	strategy := qordle.NewChain(new(qordle.Frequency), new(qordle.Position))
 	strategy = qordle.NewSpeculator(dictionary, strategy)
 	guesses, err := qordle.Guesses(strings.Split(c.Param("guesses"), " ")...)
 	if err != nil {

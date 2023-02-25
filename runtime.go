@@ -22,6 +22,8 @@ type Rt struct {
 	Grab Grab
 	// Start time of the execution
 	Start time.Time
+	// Strategy returns the strategy for the code
+	Strategy func(string) (Strategy, error)
 }
 
 // Encoder encodes a struct to a specific format

@@ -4,42 +4,15 @@ set -eo pipefail
 
 repo=$(git rev-parse --show-toplevel)
 
-games=$(
+strategies=(frequency position chain bigram)
+for strategy in ${strategies}
+do
+    print -P "%F{magenta}\nRunning {$strategy} strategy...%f\n" 1>&2
     cat $repo/data/possible.txt |
-    $repo/dist/qordle play -B -S --start "${1:-"brain"}" |
+    $repo/dist/qordle play -B -S -s $strategy |
     jq -r -s '
-        map([.secret, (.rounds|length), (.rounds|last|.success), (.rounds|last|.dictionary), .elapsed])
-        | .[] 
+        map([.secret, .strategy, (.rounds|length), (.rounds|last|.success), (.rounds|last|.dictionary), .elapsed])
+        | .[]
         | @csv
-    '
-)
-
-print -P "%F{magenta}\nFailed to find any solution!%f\n"
-csvq -c --no-header '
-    with
-        games as
-        (
-            select
-                c1 as secret, c2 as rounds, c3 as success, c4 as dictionary, c5 as elapsed
-            from
-                stdin
-        )
-    select
-        secret, rounds, success, elapsed from games where success is false
-' <<< $games
-
-print -P "%F{magenta}\nFailed to find the solution in six rounds!%f\n"
-csvq -c --no-header '
-    with
-        games as
-        (
-            select
-                c1 as secret, c2 as rounds, c3 as success, c4 as dictionary, c5 as elapsed
-            from
-                stdin
-        )
-    select
-        secret, rounds, success, elapsed from games where rounds > 6
-    order by
-        rounds, secret
-' <<< $games
+    ' >> $repo/dist/regression.csv
+done

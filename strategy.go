@@ -1,22 +1,28 @@
 package qordle
 
 import (
-	"fmt"
 	"sort"
+	"sync"
 
 	"github.com/rs/zerolog/log"
+	"github.com/urfave/cli/v2"
 )
 
-func NewStrategy(code string) (Strategy, error) {
-	switch code {
-	case "a", "alpha":
-		return new(Alpha), nil
-	case "p", "pos", "position":
-		return new(Position), nil
-	case "", "f", "freq", "frequency":
-		return new(Frequency), nil
+func strategyFlags() []cli.Flag {
+	return []cli.Flag{
+		&cli.StringFlag{
+			Name:    "strategy",
+			Aliases: []string{"s"},
+			Usage:   "use the specified strategy",
+			Value:   "frequency",
+		},
+		&cli.BoolFlag{
+			Name:    "speculate",
+			Aliases: []string{"S"},
+			Usage:   "speculate if necessary",
+			Value:   false,
+		},
 	}
-	return nil, fmt.Errorf("unknown strategy `%s`", code)
 }
 
 type Strategy interface {
@@ -52,13 +58,31 @@ func mkdict(scores map[int][]string) Dictionary {
 		// alpha sort to ensure stability in the output
 		q := scores[ranks[i]]
 		sort.Strings(q)
-		// log.Debug().Int("rank", ranks[i]).Strs("words", q).Msg("mkdict")
 		dict = append(dict, q...)
 	}
 	return dict
 }
 
-// Position orders words by their letter's optimal position
+func mkdictf(scores map[string]float64, less func(i, j float64) bool) Dictionary {
+	type tuple struct {
+		word string
+		rank float64
+	}
+	tuples := make([]tuple, 0, len(scores))
+	for word, rank := range scores {
+		tuples = append(tuples, tuple{word, rank})
+	}
+	sort.Slice(tuples, func(i, j int) bool {
+		return less(tuples[i].rank, tuples[j].rank)
+	})
+	words := make(Dictionary, len(tuples))
+	for i := range tuples {
+		words[i] = tuples[i].word
+	}
+	return words
+}
+
+// Position sorts the word list be letter position
 type Position struct{}
 
 func (s *Position) String() string {
@@ -90,7 +114,7 @@ func (s *Position) Apply(words Dictionary) Dictionary {
 	return mkdict(scores)
 }
 
-// Frequency orders the dictionary by words containing the most frequent letters
+// Frequency sorts the wordlist by letter frequency
 type Frequency struct{}
 
 func (s *Frequency) String() string {
@@ -101,9 +125,9 @@ func (s *Frequency) Apply(words Dictionary) Dictionary {
 	// find the most common letters in the word list
 	freq := make(map[rune]int)
 	for i := range words {
-		w := []rune(words[i])
-		for j := range w {
-			freq[w[j]]++
+		word := []rune(words[i])
+		for j := range word {
+			freq[word[j]]++
 		}
 	}
 
@@ -112,10 +136,10 @@ func (s *Frequency) Apply(words Dictionary) Dictionary {
 	for i, word := range words {
 		n := 0
 		word := []rune(word)
-		s := make(map[rune]bool, 0)
+		s := make(map[rune]struct{}, len(word))
 		for j := range word {
 			if _, ok := s[word[j]]; !ok {
-				s[word[j]] = true
+				s[word[j]] = struct{}{}
 				n += freq[word[j]]
 			}
 		}
@@ -123,6 +147,84 @@ func (s *Frequency) Apply(words Dictionary) Dictionary {
 	}
 
 	return mkdict(scores)
+}
+
+// Bigram sorts the dictionary by the bigram frequency of the word
+type Bigram struct{}
+
+func (s *Bigram) String() string {
+	return "bigram"
+}
+
+func (s *Bigram) Apply(words Dictionary) Dictionary {
+	var i int
+	var val float64
+	res := make(map[string]float64, len(words))
+	for _, word := range words {
+		switch n := len(word); n {
+		case 0, 1:
+		default:
+			i, val = 0, 0.0
+			for i+2 < n {
+				val += bigrams[word[i:i+2]]
+				i++
+			}
+			res[word] = val
+		}
+	}
+	if len(res) == 0 {
+		return words
+	}
+	return mkdictf(res, func(i, j float64) bool {
+		return i > j
+	})
+}
+
+// Chain chains multiple strategies to sort the wordlist
+type Chain struct {
+	strategies []Strategy
+}
+
+func (s *Chain) String() string {
+	return "chain"
+}
+
+func (s *Chain) Apply(words Dictionary) Dictionary {
+	switch n := len(s.strategies); n {
+	case 0:
+		return words
+	case 1:
+		return s.strategies[0].Apply(words)
+	}
+
+	var wg sync.WaitGroup
+	wordc := make(chan Dictionary, len(s.strategies))
+	for i := range s.strategies {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			wordc <- s.strategies[i].Apply(words)
+		}(i)
+	}
+	go func() {
+		defer close(wordc)
+		wg.Wait()
+	}()
+
+	n := float64(len(words))
+	res := make(map[string]float64, len(words))
+	for w := range wordc {
+		for i, w := range w {
+			res[w] += float64(i) / n
+		}
+	}
+	return mkdictf(res, func(i, j float64) bool {
+		return i < j
+	})
+}
+
+func NewChain(strategies ...Strategy) Strategy {
+	return &Chain{strategies: strategies}
 }
 
 // Speculate attempts to find a word which eliminates the most letters
@@ -134,7 +236,7 @@ type Speculate struct {
 
 func (s *Speculate) String() string {
 	if s.strategy == nil {
-		return "speculate;"
+		return "speculate"
 	}
 	return "speculate;" + s.strategy.String()
 }

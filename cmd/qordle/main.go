@@ -57,6 +57,29 @@ func main() {
 					Grab:    &http.Client{Timeout: 2 * time.Second},
 					Encoder: json.NewEncoder(c.App.Writer),
 					Start:   time.Now(),
+					Strategy: func() func(string) (qordle.Strategy, error) {
+						trie := &qordle.Trie[qordle.Strategy]{}
+						alpha := new(qordle.Alpha)
+						bigram := new(qordle.Bigram)
+						position := new(qordle.Position)
+						frequency := new(qordle.Frequency)
+						for _, strategy := range []qordle.Strategy{
+							alpha,
+							bigram,
+							frequency,
+							position,
+							qordle.NewChain(frequency, position),
+						} {
+							trie.Add(strategy.String(), strategy)
+						}
+						return func(code string) (qordle.Strategy, error) {
+							strategy := trie.Value(code)
+							if strategy != nil {
+								return strategy, nil
+							}
+							return nil, fmt.Errorf("unknown strategy `%s`", code)
+						}
+					}(),
 				},
 			}
 
@@ -68,6 +91,7 @@ func main() {
 			qordle.CommandPlay(),
 			qordle.CommandScore(),
 			qordle.CommandSuggest(),
+			qordle.CommandVersion(),
 			qordle.CommandWordlists(),
 		},
 	}

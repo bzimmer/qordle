@@ -17,35 +17,35 @@ import (
 func TestGame(t *testing.T) {
 	t.Parallel()
 	for _, tt := range []struct {
-		name, start, secret       string
-		strategy, errStrategy     string
-		dictionary, errDictionary string
+		name, start, secret, errStrategy string
+		dictionary, errDictionary        string
+		strategy                         qordle.Strategy
 	}{
 		{
 			name:       "no startng word",
 			secret:     "shine",
-			strategy:   "frequency",
+			strategy:   new(qordle.Frequency),
 			dictionary: "solutions",
 		},
 		{
 			name:       "starting word",
 			start:      "soare",
 			secret:     "shine",
-			strategy:   "frequency",
+			strategy:   new(qordle.Frequency),
 			dictionary: "solutions",
 		},
 		{
 			name:       "simple with qordle dictionary",
 			start:      "soare",
 			secret:     "shine",
-			strategy:   "frequency",
+			strategy:   new(qordle.Frequency),
 			dictionary: "qordle",
 		},
 		{
 			name:          "empty dictionary",
 			start:         "soare",
 			secret:        "train",
-			strategy:      "frequency",
+			strategy:      new(qordle.Frequency),
 			errDictionary: "empty dictionary",
 		},
 		{
@@ -60,15 +60,7 @@ func TestGame(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
-			a.NotEqual(tt.strategy, tt.errStrategy)
-			a.NotEqual(tt.dictionary, tt.errDictionary)
 			var err error
-			var st qordle.Strategy
-			if tt.strategy != "" {
-				st, err = qordle.NewStrategy(tt.strategy)
-				a.NoError(err)
-				a.NotNil(st)
-			}
 			var dt qordle.Dictionary
 			if tt.dictionary != "" {
 				dt, err = qordle.Read(tt.dictionary)
@@ -76,7 +68,7 @@ func TestGame(t *testing.T) {
 				a.NotNil(dt)
 			}
 			game := qordle.NewGame(
-				qordle.WithStrategy(st),
+				qordle.WithStrategy(tt.strategy),
 				qordle.WithDictionary(dt),
 				qordle.WithStart(tt.start))
 			scoreboard, err := game.Play(tt.secret)

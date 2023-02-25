@@ -35,51 +35,6 @@ func bm(word string) *bitmap.Bitmap {
 	return m
 }
 
-type Trie struct {
-	word     bool
-	children map[rune]*Trie
-}
-
-func NewTrie() *Trie {
-	return new(Trie)
-}
-
-func (trie *Trie) Add(word string) {
-	node := trie
-	for _, r := range strings.ToLower(word) {
-		child := node.children[r]
-		if child == nil {
-			if node.children == nil {
-				node.children = make(map[rune]*Trie)
-			}
-			child = new(Trie)
-			node.children[r] = child
-		}
-		node = child
-	}
-	node.word = true
-}
-
-func (trie *Trie) Node(word string) *Trie {
-	node := trie
-	for _, r := range word {
-		child := node.children[r]
-		if child == nil {
-			return nil
-		}
-		node = child
-	}
-	return node
-}
-
-func (trie *Trie) Prefix() bool {
-	return trie != nil && len(trie.children) > 0
-}
-
-func (trie *Trie) Word() bool {
-	return trie != nil && trie.word
-}
-
 type Box struct {
 	min   int // minimum word length to be a solution
 	max   int // maximum word chain length to be a solution
@@ -121,7 +76,7 @@ func NewBox(opts ...BoxOption) *Box {
 	return box
 }
 
-func (box *Box) words(trie *Trie, prefix string, side int) []string {
+func (box *Box) words(trie *Trie[any], prefix string, side int) []string {
 	var s []string
 	for i := 0; i < len(box.sides); i++ {
 		if i == side {
@@ -143,7 +98,7 @@ func (box *Box) words(trie *Trie, prefix string, side int) []string {
 	return s
 }
 
-func (box *Box) Words(trie *Trie) []string {
+func (box *Box) Words(trie *Trie[any]) []string {
 	var s []string
 	for i := 0; i < len(box.sides); i++ {
 		for j := 0; j < len(box.sides[i]); j++ {
@@ -247,7 +202,7 @@ func box(c *cli.Context) (*Box, error) {
 		WithMaxSolutionLength(c.Int("max"))), nil
 }
 
-func trie(c *cli.Context) (int, *Trie, error) {
+func trie(c *cli.Context) (int, *Trie[any], error) {
 	defer func(t time.Time) {
 		log.Info().Dur("elapsed", time.Since(t)).Msg("build trie")
 	}(time.Now())
@@ -255,9 +210,9 @@ func trie(c *cli.Context) (int, *Trie, error) {
 	if err != nil {
 		return 0, nil, err
 	}
-	trie := NewTrie()
+	trie := &Trie[any]{}
 	for i := range dictionary {
-		trie.Add(dictionary[i])
+		trie.Add(dictionary[i], nil)
 	}
 	return len(dictionary), trie, nil
 }
@@ -266,24 +221,26 @@ func CommandLetterBox() *cli.Command {
 	return &cli.Command{
 		Name:  "letterbox",
 		Usage: "play letterbox",
-		Flags: []cli.Flag{
-			&cli.IntFlag{
-				Name:  "min",
-				Usage: "minimum word size",
-				Value: 3,
+		Flags: append(
+			[]cli.Flag{
+				&cli.IntFlag{
+					Name:  "min",
+					Usage: "minimum word size",
+					Value: 3,
+				},
+				&cli.IntFlag{
+					Name:  "max",
+					Usage: "maximum solution length",
+					Value: 2,
+				},
+				&cli.IntFlag{
+					Name:  "concurrent",
+					Usage: "number of cpus to use for concurrent solving",
+					Value: sys.NumCPU(),
+				},
 			},
-			&cli.IntFlag{
-				Name:  "max",
-				Usage: "maximum solution length",
-				Value: 2,
-			},
-			&cli.IntFlag{
-				Name:  "concurrent",
-				Usage: "number of cpus to use for concurrent solving",
-				Value: sys.NumCPU(),
-			},
-			wordlistFlag(),
-		},
+			wordlistFlags()...,
+		),
 		Action: func(c *cli.Context) error {
 			defer func(t time.Time) {
 				log.Info().Dur("elapsed", time.Since(t)).Msg(c.Command.Name)

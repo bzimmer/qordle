@@ -12,45 +12,35 @@ func CommandSuggest() *cli.Command {
 		Name:        "suggest",
 		Usage:       "suggest the next guess",
 		Description: "suggest the next guess",
-		Flags: []cli.Flag{
-			&cli.IntFlag{
-				Name:  "length",
-				Usage: "word length",
-				Value: 5,
+		Flags: append(
+			[]cli.Flag{
+				&cli.IntFlag{
+					Name:  "length",
+					Usage: "word length",
+					Value: 5,
+				},
+				&cli.StringFlag{
+					Name:  "hits",
+					Usage: "letters in the word",
+				},
+				&cli.StringFlag{
+					Name:  "misses",
+					Usage: "letters not in the word",
+				},
+				&cli.StringFlag{
+					Name:  "pattern",
+					Usage: "match against a known pattern (use '.' for all unknown letters)",
+				},
 			},
-			&cli.StringFlag{
-				Name:  "hits",
-				Usage: "letters in the word",
-			},
-			&cli.StringFlag{
-				Name:  "misses",
-				Usage: "letters not in the word",
-			},
-			&cli.StringFlag{
-				Name:  "pattern",
-				Usage: "match against a known pattern (use '.' for all unknown letters)",
-			},
-			&cli.StringFlag{
-				Name:    "strategy",
-				Aliases: []string{"s"},
-				Usage:   "use the specified strategy",
-				Value:   "frequency",
-			},
-			&cli.BoolFlag{
-				Name:    "speculate",
-				Aliases: []string{"S"},
-				Usage:   "speculate if necessary",
-				Value:   false,
-			},
-			wordlistFlag(),
-		},
+			append(wordlistFlags(), strategyFlags()...)...,
+		),
 		Action: func(c *cli.Context) error {
 			t := time.Now()
 			dictionary, err := wordlists(c, "possible", "solutions")
 			if err != nil {
 				return err
 			}
-			strategy, err := NewStrategy(c.String("strategy"))
+			strategy, err := Runtime(c).Strategy((c.String("strategy")))
 			if err != nil {
 				return err
 			}
