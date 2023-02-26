@@ -44,7 +44,6 @@ func prepare(c *cli.Context, wordlist ...string) (Dictionary, Strategy, error) {
 	var strategy Strategy
 	strategies := c.StringSlice("strategy")
 	switch n := len(strategies); n {
-	case 0:
 	case 1:
 		strategy, err = Runtime(c).Strategy(strategies[0])
 		if err != nil {
