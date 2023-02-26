@@ -133,16 +133,9 @@ func (g *Game) play(dictionary Dictionary, secret string, words []string) (*Scor
 }
 
 func play(c *cli.Context) error {
-	dictionary, err := wordlists(c, "possible", "solutions")
+	dictionary, strategy, err := prepare(c, "possible", "solutions")
 	if err != nil {
 		return err
-	}
-	strategy, err := Runtime(c).Strategy((c.String("strategy")))
-	if err != nil {
-		return err
-	}
-	if c.Bool("speculate") {
-		strategy = NewSpeculator(dictionary, strategy)
 	}
 	secrets := c.Args().Slice()
 	if len(secrets) == 0 {

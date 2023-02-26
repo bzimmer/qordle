@@ -1,6 +1,7 @@
 package qordle_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -90,7 +91,7 @@ func TestChain(t *testing.T) {
 			result: qordle.Dictionary{},
 		},
 		{
-			name:       "position & frequency",
+			name:       "position and frequency",
 			strategies: []qordle.Strategy{new(qordle.Position), new(qordle.Frequency)},
 			words:      qordle.Dictionary{"maths", "sport", "brain", "raise"},
 			result:     qordle.Dictionary{"raise", "maths", "brain", "sport"},
@@ -103,7 +104,7 @@ func TestChain(t *testing.T) {
 			s := qordle.NewChain(tt.strategies...)
 			dictionary := s.Apply(tt.words)
 			a.Equal(tt.result, dictionary)
-			a.Equal("chain", s.String())
+			a.Contains(s.String(), "chain")
 		})
 	}
 }
@@ -265,7 +266,8 @@ func TestSpeculate(t *testing.T) {
 			if tt.strategy == nil {
 				a.Equal("speculate", s.String())
 			} else {
-				a.Equal("speculate;"+tt.strategy.String(), s.String())
+				name := fmt.Sprintf("speculate{%s}", tt.strategy.String())
+				a.Equal(name, s.String())
 			}
 		})
 	}

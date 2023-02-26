@@ -1,7 +1,9 @@
 package qordle
 
 import (
+	"fmt"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/rs/zerolog/log"
@@ -10,11 +12,11 @@ import (
 
 func strategyFlags() []cli.Flag {
 	return []cli.Flag{
-		&cli.StringFlag{
+		&cli.StringSliceFlag{
 			Name:    "strategy",
 			Aliases: []string{"s"},
 			Usage:   "use the specified strategy",
-			Value:   "frequency",
+			Value:   cli.NewStringSlice("frequency"),
 		},
 		&cli.BoolFlag{
 			Name:    "speculate",
@@ -186,7 +188,11 @@ type Chain struct {
 }
 
 func (s *Chain) String() string {
-	return "chain"
+	names := make([]string, len(s.strategies))
+	for i := range s.strategies {
+		names[i] = s.strategies[i].String()
+	}
+	return fmt.Sprintf("chain{%s}", strings.Join(names, ","))
 }
 
 func (s *Chain) Apply(words Dictionary) Dictionary {
@@ -238,7 +244,7 @@ func (s *Speculate) String() string {
 	if s.strategy == nil {
 		return "speculate"
 	}
-	return "speculate;" + s.strategy.String()
+	return fmt.Sprintf("speculate{%s}", s.strategy.String())
 }
 
 func (s *Speculate) hamming(s1 string, s2 string) int {

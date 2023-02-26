@@ -46,11 +46,11 @@ func newTestApp(tt *harness, cmd *cli.Command) *cli.App {
 					Start:   time.Now(),
 					Strategy: func() func(string) (qordle.Strategy, error) {
 						trie := &qordle.Trie[qordle.Strategy]{}
-						position := new(qordle.Position)
-						frequency := new(qordle.Frequency)
 						for _, strategy := range []qordle.Strategy{
-							new(qordle.Alpha), position, frequency,
-							qordle.NewChain(frequency, position),
+							new(qordle.Alpha),
+							new(qordle.Bigram),
+							new(qordle.Frequency),
+							new(qordle.Position),
 						} {
 							trie.Add(strategy.String(), strategy)
 						}
