@@ -28,12 +28,17 @@ func TestSuggestCommand(t *testing.T) {
 		},
 		{
 			name: "combination",
-			args: []string{"suggest", "--strategy", "c", "raise", "fol.l.y"},
+			args: []string{"suggest", "-s", "b", "-s", "f", "raise", "fol.l.y"},
 		},
 		{
 			name: "unknown",
 			args: []string{"suggest", "--strategy", "u", "raise", "fol.l.y"},
 			err:  "unknown strategy `u`",
+		},
+		{
+			name: "unknown strategy chain",
+			args: []string{"suggest", "-s", "f", "-s", "q", "raise", "fol.l.y"},
+			err:  "unknown strategy `q`",
 		},
 		{
 			name: "speculate",

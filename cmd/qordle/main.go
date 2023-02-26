@@ -59,16 +59,11 @@ func main() {
 					Start:   time.Now(),
 					Strategy: func() func(string) (qordle.Strategy, error) {
 						trie := &qordle.Trie[qordle.Strategy]{}
-						alpha := new(qordle.Alpha)
-						bigram := new(qordle.Bigram)
-						position := new(qordle.Position)
-						frequency := new(qordle.Frequency)
 						for _, strategy := range []qordle.Strategy{
-							alpha,
-							bigram,
-							frequency,
-							position,
-							qordle.NewChain(frequency, position),
+							new(qordle.Alpha),
+							new(qordle.Bigram),
+							new(qordle.Frequency),
+							new(qordle.Position),
 						} {
 							trie.Add(strategy.String(), strategy)
 						}

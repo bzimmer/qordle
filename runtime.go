@@ -35,3 +35,34 @@ type Encoder interface {
 func Runtime(c *cli.Context) *Rt {
 	return c.App.Metadata[RuntimeKey].(*Rt)
 }
+
+func prepare(c *cli.Context, wordlist ...string) (Dictionary, Strategy, error) {
+	dictionary, err := wordlists(c, wordlist...)
+	if err != nil {
+		return nil, nil, err
+	}
+	var strategy Strategy
+	strategies := c.StringSlice("strategy")
+	switch n := len(strategies); n {
+	case 0:
+	case 1:
+		strategy, err = Runtime(c).Strategy(strategies[0])
+		if err != nil {
+			return nil, nil, err
+		}
+	default:
+		s := make([]Strategy, n)
+		for i := range strategies {
+			strategy, err = Runtime(c).Strategy(strategies[i])
+			if err != nil {
+				return nil, nil, err
+			}
+			s[i] = strategy
+		}
+		strategy = NewChain(s...)
+	}
+	if c.Bool("speculate") {
+		strategy = NewSpeculator(dictionary, strategy)
+	}
+	return dictionary, strategy, nil
+}
