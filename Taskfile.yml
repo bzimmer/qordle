@@ -37,7 +37,6 @@ tasks:
     desc: Run regression test
     deps: [build]
     cmds:
-      - rm -f {{.DIST}}/regression.csv
       - "{{.CWD}}/bin/regression.zsh"
       - "{{.CWD}}/bin/analyze.zsh"
 

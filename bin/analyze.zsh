@@ -3,54 +3,57 @@
 set -eo pipefail
 
 repo=$(git rev-parse --show-toplevel)
-games=$(cat ${repo}/dist/regression.csv)
+regression="${repo}/dist/regression.csv"
 
 print -P "%F{magenta}\nFailed to find any solution!%f\n" 1>&2
-csvq -c --no-header '
-    with
-        games as
-        (
-            select
-                c1 as secret, c2 as strategy, c3 as rounds, c4 as success, c5 as dictionary, c6 as elapsed
-            from
-                stdin
-        )
+csvq -c '
     select
-        secret, strategy, rounds, success, elapsed from games where success is false
-' <<< $games
+        secret, strategy, rounds, success, elapsed
+    from
+        stdin
+    where
+        success is false
+    order by
+        strategy, secret
+' < ${regression}
 
 print -P "%F{magenta}\nFailed to find the solution in six rounds!%f\n" 1>&2
-csvq -c --no-header '
-    with
-        games as
-        (
-            select
-                c1 as secret, c2 as strategy, c3 as rounds, c4 as success, c5 as dictionary, c6 as elapsed
-            from
-                stdin
-        )
+csvq -c '
     select
-        secret, strategy, rounds, success, elapsed from games where rounds > 6
+        secret, strategy, rounds, success, elapsed
+    from
+        stdin
+    where
+        rounds > 6
     order by
         rounds, secret, strategy
-' <<< $games
+' < ${regression}
 
-print -P "%F{magenta}\nSummary statistics%f\n" 1>&2
-csvq -c --no-header '
-    with
-        games as
-        (
-            select
-                c1 as secret, c2 as strategy, c3 as rounds, c4 as success, c5 as dictionary, c6 as elapsed
-            from
-                stdin
-        )
+# print -P "%F{magenta}\nSummary statistics%f\n" 1>&2
+# csvq -c '
+#     select
+#         strategy,
+#         avg(rounds) as avg_rounds,
+#         stdev(rounds) as stdev_rounds,
+#         max(rounds) as max_rounds,
+#         min(rounds) as min_rounds,
+#         avg(elapsed) as avg_elapsed
+#     from
+#         stdin
+#     group by
+#         strategy
+#     order by
+#         strategy
+# ' < ${regression}
+
+print -P "%F{magenta}\nHistograms%f\n" 1>&2
+csvq -c '
     select
-        strategy, avg(rounds) as avg_rounds, stdev(rounds) as stdev_rounds, max(rounds) as max_rounds, min(rounds) as min_rounds, avg(elapsed) as avg_elapsed
+        strategy, rounds, count(rounds) as bins
     from
-        games
+        stdin
     group by
-        strategy
+        strategy, rounds
     order by
-        strategy
-' <<< $games
+        len(strategy), strategy, rounds, bins
+' < ${regression}
