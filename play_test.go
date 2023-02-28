@@ -246,6 +246,16 @@ func TestPlayCommand(t *testing.T) {
 				return nil
 			},
 		},
+		{
+			name: "bigram strategy",
+			args: []string{"play", "-s", "bigram", "-S", "aahed"},
+			after: func(c *cli.Context) error {
+				round := decode(c)
+				a.True(round.Success)
+				a.Equal([]string{"t.h.ere", ".h.en.ds", "icHED", "poHED", "AAHED"}, round.Scores)
+				return nil
+			},
+		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {

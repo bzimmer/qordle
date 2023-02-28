@@ -8,7 +8,7 @@ regression="${repo}/dist/regression.csv"
 print -P "%F{magenta}\nFailed to find any solution!%f\n" 1>&2
 csvq -c '
     select
-        secret, strategy, rounds, success, elapsed
+        secret, strategy, success
     from
         stdin
     where
