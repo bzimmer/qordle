@@ -8,7 +8,7 @@ vars:
   CWD:
     sh: git rev-parse --show-toplevel
   APP:
-    sh: basename $PWD
+    sh: basename {{.CWD}}
   PKG:
     github.com/bzimmer/{{.APP}}
   DIST:
@@ -114,3 +114,9 @@ tasks:
     cmds:
       - go test -outputdir {{.DIST}} -cpuprofile cpu.prof -memprofile mem.prof -bench .
       - go tool pprof -http=":8000" ./qordle.test {{.DIST}}/mem.prof
+
+  books:
+    desc: Generate the google books data structures
+    cmds:
+      - python3 {{.CWD}}/bin/norvig.py > {{.CWD}}/books.go
+      - task: goimports

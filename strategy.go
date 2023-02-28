@@ -75,7 +75,25 @@ func mkdictf(scores map[string]float64, less func(i, j float64) bool) Dictionary
 		tuples = append(tuples, tuple{word, rank})
 	}
 	sort.Slice(tuples, func(i, j int) bool {
-		return less(tuples[i].rank, tuples[j].rank)
+		xi, xj := tuples[i].rank, tuples[j].rank
+		// ensure output stability
+		if xi == xj {
+			// start with frequency ordering
+			yi, yj := 0.0, 0.0
+			for _, v := range tuples[i].word {
+				yi += frequencies[v]
+			}
+			for _, v := range tuples[j].word {
+				yj += frequencies[v]
+			}
+			// revert to alphabetical ordering if necessary
+			if yi == yj {
+				return tuples[i].word < tuples[j].word
+			}
+			// frequencies are accumulated so inverse `less` to sort descending
+			return yi > yj
+		}
+		return less(xi, xj)
 	})
 	words := make(Dictionary, len(tuples))
 	for i := range tuples {
