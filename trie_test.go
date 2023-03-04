@@ -1,6 +1,7 @@
 package qordle_test
 
 import (
+	"sort"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -57,4 +58,17 @@ func TestTrie(t *testing.T) {
 			a.Equal(tt.word, node.Word())
 		})
 	}
+}
+
+func TestStrings(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+	trie := &qordle.Trie[any]{}
+	for _, w := range []string{"foo", "bar", "baz", "barter"} {
+		trie.Add(w, nil)
+	}
+	res := trie.Strings()
+	a.NotNil(res)
+	sort.Strings(res)
+	a.Equal([]string{"bar", "barter", "baz", "foo"}, res)
 }

@@ -22,8 +22,8 @@ type Rt struct {
 	Grab Grab
 	// Start time of the execution
 	Start time.Time
-	// Strategy returns the strategy for the code
-	Strategy func(string) (Strategy, error)
+	// Strategies manages the availale strategies
+	Strategies Strategies
 }
 
 // Encoder encodes a struct to a specific format
@@ -45,14 +45,14 @@ func prepare(c *cli.Context, wordlist ...string) (Dictionary, Strategy, error) {
 	strategies := c.StringSlice("strategy")
 	switch n := len(strategies); n {
 	case 1:
-		strategy, err = Runtime(c).Strategy(strategies[0])
+		strategy, err = Runtime(c).Strategies.Strategy(strategies[0])
 		if err != nil {
 			return nil, nil, err
 		}
 	default:
 		s := make([]Strategy, n)
 		for i := range strategies {
-			strategy, err = Runtime(c).Strategy(strategies[i])
+			strategy, err = Runtime(c).Strategies.Strategy(strategies[i])
 			if err != nil {
 				return nil, nil, err
 			}

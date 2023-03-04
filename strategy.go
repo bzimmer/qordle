@@ -27,9 +27,28 @@ func strategyFlags() []cli.Flag {
 	}
 }
 
+func CommandStrategies() *cli.Command {
+	return &cli.Command{
+		Name:        "strategies",
+		HelpName:    "strategies",
+		Usage:       "List all available strategies",
+		Description: "List all available strategies",
+		Action: func(c *cli.Context) error {
+			strategies := Runtime(c).Strategies.Strategies()
+			sort.Strings(strategies)
+			return Runtime(c).Encoder.Encode(strategies)
+		},
+	}
+}
+
 type Strategy interface {
 	String() string
-	Apply(words Dictionary) Dictionary
+	Apply(Dictionary) Dictionary
+}
+
+type Strategies interface {
+	Strategy(string) (Strategy, error)
+	Strategies() []string
 }
 
 // Alpha orders the dictionary alphabetically
