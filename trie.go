@@ -71,11 +71,7 @@ func (trie *Trie[T]) collect(prefix string, node *Trie[T]) []string {
 }
 
 func (trie *Trie[T]) Strings() []string {
-	var results []string
-	for key, value := range trie.children {
-		results = append(results, trie.collect(string(key), value)...)
-	}
-	return results
+	return trie.collect("", trie)
 }
 
 func (trie *Trie[T]) Prefix() bool {
