@@ -37,8 +37,8 @@ func (trie *Trie[T]) Node(word string) *Trie[T] {
 	return node
 }
 
-func (trie *Trie[T]) Value(word string) T {
-	node := trie.Node(word)
+func (trie *Trie[T]) Value(prefix string) T {
+	node := trie.Node(prefix)
 	switch {
 	case node == nil:
 		return *new(T)
@@ -57,6 +57,25 @@ func (trie *Trie[T]) Value(word string) T {
 			}
 		}
 	}
+}
+
+func (trie *Trie[T]) collect(prefix string, node *Trie[T]) []string {
+	var results []string
+	if node.word {
+		results = append(results, prefix)
+	}
+	for letter, child := range node.children {
+		results = append(results, trie.collect(prefix+string(letter), child)...)
+	}
+	return results
+}
+
+func (trie *Trie[T]) Strings() []string {
+	var results []string
+	for key, value := range trie.children {
+		results = append(results, trie.collect(string(key), value)...)
+	}
+	return results
 }
 
 func (trie *Trie[T]) Prefix() bool {

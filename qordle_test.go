@@ -23,6 +23,22 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+type strategies struct {
+	strategies qordle.Trie[qordle.Strategy]
+}
+
+func (s strategies) Strategy(prefix string) (qordle.Strategy, error) {
+	strategy := s.strategies.Value(prefix)
+	if strategy != nil {
+		return strategy, nil
+	}
+	return nil, fmt.Errorf("unknown strategy `%s`", prefix)
+}
+
+func (s strategies) Strategies() []string {
+	return s.strategies.Strings()
+}
+
 type harness struct {
 	name, err string
 	args      []string
@@ -33,6 +49,17 @@ type harness struct {
 
 func newTestApp(tt *harness, cmd *cli.Command) *cli.App {
 	name := strings.ReplaceAll(tt.name, " ", "-")
+
+	trie := qordle.Trie[qordle.Strategy]{}
+	for _, strategy := range []qordle.Strategy{
+		new(qordle.Alpha),
+		new(qordle.Bigram),
+		new(qordle.Frequency),
+		new(qordle.Position),
+	} {
+		trie.Add(strategy.String(), strategy)
+	}
+
 	return &cli.App{
 		Name:      name,
 		HelpName:  name,
@@ -42,26 +69,9 @@ func newTestApp(tt *harness, cmd *cli.Command) *cli.App {
 		Before: func(c *cli.Context) error {
 			c.App.Metadata = map[string]any{
 				qordle.RuntimeKey: &qordle.Rt{
-					Encoder: json.NewEncoder(c.App.Writer),
-					Start:   time.Now(),
-					Strategy: func() func(string) (qordle.Strategy, error) {
-						trie := &qordle.Trie[qordle.Strategy]{}
-						for _, strategy := range []qordle.Strategy{
-							new(qordle.Alpha),
-							new(qordle.Bigram),
-							new(qordle.Frequency),
-							new(qordle.Position),
-						} {
-							trie.Add(strategy.String(), strategy)
-						}
-						return func(code string) (qordle.Strategy, error) {
-							strategy := trie.Value(code)
-							if strategy != nil {
-								return strategy, nil
-							}
-							return nil, fmt.Errorf("unknown strategy `%s`", code)
-						}
-					}(),
+					Encoder:    json.NewEncoder(c.App.Writer),
+					Start:      time.Now(),
+					Strategies: &strategies{strategies: trie},
 				},
 			}
 			return nil
