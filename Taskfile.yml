@@ -68,6 +68,12 @@ tasks:
     cmds:
       - golangci-lint -v run
 
+  typos:
+    desc: Runs typos
+    aliases: [spell, spellcheck]
+    cmds:
+      - fd -e go -E books.go . | xargs typos
+
   snapshot:
     desc: Build a snapshot
     deps: [test, lint]

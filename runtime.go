@@ -22,7 +22,7 @@ type Rt struct {
 	Grab Grab
 	// Start time of the execution
 	Start time.Time
-	// Strategies manages the availale strategies
+	// Strategies manages the available strategies
 	Strategies Strategies
 }
 

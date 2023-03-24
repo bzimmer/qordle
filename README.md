@@ -19,7 +19,7 @@ $ brew install qordle
 ## Input
 
 * Input correctly placed letters as an uppercase
-* Input incorrectly placed letters as a lowercase letter preceeded by any symbol (`.`, `@`)
+* Input incorrectly placed letters as a lowercase letter preceded by any symbol (`.`, `@`)
 * Input misses as lowercase letters
 
 ## Example
@@ -152,4 +152,5 @@ $ qordle play --start brain table | jq
     }
   ],
   "elapsed": 2
-}```
+}
+```

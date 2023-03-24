@@ -254,7 +254,7 @@ func CommandLetterBox() *cli.Command {
 				return err
 			}
 			words := box.Words(t)
-			log.Info().Int("matching", len(words)).Int("possible", n).Msg("dictonary")
+			log.Info().Int("matching", len(words)).Int("possible", n).Msg("dictionary")
 			sol := map[int]int{}
 			enc := Runtime(c).Encoder
 			for solution := range box.Solutions(words) {

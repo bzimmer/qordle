@@ -26,7 +26,7 @@ func Filter(words Dictionary, fns ...FilterFunc) Dictionary {
 	return res[:count]
 }
 
-func NoOp(word string) bool {
+func NoOp(_ string) bool {
 	return true
 }
 
