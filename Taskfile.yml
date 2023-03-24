@@ -70,6 +70,7 @@ tasks:
 
   typos:
     desc: Runs typos
+    aliases: [spell, spellcheck]
     cmds:
       - fd -e go -E books.go . | xargs typos
 
