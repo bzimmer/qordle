@@ -1,0 +1,9 @@
+# https://github.com/crate-ci/typos
+
+[files]
+extend-exclude = [
+  "books.go",
+  "data/*.txt",
+  "bin/norvig.py",
+  "testdata/*",
+]
