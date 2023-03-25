@@ -67,12 +67,7 @@ tasks:
     desc: Runs golint
     cmds:
       - golangci-lint -v run
-
-  typos:
-    desc: Runs typos
-    aliases: [spell, spellcheck]
-    cmds:
-      - fd -e go -E books.go . | xargs typos
+      - typos
 
   snapshot:
     desc: Build a snapshot
