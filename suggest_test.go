@@ -84,6 +84,11 @@ func TestValidateCommand(t *testing.T) {
 			name: "invalid",
 			args: []string{"validate", "yleaz", "fol.l.y"},
 		},
+		{
+			name: "failure",
+			args: []string{"validate", "yleaz", "fol.l......."},
+			err:  "too few characters",
+		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
