@@ -50,11 +50,6 @@ func TestSuggestCommand(t *testing.T) {
 			err:  "too few characters",
 		},
 		{
-			name: "bad pattern",
-			args: []string{"suggest", "--pattern", "[A-Z", "raise", "fol.l.y"},
-			err:  "error parsing regexp: missing closing ]: `[A-Z`",
-		},
-		{
 			name: "bad wordlist",
 			args: []string{"suggest", "-w", "foobar", "raise", "fol.l.y"},
 			err:  "invalid wordlist `foobar`",
@@ -75,6 +70,24 @@ func TestSuggestCommand(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			run(t, &tt, qordle.CommandSuggest)
+		})
+	}
+}
+
+func TestValidateCommand(t *testing.T) {
+	for _, tt := range []harness{
+		{
+			name: "invalid",
+			args: []string{"validate", "raise", "fol.l.y"},
+		},
+		{
+			name: "invalid",
+			args: []string{"validate", "yleaz", "fol.l.y"},
+		},
+	} {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			run(t, &tt, qordle.CommandValidate)
 		})
 	}
 }

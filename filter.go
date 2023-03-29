@@ -2,11 +2,13 @@ package qordle
 
 import (
 	"errors"
-	"fmt"
-	"regexp"
-	"strings"
 	"unicode"
 )
+
+type state struct {
+	exact     rune
+	forbidden map[rune]struct{}
+}
 
 type FilterFunc func(string) bool
 
@@ -42,30 +44,21 @@ func Length(length int) FilterFunc {
 	}
 }
 
-func Misses(misses string) FilterFunc {
-	if misses == "" {
-		return NoOp
-	}
+func filter(ms []*state, rq map[rune]int) FilterFunc {
 	return func(word string) bool {
-		return !strings.ContainsAny(word, misses)
-	}
-}
-
-func Hits(hits string) FilterFunc {
-	if hits == "" {
-		return NoOp
-	}
-	m := map[rune]int{}
-	for i := range hits {
-		m[rune(hits[i])]++
-	}
-	return func(word string) bool {
-		n := map[rune]int{}
-		for i := range word {
-			n[rune(word[i])]++
+		ws, rs := []rune(word), make(map[rune]int)
+		for i := range ws {
+			rs[ws[i]]++
+			if ms[i].exact != 0 && ms[i].exact != ws[i] {
+				return false
+			}
+			if _, ok := ms[i].forbidden[ws[i]]; ok {
+				return false
+			}
 		}
-		for key, val := range m {
-			if n[key] < val {
+		for key, val := range rq {
+			num, ok := rs[key]
+			if !ok || num < val {
 				return false
 			}
 		}
@@ -73,89 +66,99 @@ func Hits(hits string) FilterFunc {
 	}
 }
 
-func Pattern(pattern string) (FilterFunc, error) {
-	if pattern == "" {
-		return NoOp, nil
-	}
-	re, err := regexp.Compile(pattern)
-	if err != nil {
-		return nil, err
-	}
-	fn := func(word string) bool {
-		return re.MatchString(word)
-	}
-	return fn, nil
-}
-
-func contains(m []string, s string) bool {
-	for _, x := range m {
-		if x == s {
-			return true
+func compile(marks map[rune]map[int]Mark, ix int) FilterFunc { //nolint:gocognit
+	ms, rq := make([]*state, ix), make(map[rune]int)
+	// prepare the table
+	for i := 0; i < ix; i++ {
+		ms[i] = &state{
+			forbidden: make(map[rune]struct{}),
 		}
 	}
-	return false
-}
+	// populate the table
+	for letter, states := range marks {
+		for index, mark := range states {
+			switch mark {
+			case MarkExact:
+				rq[letter]++
+				ms[index].exact = letter
+			case MarkMisplaced:
+				rq[letter]++
+				ms[index].forbidden[letter] = struct{}{}
+			case MarkMiss:
+				/*
+					if the same letter exists as a misplaced or exact mark for any
+					index, then only add the miss to the current index otherwise add
+					it to all indices
 
-func join(hits []string, misses map[int]string, idx int) string {
-	var s string
-	for key, val := range misses {
-		switch key {
-		case idx:
-			s += val
-		default:
-			if !contains(hits, val) {
-				s += val
+					go run cmd/qordle/main.go --debug validate cleat .legwl | jq
+					.l.egAl => the second l should put itself only in it's slot?
+					=> feedback [egwl]  [egwl] [gwle] [egwl] [egwl]
+					=> regex    [^egwl] [^weg] [^egw] [^egw] [^egwl]
+				*/
+				all := true
+				for i := 0; all && i < ix; i++ {
+					switch marks[letter][i] {
+					case MarkMiss:
+						// ignore
+					case MarkMisplaced, MarkExact:
+						all = false
+					}
+				}
+				if all {
+					for i := 0; i < ix; i++ {
+						ms[i].forbidden[letter] = struct{}{}
+					}
+				} else {
+					ms[index].forbidden[letter] = struct{}{}
+				}
 			}
 		}
 	}
-	return s
+	// if zerolog.GlobalLevel() == zerolog.DebugLevel {
+	// 	var buf []string
+	// 	for i := range ms {
+	// 		var bar []string
+	// 		for letter := range ms[i].forbidden {
+	// 			bar = append(bar, string(letter))
+	// 		}
+	// 		buf = append(buf, "["+strings.Join(bar, "")+"]")
+	// 	}
+	// 	log.Debug().Str("pattern", strings.Join(buf, " ")).Any("required", rq).Msg("compile")
+	// }
+	return filter(ms, rq)
 }
 
-func parse(guess string) ([]FilterFunc, error) {
-	x := []rune(guess)
-	var hits, pattern []string
-	misses := make(map[int]string, 0)
-	for i := 0; i < len(x); i++ {
+func parse(feedback string) (FilterFunc, error) {
+	ix, rs := 0, []rune(feedback)
+	marks := make(map[rune]map[int]Mark)
+	for i := 0; i < len(rs); i++ {
+		var mark Mark
 		switch {
-		case unicode.IsSpace(x[i]):
+		case unicode.IsSpace(rs[i]):
 			fallthrough
-		case unicode.IsNumber(x[i]):
+		case unicode.IsNumber(rs[i]):
 			fallthrough
-		case unicode.IsLower(x[i]):
-			misses[len(pattern)] = string(x[i])
-			pattern = append(pattern, "")
-		case unicode.IsUpper(x[i]):
-			hit := string(unicode.ToLower(x[i]))
-			hits = append(hits, hit)
-			pattern = append(pattern, hit)
+		case unicode.IsLower(rs[i]):
+			mark = MarkMiss
+		case unicode.IsUpper(rs[i]):
+			mark = MarkExact
 		default:
 			i++
-			if i >= len(x) {
+			if i >= len(rs) {
 				return nil, errors.New("too few characters")
 			}
-			w := string(unicode.ToLower(x[i]))
-			hits = append(hits, w)
-			misses[len(pattern)] = w
-			pattern = append(pattern, "[^")
+			mark = MarkMisplaced
 		}
-	}
-
-	var re string
-	for i, s := range pattern {
-		switch {
-		case s == "":
-			re += fmt.Sprintf("[^%s]", join(hits, misses, i))
-		case s[0] == '[':
-			re += fmt.Sprintf("%s%s]", s, join(hits, misses, i))
-		default:
-			re += s
+		lower := unicode.ToLower(rs[i])
+		hit, ok := marks[lower]
+		if !ok {
+			hit = make(map[int]Mark)
+			marks[lower] = hit
 		}
+		hit[ix] = mark
+		ix++
 	}
-	p, err := Pattern(re)
-	if err != nil {
-		return nil, err
-	}
-	return []FilterFunc{Hits(strings.Join(hits, "")), p}, nil
+	return compile(marks, ix), nil
 }
 
 func Guesses(guesses ...string) (FilterFunc, error) {
@@ -168,7 +171,7 @@ func Guesses(guesses ...string) (FilterFunc, error) {
 		if err != nil {
 			return nil, err
 		}
-		fns = append(fns, f...)
+		fns = append(fns, f)
 	}
 	if len(fns) == 0 {
 		return NoOp, nil

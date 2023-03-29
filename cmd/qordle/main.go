@@ -96,6 +96,7 @@ func main() {
 			qordle.CommandScore(),
 			qordle.CommandStrategies(),
 			qordle.CommandSuggest(),
+			qordle.CommandValidate(),
 			qordle.CommandVersion(),
 			qordle.CommandWordlists(),
 		},

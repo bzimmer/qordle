@@ -16,18 +16,6 @@ func CommandSuggest() *cli.Command {
 					Usage: "word length",
 					Value: 5,
 				},
-				&cli.StringFlag{
-					Name:  "hits",
-					Usage: "letters in the word",
-				},
-				&cli.StringFlag{
-					Name:  "misses",
-					Usage: "letters not in the word",
-				},
-				&cli.StringFlag{
-					Name:  "pattern",
-					Usage: "match against a known pattern (use '.' for all unknown letters)",
-				},
 			},
 			append(wordlistFlags(), strategyFlags()...)...,
 		),
@@ -36,24 +24,35 @@ func CommandSuggest() *cli.Command {
 			if err != nil {
 				return err
 			}
-			pattern, err := Pattern(c.String("pattern"))
-			if err != nil {
-				return err
-			}
 			guesses, err := Guesses(c.Args().Slice()...)
 			if err != nil {
 				return err
 			}
 			dictionary = Filter(
-				dictionary,
-				IsLower(),
-				Length(c.Int("length")),
-				Hits(c.String("hits")),
-				Misses(c.String("misses")),
-				pattern,
-				guesses)
+				dictionary, IsLower(), Length(c.Int("length")), guesses)
 			dictionary = strategy.Apply(dictionary)
 			return Runtime(c).Encoder.Encode(dictionary)
+		},
+	}
+}
+
+func CommandValidate() *cli.Command {
+	return &cli.Command{
+		Name:      "validate",
+		Usage:     "validate the word against the pattern",
+		ArgsUsage: "<word to validate> <scored word> [, <scored word>]",
+		Action: func(c *cli.Context) error {
+			word := c.Args().First()
+			scores := c.Args().Tail()
+			guesser, err := Guesses(scores...)
+			if err != nil {
+				return err
+			}
+			return Runtime(c).Encoder.Encode(map[string]any{
+				"word":   word,
+				"scores": scores,
+				"ok":     guesser(word),
+			})
 		},
 	}
 }
