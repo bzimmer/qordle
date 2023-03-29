@@ -2,7 +2,6 @@ package qordle_test
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"testing"
 
@@ -11,31 +10,6 @@ import (
 
 	"github.com/bzimmer/qordle"
 )
-
-func TestMarks(t *testing.T) {
-	t.Parallel()
-	a := assert.New(t)
-	for _, tt := range []struct {
-		marks qordle.Marks
-		key   int
-	}{
-		{
-			marks: qordle.Marks{qordle.MarkExact, qordle.MarkMiss, qordle.MarkExact, qordle.MarkMisplaced, qordle.MarkMiss},
-			key:   20210,
-		},
-		{
-			marks: qordle.Marks{qordle.MarkMiss, qordle.MarkMiss, qordle.MarkExact, qordle.MarkMisplaced, qordle.MarkMiss},
-			key:   210,
-		},
-	} {
-		tt := tt
-		name := fmt.Sprintf("%v", tt.marks)
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			a.Equal(tt.key, tt.marks.Key())
-		})
-	}
-}
 
 func TestScore(t *testing.T) {
 	t.Parallel()

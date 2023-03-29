@@ -8,7 +8,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-type Mark uint8
+type Mark int
 type Marks []Mark
 
 const (
@@ -18,21 +18,6 @@ const (
 	MarkMisplaced Mark = 1
 	MarkExact     Mark = 2
 )
-
-func (m Marks) Key() int {
-	i, n := 0, 0
-	for x := len(m) - 1; x >= 0; x-- {
-		switch i {
-		case 0:
-			n = int(m[x])
-			i = 10
-		default:
-			n += (i * int(m[x]))
-			i *= 10
-		}
-	}
-	return n
-}
 
 func Check(secret string, guesses ...string) []Marks {
 	secret = strings.ToLower(secret)

@@ -347,6 +347,7 @@ func (s *Speculate) with(words Dictionary) Dictionary {
 		}
 	}
 
+	log.Debug().Any("next", next).Msg("with")
 	return Dictionary(next[n])
 }
 
