@@ -1,6 +1,7 @@
 package qordle
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -19,13 +20,15 @@ const (
 	MarkExact     Mark = 2
 )
 
+var ErrInvalidLength = errors.New("secret and guess lengths do not match")
+
 func Check(secret string, guesses ...string) []Marks {
 	secret = strings.ToLower(secret)
 	scores := make([]Marks, len(guesses))
 	for n, guess := range guesses {
 		if len(secret) != len(guess) {
 			log.Error().Str("secret", secret).Str("guess", guess).Msg("score")
-			panic("secret and guess lengths do not match")
+			panic(ErrInvalidLength)
 		}
 		guess = strings.ToLower(guess)
 		score := make(Marks, len(secret))

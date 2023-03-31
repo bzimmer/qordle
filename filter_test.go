@@ -1,6 +1,7 @@
 package qordle_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,14 +10,6 @@ import (
 )
 
 type FilterFuncFunc func(string) qordle.FilterFunc
-
-func mustGuesses(guesses ...string) qordle.FilterFunc {
-	f, err := qordle.Guesses(guesses...)
-	if err != nil {
-		panic(err)
-	}
-	return f
-}
 
 func TestLength(t *testing.T) {
 	t.Parallel()
@@ -102,9 +95,9 @@ func TestLower(t *testing.T) {
 func TestGuesses(t *testing.T) {
 	t.Parallel()
 	for _, tt := range []struct {
-		name, word  string
-		guesses     []string
-		err, result bool
+		name, word    string
+		guesses       []string
+		panic, result bool
 	}{
 		{
 			name:    "no guesses",
@@ -154,18 +147,25 @@ func TestGuesses(t *testing.T) {
 			guesses: []string{"br#ain", "#l#EgAl"},
 			result:  true,
 		},
+		{
+			name:    "panic with poor format",
+			word:    "pleat",
+			guesses: []string{"br.ain", ".l.Eg...A....."},
+			result:  true,
+			panic:   true,
+		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
-			p, err := qordle.Guesses(tt.guesses...)
-			switch tt.err {
-			case true:
-				a.Error(err)
-			case false:
-				a.NoError(err)
+			if tt.panic {
+				a.Panics(func() {
+					_ = qordle.Guess(tt.guesses...)
+				})
+				return
 			}
+			p := qordle.Guess(tt.guesses...)
 			a.Equal(tt.result, p(tt.word))
 		})
 	}
@@ -176,7 +176,19 @@ func FuzzGuesses(f *testing.F) {
 		f.Add(x)
 	}
 	f.Fuzz(func(t *testing.T, s string) {
-		_, _ = qordle.Guesses(s)
+		defer func() {
+			if r := recover(); r != nil {
+				switch v := r.(type) {
+				case error:
+					if !errors.Is(v, qordle.ErrInvalidFormat) {
+						panic(v)
+					}
+				default:
+					panic(r)
+				}
+			}
+		}()
+		_ = qordle.Guess(s)
 	})
 }
 
@@ -197,7 +209,7 @@ func TestFilter(t *testing.T) {
 			name:   "double letter",
 			words:  qordle.Dictionary{"excel", "fleck", "expel", "sport"},
 			result: qordle.Dictionary{"excel", "expel"},
-			fns:    []qordle.FilterFunc{mustGuesses("brain", "south", "@l@edg@e")},
+			fns:    []qordle.FilterFunc{qordle.Guess("brain", "south", "@l@edg@e")},
 		},
 		{
 			name:   "filter all",

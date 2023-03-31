@@ -49,7 +49,7 @@ func TestScore(t *testing.T) {
 			a := assert.New(t)
 			if tt.panic {
 				a.Panics(func() {
-					qordle.Score(tt.secret, tt.guesses...)
+					_ = qordle.Score(tt.secret, tt.guesses...)
 				})
 				return
 			}

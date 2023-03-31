@@ -24,12 +24,9 @@ func CommandSuggest() *cli.Command {
 			if err != nil {
 				return err
 			}
-			guesses, err := Guesses(c.Args().Slice()...)
-			if err != nil {
-				return err
-			}
+			guesser := Guess(c.Args().Slice()...)
 			dictionary = Filter(
-				dictionary, IsLower(), Length(c.Int("length")), guesses)
+				dictionary, IsLower(), Length(c.Int("length")), guesser)
 			dictionary = strategy.Apply(dictionary)
 			return Runtime(c).Encoder.Encode(dictionary)
 		},
@@ -44,10 +41,7 @@ func CommandValidate() *cli.Command {
 		Action: func(c *cli.Context) error {
 			word := c.Args().First()
 			scores := c.Args().Tail()
-			guesser, err := Guesses(scores...)
-			if err != nil {
-				return err
-			}
+			guesser := Guess(scores...)
 			return Runtime(c).Encoder.Encode(map[string]any{
 				"word":   word,
 				"scores": scores,

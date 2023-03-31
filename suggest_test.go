@@ -5,6 +5,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/urfave/cli/v2"
 
@@ -47,7 +48,7 @@ func TestSuggestCommand(t *testing.T) {
 		{
 			name: "bad guesses",
 			args: []string{"suggest", "fol.l."},
-			err:  "too few characters",
+			err:  qordle.ErrInvalidFormat.Error(),
 		},
 		{
 			name: "bad wordlist",
@@ -87,11 +88,16 @@ func TestValidateCommand(t *testing.T) {
 		{
 			name: "failure",
 			args: []string{"validate", "yleaz", "fol.l......."},
-			err:  "too few characters",
+			err:  qordle.ErrInvalidFormat.Error(),
 		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			level := zerolog.GlobalLevel()
+			defer func() {
+				zerolog.SetGlobalLevel(level)
+			}()
+			zerolog.SetGlobalLevel(zerolog.DebugLevel)
 			run(t, &tt, qordle.CommandValidate)
 		})
 	}
