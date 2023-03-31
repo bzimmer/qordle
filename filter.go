@@ -164,7 +164,7 @@ func compile(marks map[rune]map[int]Mark, ix int) FilterFunc { //nolint:gocognit
 	return filter(ms, rq)
 }
 
-func parse(feedback string) (FilterFunc, error) {
+func parse(feedback string) FilterFunc {
 	ix, rs := 0, []rune(feedback)
 	marks := make(map[rune]map[int]Mark)
 	for i := 0; i < len(rs); i++ {
@@ -194,7 +194,7 @@ func parse(feedback string) (FilterFunc, error) {
 		hit[ix] = mark
 		ix++
 	}
-	return compile(marks, ix), nil
+	return compile(marks, ix)
 }
 
 func Guess(guesses ...string) FilterFunc {
@@ -203,11 +203,7 @@ func Guess(guesses ...string) FilterFunc {
 		if guess == "" {
 			continue
 		}
-		f, err := parse(guess)
-		if err != nil {
-			return nil
-		}
-		fns = append(fns, f)
+		fns = append(fns, parse(guess))
 	}
 	if len(fns) == 0 {
 		return NoOp
