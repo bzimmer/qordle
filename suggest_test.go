@@ -5,6 +5,7 @@ import (
 	"io"
 	"testing"
 
+	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/urfave/cli/v2"
 
@@ -47,7 +48,7 @@ func TestSuggestCommand(t *testing.T) {
 		{
 			name: "bad guesses",
 			args: []string{"suggest", "fol.l."},
-			err:  "too few characters",
+			err:  qordle.ErrInvalidFormat.Error(),
 		},
 		{
 			name: "bad wordlist",
@@ -77,21 +78,34 @@ func TestSuggestCommand(t *testing.T) {
 func TestValidateCommand(t *testing.T) {
 	for _, tt := range []harness{
 		{
-			name: "invalid",
+			name: "invalid match",
 			args: []string{"validate", "raise", "fol.l.y"},
 		},
 		{
-			name: "invalid",
+			name: "invalid length",
+			args: []string{"validate", "raise", "abc"},
+		},
+		{
+			name: "valid",
 			args: []string{"validate", "yleaz", "fol.l.y"},
+		},
+		{
+			name: "valid with exact",
+			args: []string{"validate", "yleaz", "fol.lZ"},
 		},
 		{
 			name: "failure",
 			args: []string{"validate", "yleaz", "fol.l......."},
-			err:  "too few characters",
+			err:  qordle.ErrInvalidFormat.Error(),
 		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			level := zerolog.GlobalLevel()
+			defer func() {
+				zerolog.SetGlobalLevel(level)
+			}()
+			zerolog.SetGlobalLevel(zerolog.DebugLevel)
 			run(t, &tt, qordle.CommandValidate)
 		})
 	}

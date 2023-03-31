@@ -16,7 +16,7 @@ func TestScore(t *testing.T) {
 	for _, tt := range []struct {
 		name, secret    string
 		guesses, scores []string
-		panic           bool
+		err             error
 	}{
 		{
 			name:    "simple",
@@ -28,7 +28,7 @@ func TestScore(t *testing.T) {
 			name:    "different lengths",
 			secret:  "humph",
 			guesses: []string{"table", "tables"},
-			panic:   true,
+			err:     qordle.ErrInvalidLength,
 		},
 		{
 			name:    "empty",
@@ -47,13 +47,13 @@ func TestScore(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
-			if tt.panic {
-				a.Panics(func() {
-					qordle.Score(tt.secret, tt.guesses...)
-				})
+			scores, err := qordle.Score(tt.secret, tt.guesses...)
+			if tt.err != nil {
+				a.ErrorIs(err, tt.err)
 				return
 			}
-			a.Equal(tt.scores, qordle.Score(tt.secret, tt.guesses...))
+			a.NoError(err)
+			a.Equal(tt.scores, scores)
 		})
 	}
 }

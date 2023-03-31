@@ -48,11 +48,11 @@ func suggest(c echo.Context) error {
 	}
 	strategy := qordle.NewChain(new(qordle.Frequency), new(qordle.Position))
 	strategy = qordle.NewSpeculator(dictionary, strategy)
-	guesses, err := qordle.Guesses(strings.Split(c.Param("guesses"), " ")...)
+	guesser, err := qordle.Guess(strings.Split(c.Param("guesses"), " ")...)
 	if err != nil {
 		return err
 	}
-	dictionary = strategy.Apply(qordle.Filter(dictionary, guesses))
+	dictionary = strategy.Apply(qordle.Filter(dictionary, guesser))
 	return c.JSONPretty(http.StatusOK, dictionary, " ")
 }
 

@@ -105,12 +105,15 @@ func (g *Game) play(dictionary Dictionary, secret string, words []string) (*Scor
 	}
 	n := len(secret) * r
 	for len(scoreboard.Rounds) < n {
-		scores := Score(secret, words...)
-		guesses, err := Guesses(scores...)
+		scores, err := Score(secret, words...)
 		if err != nil {
 			return nil, err
 		}
-		dictionary = g.strategy.Apply(Filter(dictionary, guesses))
+		guess, err := Guess(scores[len(scores)-1])
+		if err != nil {
+			return nil, err
+		}
+		dictionary = g.strategy.Apply(Filter(dictionary, guess))
 
 		round := &Round{
 			Dictionary: len(dictionary),

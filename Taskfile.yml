@@ -108,7 +108,7 @@ tasks:
         mound board brain lills qwert 12345
     cmds:
       - |
-        hyperfine -N -w 3 --runs=75 -L binary {{.binaries}} "{binary} play {{.options}} {{.secrets}}"
+        hyperfine -N -w 3 --runs=100 -L binary {{.binaries}} "{binary} play {{.options}} {{.secrets}}"
 
   profile:
     desc: Run the profiler

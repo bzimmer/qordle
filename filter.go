@@ -2,15 +2,21 @@ package qordle
 
 import (
 	"errors"
+	"strings"
 	"unicode"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
-type state struct {
-	exact     rune
-	forbidden map[rune]struct{}
+type criteria struct {
+	exact  rune
+	misses map[rune]struct{}
 }
 
 type FilterFunc func(string) bool
+
+var ErrInvalidFormat = errors.New("invalid pattern format")
 
 func Filter(words Dictionary, fns ...FilterFunc) Dictionary {
 	var count int
@@ -44,21 +50,50 @@ func Length(length int) FilterFunc {
 	}
 }
 
-func filter(ms []*state, rq map[rune]int) FilterFunc {
+func filter(ms []*criteria, rq map[rune]int) FilterFunc {
 	return func(word string) bool {
+		if len(word) != len(ms) {
+			log.Debug().
+				Str("word", word).
+				Int("expected", len(ms)).
+				Int("found", len(word)).
+				Str("reason", "length").
+				Msg("filter")
+			return false
+		}
 		ws, rs := []rune(word), make(map[rune]int)
 		for i := range ws {
 			rs[ws[i]]++
 			if ms[i].exact != 0 && ms[i].exact != ws[i] {
+				log.Debug().
+					Str("word", word).
+					Int("i", i).
+					Str("expected", string(ms[i].exact)).
+					Str("found", string(ws[i])).
+					Str("reason", "exact").
+					Msg("filter")
 				return false
 			}
-			if _, ok := ms[i].forbidden[ws[i]]; ok {
+			if _, ok := ms[i].misses[ws[i]]; ok {
+				log.Debug().
+					Str("word", word).
+					Int("i", i).
+					Str("found", string(ws[i])).
+					Str("reason", "miss").
+					Msg("filter")
 				return false
 			}
 		}
 		for key, val := range rq {
 			num, ok := rs[key]
 			if !ok || num < val {
+				log.Debug().
+					Str("word", word).
+					Str("letter", string(key)).
+					Int("expected", val).
+					Int("found", num).
+					Str("reason", "incomplete").
+					Msg("filter")
 				return false
 			}
 		}
@@ -67,14 +102,12 @@ func filter(ms []*state, rq map[rune]int) FilterFunc {
 }
 
 func compile(marks map[rune]map[int]Mark, ix int) FilterFunc { //nolint:gocognit
-	ms, rq := make([]*state, ix), make(map[rune]int)
-	// prepare the table
+	ms, rq := make([]*criteria, ix), make(map[rune]int)
 	for i := 0; i < ix; i++ {
-		ms[i] = &state{
-			forbidden: make(map[rune]struct{}),
+		ms[i] = &criteria{
+			misses: make(map[rune]struct{}),
 		}
 	}
-	// populate the table
 	for letter, states := range marks {
 		for index, mark := range states {
 			switch mark {
@@ -83,48 +116,51 @@ func compile(marks map[rune]map[int]Mark, ix int) FilterFunc { //nolint:gocognit
 				ms[index].exact = letter
 			case MarkMisplaced:
 				rq[letter]++
-				ms[index].forbidden[letter] = struct{}{}
+				ms[index].misses[letter] = struct{}{}
 			case MarkMiss:
 				/*
 					if the same letter exists as a misplaced or exact mark for any
 					index, then only add the miss to the current index otherwise add
 					it to all indices
-
-					go run cmd/qordle/main.go --debug validate cleat .legwl | jq
-					.l.egAl => the second l should put itself only in it's slot?
-					=> feedback [egwl]  [egwl] [gwle] [egwl] [egwl]
-					=> regex    [^egwl] [^weg] [^egw] [^egw] [^egwl]
 				*/
-				all := true
-				for i := 0; all && i < ix; i++ {
+				var variable bool
+				for i := 0; !variable && i < ix; i++ {
 					switch marks[letter][i] {
 					case MarkMiss:
 						// ignore
 					case MarkMisplaced, MarkExact:
-						all = false
+						// at least one other slot is variable
+						variable = true
+						ms[index].misses[letter] = struct{}{}
 					}
 				}
-				if all {
+				if !variable {
 					for i := 0; i < ix; i++ {
-						ms[i].forbidden[letter] = struct{}{}
+						ms[i].misses[letter] = struct{}{}
 					}
-				} else {
-					ms[index].forbidden[letter] = struct{}{}
 				}
 			}
 		}
 	}
-	// if zerolog.GlobalLevel() == zerolog.DebugLevel {
-	// 	var buf []string
-	// 	for i := range ms {
-	// 		var bar []string
-	// 		for letter := range ms[i].forbidden {
-	// 			bar = append(bar, string(letter))
-	// 		}
-	// 		buf = append(buf, "["+strings.Join(bar, "")+"]")
-	// 	}
-	// 	log.Debug().Str("pattern", strings.Join(buf, " ")).Any("required", rq).Msg("compile")
-	// }
+	if zerolog.GlobalLevel() == zerolog.DebugLevel {
+		var buf strings.Builder
+		for i := range ms {
+			switch {
+			case ms[i].exact != rune(0):
+				buf.WriteString(string(ms[i].exact))
+			default:
+				var bar []string
+				for letter := range ms[i].misses {
+					bar = append(bar, string(letter))
+				}
+				buf.WriteString("[^" + strings.Join(bar, "") + "]")
+			}
+		}
+		log.Debug().
+			Str("pattern", buf.String()).
+			Any("required", rq).
+			Msg("compile")
+	}
 	return filter(ms, rq)
 }
 
@@ -145,7 +181,7 @@ func parse(feedback string) (FilterFunc, error) {
 		default:
 			i++
 			if i >= len(rs) {
-				return nil, errors.New("too few characters")
+				return nil, ErrInvalidFormat
 			}
 			mark = MarkMisplaced
 		}
@@ -161,17 +197,17 @@ func parse(feedback string) (FilterFunc, error) {
 	return compile(marks, ix), nil
 }
 
-func Guesses(guesses ...string) (FilterFunc, error) {
+func Guess(guesses ...string) (FilterFunc, error) {
 	var fns []FilterFunc
 	for _, guess := range guesses {
 		if guess == "" {
 			continue
 		}
-		f, err := parse(guess)
+		ff, err := parse(guess)
 		if err != nil {
 			return nil, err
 		}
-		fns = append(fns, f)
+		fns = append(fns, ff)
 	}
 	if len(fns) == 0 {
 		return NoOp, nil
