@@ -78,12 +78,20 @@ func TestSuggestCommand(t *testing.T) {
 func TestValidateCommand(t *testing.T) {
 	for _, tt := range []harness{
 		{
-			name: "invalid",
+			name: "invalid match",
 			args: []string{"validate", "raise", "fol.l.y"},
 		},
 		{
-			name: "invalid",
+			name: "invalid length",
+			args: []string{"validate", "raise", "abc"},
+		},
+		{
+			name: "valid",
 			args: []string{"validate", "yleaz", "fol.l.y"},
+		},
+		{
+			name: "valid with exact",
+			args: []string{"validate", "yleaz", "fol.lZ"},
 		},
 		{
 			name: "failure",

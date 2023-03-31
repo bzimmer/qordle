@@ -22,13 +22,13 @@ const (
 
 var ErrInvalidLength = errors.New("secret and guess lengths do not match")
 
-func Check(secret string, guesses ...string) []Marks {
+func Check(secret string, guesses ...string) ([]Marks, error) {
 	secret = strings.ToLower(secret)
 	scores := make([]Marks, len(guesses))
 	for n, guess := range guesses {
 		if len(secret) != len(guess) {
 			log.Error().Str("secret", secret).Str("guess", guess).Msg("score")
-			panic(ErrInvalidLength)
+			return nil, ErrInvalidLength
 		}
 		guess = strings.ToLower(guess)
 		score := make(Marks, len(secret))
@@ -58,11 +58,14 @@ func Check(secret string, guesses ...string) []Marks {
 		}
 		scores[n] = score
 	}
-	return scores
+	return scores, nil
 }
 
-func Score(secret string, guesses ...string) []string {
-	checks := Check(secret, guesses...)
+func Score(secret string, guesses ...string) ([]string, error) {
+	checks, err := Check(secret, guesses...)
+	if err != nil {
+		return nil, err
+	}
 	scores := make([]string, len(checks))
 	for i := range checks {
 		var pattern string
@@ -79,7 +82,7 @@ func Score(secret string, guesses ...string) []string {
 		}
 		scores[i] = pattern
 	}
-	return scores
+	return scores, nil
 }
 
 func CommandScore() *cli.Command {
@@ -88,7 +91,10 @@ func CommandScore() *cli.Command {
 		Usage:     "score the guesses against the secret",
 		ArgsUsage: "<secret> <guess> [, <guess>]",
 		Action: func(c *cli.Context) error {
-			scores := Score(c.Args().First(), c.Args().Tail()...)
+			scores, err := Score(c.Args().First(), c.Args().Tail()...)
+			if err != nil {
+				return err
+			}
 			return Runtime(c).Encoder.Encode(scores)
 		},
 	}

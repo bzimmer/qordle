@@ -146,7 +146,7 @@ func compile(marks map[rune]map[int]Mark, ix int) FilterFunc { //nolint:gocognit
 		var buf strings.Builder
 		for i := range ms {
 			switch {
-			case ms[i].exact != 0:
+			case ms[i].exact != rune(0):
 				buf.WriteString(string(ms[i].exact))
 			default:
 				var bar []string
@@ -164,7 +164,7 @@ func compile(marks map[rune]map[int]Mark, ix int) FilterFunc { //nolint:gocognit
 	return filter(ms, rq)
 }
 
-func parse(feedback string) FilterFunc {
+func parse(feedback string) (FilterFunc, error) {
 	ix, rs := 0, []rune(feedback)
 	marks := make(map[rune]map[int]Mark)
 	for i := 0; i < len(rs); i++ {
@@ -181,7 +181,7 @@ func parse(feedback string) FilterFunc {
 		default:
 			i++
 			if i >= len(rs) {
-				panic(ErrInvalidFormat)
+				return nil, ErrInvalidFormat
 			}
 			mark = MarkMisplaced
 		}
@@ -194,19 +194,23 @@ func parse(feedback string) FilterFunc {
 		hit[ix] = mark
 		ix++
 	}
-	return compile(marks, ix)
+	return compile(marks, ix), nil
 }
 
-func Guess(guesses ...string) FilterFunc {
+func Guess(guesses ...string) (FilterFunc, error) {
 	var fns []FilterFunc
 	for _, guess := range guesses {
 		if guess == "" {
 			continue
 		}
-		fns = append(fns, parse(guess))
+		ff, err := parse(guess)
+		if err != nil {
+			return nil, err
+		}
+		fns = append(fns, ff)
 	}
 	if len(fns) == 0 {
-		return NoOp
+		return NoOp, nil
 	}
 	return func(word string) bool {
 		for _, fn := range fns {
@@ -215,5 +219,5 @@ func Guess(guesses ...string) FilterFunc {
 			}
 		}
 		return true
-	}
+	}, nil
 }

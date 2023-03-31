@@ -95,9 +95,10 @@ func TestLower(t *testing.T) {
 func TestGuesses(t *testing.T) {
 	t.Parallel()
 	for _, tt := range []struct {
-		name, word    string
-		guesses       []string
-		panic, result bool
+		name, word string
+		guesses    []string
+		result     bool
+		err        error
 	}{
 		{
 			name:    "no guesses",
@@ -148,25 +149,23 @@ func TestGuesses(t *testing.T) {
 			result:  true,
 		},
 		{
-			name:    "panic with poor format",
+			name:    "error with poor format",
 			word:    "pleat",
 			guesses: []string{"br.ain", ".l.Eg...A....."},
 			result:  true,
-			panic:   true,
+			err:     qordle.ErrInvalidFormat,
 		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
-			if tt.panic {
-				a.Panics(func() {
-					_ = qordle.Guess(tt.guesses...)
-				})
+			ff, err := qordle.Guess(tt.guesses...)
+			if tt.err != nil {
+				a.ErrorIs(err, tt.err)
 				return
 			}
-			p := qordle.Guess(tt.guesses...)
-			a.Equal(tt.result, p(tt.word))
+			a.Equal(tt.result, ff(tt.word))
 		})
 	}
 }
@@ -176,19 +175,10 @@ func FuzzGuesses(f *testing.F) {
 		f.Add(x)
 	}
 	f.Fuzz(func(t *testing.T, s string) {
-		defer func() {
-			if r := recover(); r != nil {
-				switch v := r.(type) {
-				case error:
-					if !errors.Is(v, qordle.ErrInvalidFormat) {
-						panic(v)
-					}
-				default:
-					panic(r)
-				}
-			}
-		}()
-		_ = qordle.Guess(s)
+		_, err := qordle.Guess(s)
+		if err != nil && !errors.Is(err, qordle.ErrInvalidFormat) {
+			panic(err)
+		}
 	})
 }
 
@@ -209,8 +199,13 @@ func TestFilter(t *testing.T) {
 			name:   "double letter",
 			words:  qordle.Dictionary{"excel", "fleck", "expel", "sport"},
 			result: qordle.Dictionary{"excel", "expel"},
-			fns:    []qordle.FilterFunc{qordle.Guess("brain", "south", "@l@edg@e")},
-		},
+			fns: func() []qordle.FilterFunc {
+				ff, err := qordle.Guess("brain", "south", "@l@edg@e")
+				if err != nil {
+					panic(err)
+				}
+				return []qordle.FilterFunc{ff}
+			}()},
 		{
 			name:   "filter all",
 			words:  qordle.Dictionary{"hoody", "foobar"},
