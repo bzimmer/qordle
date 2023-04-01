@@ -9,7 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-type criteria struct {
+type criterion struct {
 	exact  rune
 	misses map[rune]struct{}
 }
@@ -50,12 +50,12 @@ func Length(length int) FilterFunc {
 	}
 }
 
-func filter(ms []*criteria, rq map[rune]int) FilterFunc {
+func filter(criteria []*criterion, required map[rune]int) FilterFunc {
 	return func(word string) bool {
-		if len(word) != len(ms) {
+		if len(word) != len(criteria) {
 			log.Debug().
 				Str("word", word).
-				Int("expected", len(ms)).
+				Int("expected", len(criteria)).
 				Int("found", len(word)).
 				Str("reason", "length").
 				Msg("filter")
@@ -64,17 +64,17 @@ func filter(ms []*criteria, rq map[rune]int) FilterFunc {
 		ws, rs := []rune(word), make(map[rune]int)
 		for i := range ws {
 			rs[ws[i]]++
-			if ms[i].exact != 0 && ms[i].exact != ws[i] {
+			if criteria[i].exact != 0 && criteria[i].exact != ws[i] {
 				log.Debug().
 					Str("word", word).
 					Int("i", i).
-					Str("expected", string(ms[i].exact)).
+					Str("expected", string(criteria[i].exact)).
 					Str("found", string(ws[i])).
 					Str("reason", "exact").
 					Msg("filter")
 				return false
 			}
-			if _, ok := ms[i].misses[ws[i]]; ok {
+			if _, ok := criteria[i].misses[ws[i]]; ok {
 				log.Debug().
 					Str("word", word).
 					Int("i", i).
@@ -84,7 +84,7 @@ func filter(ms []*criteria, rq map[rune]int) FilterFunc {
 				return false
 			}
 		}
-		for key, val := range rq {
+		for key, val := range required {
 			num, ok := rs[key]
 			if !ok || num < val {
 				log.Debug().
@@ -92,7 +92,7 @@ func filter(ms []*criteria, rq map[rune]int) FilterFunc {
 					Str("letter", string(key)).
 					Int("expected", val).
 					Int("found", num).
-					Str("reason", "incomplete").
+					Str("reason", "required").
 					Msg("filter")
 				return false
 			}
@@ -101,13 +101,14 @@ func filter(ms []*criteria, rq map[rune]int) FilterFunc {
 	}
 }
 
-func compile(marks map[rune]map[int]Mark, ix int) FilterFunc { //nolint:gocognit
-	ms, rq := make([]*criteria, ix), make(map[rune]int)
-	for i := 0; i < ix; i++ {
-		ms[i] = &criteria{
-			misses: make(map[rune]struct{}),
+func compile(marks map[rune]map[int]Mark) FilterFunc { //nolint:gocognit
+	var criteria []*criterion
+	for _, states := range marks {
+		for range states {
+			criteria = append(criteria, &criterion{misses: make(map[rune]struct{})})
 		}
 	}
+	required := make(map[rune]int)
 	for letter, states := range marks {
 		/*
 			if the same letter exists as a misplaced or exact mark for any
@@ -118,13 +119,13 @@ func compile(marks map[rune]map[int]Mark, ix int) FilterFunc { //nolint:gocognit
 		for index, mark := range states {
 			switch mark {
 			case MarkExact:
-				rq[letter]++
-				ms[index].exact = letter
+				required[letter]++
+				criteria[index].exact = letter
 			case MarkMisplaced:
-				rq[letter]++
-				ms[index].misses[letter] = struct{}{}
+				required[letter]++
+				criteria[index].misses[letter] = struct{}{}
 			case MarkMiss:
-				for i := 0; !variable && i < ix; i++ {
+				for i := 0; !variable && i < len(criteria); i++ {
 					switch marks[letter][i] {
 					case MarkMiss:
 						// ignore
@@ -135,10 +136,10 @@ func compile(marks map[rune]map[int]Mark, ix int) FilterFunc { //nolint:gocognit
 				}
 				switch {
 				case variable:
-					ms[index].misses[letter] = struct{}{}
+					criteria[index].misses[letter] = struct{}{}
 				default:
-					for i := 0; i < ix; i++ {
-						ms[i].misses[letter] = struct{}{}
+					for i := 0; i < len(criteria); i++ {
+						criteria[i].misses[letter] = struct{}{}
 					}
 				}
 			}
@@ -146,13 +147,13 @@ func compile(marks map[rune]map[int]Mark, ix int) FilterFunc { //nolint:gocognit
 	}
 	if zerolog.GlobalLevel() == zerolog.DebugLevel {
 		var buf strings.Builder
-		for i := range ms {
+		for i := range criteria {
 			switch {
-			case ms[i].exact != rune(0):
-				buf.WriteString(string(ms[i].exact))
+			case criteria[i].exact != rune(0):
+				buf.WriteString(string(criteria[i].exact))
 			default:
 				var bar []string
-				for letter := range ms[i].misses {
+				for letter := range criteria[i].misses {
 					bar = append(bar, string(letter))
 				}
 				buf.WriteString("[^" + strings.Join(bar, "") + "]")
@@ -160,10 +161,10 @@ func compile(marks map[rune]map[int]Mark, ix int) FilterFunc { //nolint:gocognit
 		}
 		log.Debug().
 			Str("pattern", buf.String()).
-			Any("required", rq).
+			Any("required", required).
 			Msg("compile")
 	}
-	return filter(ms, rq)
+	return filter(criteria, required)
 }
 
 func parse(feedback string) (FilterFunc, error) {
@@ -212,7 +213,7 @@ func parse(feedback string) (FilterFunc, error) {
 		m[ix] = mark
 		ix++
 	}
-	return compile(marks, ix), nil
+	return compile(marks), nil
 }
 
 func Guess(guesses ...string) (FilterFunc, error) {
