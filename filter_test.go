@@ -146,7 +146,7 @@ func TestGuesses(t *testing.T) {
 			name:    "guesses with partial as hash and capital partial",
 			word:    "pleat",
 			guesses: []string{"br#ain", "#l#EgAl"},
-			result:  true,
+			err:     qordle.ErrInvalidFormat,
 		},
 		{
 			name:    "error with poor format",
@@ -165,6 +165,8 @@ func TestGuesses(t *testing.T) {
 				a.ErrorIs(err, tt.err)
 				return
 			}
+			a.NoError(err)
+			a.NotNil(ff)
 			a.Equal(tt.result, ff(tt.word))
 		})
 	}

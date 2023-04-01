@@ -98,6 +98,11 @@ func TestValidateCommand(t *testing.T) {
 			args: []string{"validate", "yleaz", "fol.l......."},
 			err:  qordle.ErrInvalidFormat.Error(),
 		},
+		{
+			name: "pattern failure",
+			args: []string{"validate", "yleaz", "ab...A"},
+			err:  qordle.ErrInvalidFormat.Error(),
+		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
