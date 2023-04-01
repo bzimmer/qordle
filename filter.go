@@ -132,15 +132,11 @@ func compile(marks map[rune]map[int]Mark) FilterFunc { //nolint:gocognit
 					case MarkMisplaced, MarkExact:
 						// at least one other slot is variable
 						variable = true
+						criteria[index].misses[letter] = struct{}{}
 					}
 				}
-				switch {
-				case variable:
-					criteria[index].misses[letter] = struct{}{}
-				default:
-					for i := 0; i < len(criteria); i++ {
-						criteria[i].misses[letter] = struct{}{}
-					}
+				for i := 0; !variable && i < len(criteria); i++ {
+					criteria[i].misses[letter] = struct{}{}
 				}
 			}
 		}
