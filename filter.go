@@ -180,18 +180,34 @@ func parse(feedback string) (FilterFunc, error) {
 			mark = MarkExact
 		default:
 			i++
-			if i >= len(rs) {
+			switch {
+			case i >= len(rs):
+				log.Debug().
+					Str("feedback", feedback).
+					Int("i", i).
+					Int("len", len(rs)).
+					Str("reason", "length").
+					Msg("filter")
+				return nil, ErrInvalidFormat
+			case unicode.IsLower(rs[i]):
+				mark = MarkMisplaced
+			default:
+				log.Debug().
+					Str("feedback", feedback).
+					Int("i", i).
+					Str("rune", string(rs[i])).
+					Str("reason", "invalid").
+					Msg("filter")
 				return nil, ErrInvalidFormat
 			}
-			mark = MarkMisplaced
 		}
 		lower := unicode.ToLower(rs[i])
-		hit, ok := marks[lower]
+		m, ok := marks[lower]
 		if !ok {
-			hit = make(map[int]Mark)
-			marks[lower] = hit
+			m = make(map[int]Mark)
+			marks[lower] = m
 		}
-		hit[ix] = mark
+		m[ix] = mark
 		ix++
 	}
 	return compile(marks, ix), nil
