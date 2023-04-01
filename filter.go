@@ -109,6 +109,12 @@ func compile(marks map[rune]map[int]Mark, ix int) FilterFunc { //nolint:gocognit
 		}
 	}
 	for letter, states := range marks {
+		/*
+			if the same letter exists as a misplaced or exact mark for any
+			index, then only add the miss to the current index otherwise add
+			it to all indices
+		*/
+		var variable bool
 		for index, mark := range states {
 			switch mark {
 			case MarkExact:
@@ -118,12 +124,6 @@ func compile(marks map[rune]map[int]Mark, ix int) FilterFunc { //nolint:gocognit
 				rq[letter]++
 				ms[index].misses[letter] = struct{}{}
 			case MarkMiss:
-				/*
-					if the same letter exists as a misplaced or exact mark for any
-					index, then only add the miss to the current index otherwise add
-					it to all indices
-				*/
-				var variable bool
 				for i := 0; !variable && i < ix; i++ {
 					switch marks[letter][i] {
 					case MarkMiss:
@@ -131,10 +131,12 @@ func compile(marks map[rune]map[int]Mark, ix int) FilterFunc { //nolint:gocognit
 					case MarkMisplaced, MarkExact:
 						// at least one other slot is variable
 						variable = true
-						ms[index].misses[letter] = struct{}{}
 					}
 				}
-				if !variable {
+				switch {
+				case variable:
+					ms[index].misses[letter] = struct{}{}
+				default:
 					for i := 0; i < ix; i++ {
 						ms[i].misses[letter] = struct{}{}
 					}
