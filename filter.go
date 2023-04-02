@@ -102,6 +102,7 @@ func filter(criteria []*criterion, required map[rune]int) FilterFunc {
 }
 
 func compile(marks map[rune]map[int]Mark) FilterFunc { //nolint:gocognit
+	var times int
 	var criteria []*criterion
 	for _, states := range marks {
 		for range states {
@@ -119,26 +120,20 @@ func compile(marks map[rune]map[int]Mark) FilterFunc { //nolint:gocognit
 		for index, mark := range states {
 			switch mark {
 			case MarkExact:
+				variable = true
 				required[letter]++
 				criteria[index].exact = letter
 			case MarkMisplaced:
+				variable = true
 				required[letter]++
 				criteria[index].misses[letter] = struct{}{}
 			case MarkMiss:
-				for i := 0; !variable && i < len(criteria); i++ {
-					switch marks[letter][i] {
-					case MarkMiss:
-						// ignore
-					case MarkMisplaced, MarkExact:
-						// at least one other slot is variable
-						variable = true
-						criteria[index].misses[letter] = struct{}{}
-					}
-				}
-				for i := 0; !variable && i < len(criteria); i++ {
-					criteria[i].misses[letter] = struct{}{}
-				}
+				criteria[index].misses[letter] = struct{}{}
 			}
+		}
+		for i := 0; !variable && i < len(criteria); i++ {
+			times++
+			criteria[i].misses[letter] = struct{}{}
 		}
 	}
 	if zerolog.GlobalLevel() == zerolog.DebugLevel {
@@ -158,6 +153,7 @@ func compile(marks map[rune]map[int]Mark) FilterFunc { //nolint:gocognit
 		log.Debug().
 			Str("pattern", buf.String()).
 			Any("required", required).
+			Int("times", times).
 			Msg("compile")
 	}
 	return filter(criteria, required)
