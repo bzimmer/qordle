@@ -102,7 +102,6 @@ func filter(criteria []*criterion, required map[rune]int) FilterFunc {
 }
 
 func compile(marks map[rune]map[int]Mark) FilterFunc { //nolint:gocognit
-	var times int
 	var criteria []*criterion
 	for _, states := range marks {
 		for range states {
@@ -132,7 +131,6 @@ func compile(marks map[rune]map[int]Mark) FilterFunc { //nolint:gocognit
 			}
 		}
 		for i := 0; !constrained && i < len(criteria); i++ {
-			times++
 			criteria[i].misses[letter] = struct{}{}
 		}
 	}
@@ -153,7 +151,6 @@ func compile(marks map[rune]map[int]Mark) FilterFunc { //nolint:gocognit
 		log.Debug().
 			Str("pattern", buf.String()).
 			Any("required", required).
-			Int("times", times).
 			Msg("compile")
 	}
 	return filter(criteria, required)
