@@ -79,7 +79,7 @@ func filter(criteria []*criterion, required map[rune]int) FilterFunc {
 					Str("word", word).
 					Int("i", i).
 					Str("found", string(ws[i])).
-					Str("reason", "miss").
+					Str("reason", "invalid").
 					Msg("filter")
 				return false
 			}
@@ -113,36 +113,25 @@ func compile(marks map[rune]map[int]Mark) FilterFunc { //nolint:gocognit
 		/*
 			if the same letter exists as a misplaced or exact mark for any
 			index, then only add the miss to the current index otherwise add
-			it to all indices
+			it to indices
 		*/
-		var variable bool
+		var constrained bool
 		for index, mark := range states {
 			switch mark {
 			case MarkExact:
+				constrained = true
 				required[letter]++
 				criteria[index].exact = letter
 			case MarkMisplaced:
+				constrained = true
 				required[letter]++
 				criteria[index].misses[letter] = struct{}{}
 			case MarkMiss:
-				for i := 0; !variable && i < len(criteria); i++ {
-					switch marks[letter][i] {
-					case MarkMiss:
-						// ignore
-					case MarkMisplaced, MarkExact:
-						// at least one other slot is variable
-						variable = true
-					}
-				}
-				switch {
-				case variable:
-					criteria[index].misses[letter] = struct{}{}
-				default:
-					for i := 0; i < len(criteria); i++ {
-						criteria[i].misses[letter] = struct{}{}
-					}
-				}
+				criteria[index].misses[letter] = struct{}{}
 			}
+		}
+		for i := 0; !constrained && i < len(criteria); i++ {
+			criteria[i].misses[letter] = struct{}{}
 		}
 	}
 	if zerolog.GlobalLevel() == zerolog.DebugLevel {
