@@ -219,6 +219,56 @@ func (s *Bigram) Apply(words Dictionary) Dictionary {
 	})
 }
 
+/*
+type Elimination struct{}
+
+func (s *Elimination) String() string {
+	return "elimination"
+}
+
+func (s *Elimination) Apply(words Dictionary) Dictionary {
+	if len(words) > 3500 {
+		return nil
+	}
+	res := make(map[string]float64)
+	for i := range words {
+		secret := words[i]
+		marks, err := Check(secret, words...)
+		if err != nil {
+			panic(err)
+		}
+		scores := make(map[int][]string)
+		for j := range marks {
+			switch {
+			case i == j:
+				// skip the identity
+			default:
+				var key int
+				for k := range marks[j] {
+					switch marks[j][k] {
+					case MarkMiss:
+						// 0
+					case MarkMisplaced:
+						key += 1
+					case MarkExact:
+						key += 3
+					}
+				}
+				scores[key] = append(scores[key], words[j])
+			}
+		}
+		for key, vals := range scores {
+			for _, val := range vals {
+				res[val] += float64(key)
+			}
+		}
+	}
+	return mkdictf(res, func(i, j float64) bool {
+		return i > j
+	})
+}
+*/
+
 // Chain chains multiple strategies to sort the wordlist
 type Chain struct {
 	strategies []Strategy

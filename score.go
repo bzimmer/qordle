@@ -2,14 +2,17 @@ package qordle
 
 import (
 	"errors"
-	"fmt"
 	"strings"
+	"unicode"
 
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 )
 
+// Mark is the state for a letter
 type Mark int
+
+// Marks is a slice of marks
 type Marks []Mark
 
 const (
@@ -32,21 +35,21 @@ func Check(secret string, guesses ...string) ([]Marks, error) {
 		}
 		guess = strings.ToLower(guess)
 		score := make(Marks, len(secret))
-		round := make(map[string]int, len(secret))
+		round := make(map[byte]int, len(secret))
 		// first pass checks for exact matches
 		for i := range guess {
 			switch {
 			case secret[i] == guess[i]:
 				score[i] = MarkExact
 			default:
-				round[string(secret[i])]++
+				round[secret[i]]++
 			}
 		}
 		// second pass checks for misplaced matches
 		for i := range guess {
 			if score[i] != MarkExact {
-				m := string(guess[i])
-				switch val := round[m]; val {
+				m := guess[i]
+				switch round[m] {
 				case 0:
 					// this letter doesn't exist in the secret
 					score[i] = MarkMiss
@@ -68,19 +71,19 @@ func Score(secret string, guesses ...string) ([]string, error) {
 	}
 	scores := make([]string, len(checks))
 	for i := range checks {
-		var pattern string
-		score, guess := checks[i], guesses[i]
+		var pattern []rune
+		score, guess := checks[i], []rune(guesses[i])
 		for j := range score {
 			switch score[j] {
 			case MarkExact:
-				pattern += strings.ToUpper(string(guess[j]))
+				pattern = append(pattern, unicode.ToUpper(guess[j]))
 			case MarkMiss:
-				pattern += strings.ToLower(string(guess[j]))
+				pattern = append(pattern, unicode.ToLower(guess[j]))
 			case MarkMisplaced:
-				pattern += fmt.Sprintf("%c%s", yellow, strings.ToLower(string(guess[j])))
+				pattern = append(pattern, yellow, unicode.ToLower(guess[j]))
 			}
 		}
-		scores[i] = pattern
+		scores[i] = string(pattern)
 	}
 	return scores, nil
 }
