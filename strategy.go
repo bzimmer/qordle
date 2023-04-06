@@ -219,23 +219,23 @@ func (s *Bigram) Apply(words Dictionary) Dictionary {
 	})
 }
 
-/*
 type Elimination struct{}
 
 func (s *Elimination) String() string {
 	return "elimination"
 }
 
-func (s *Elimination) Apply(words Dictionary) Dictionary {
-	if len(words) > 3500 {
-		return nil
+func (s *Elimination) Apply(words Dictionary) Dictionary { //nolint:gocognit
+	if len(words) == 1 {
+		return words
 	}
 	res := make(map[string]float64)
 	for i := range words {
 		secret := words[i]
 		marks, err := Check(secret, words...)
 		if err != nil {
-			panic(err)
+			log.Error().Err(err).Msg("elimination")
+			return nil
 		}
 		scores := make(map[int][]string)
 		for j := range marks {
@@ -243,18 +243,18 @@ func (s *Elimination) Apply(words Dictionary) Dictionary {
 			case i == j:
 				// skip the identity
 			default:
-				var key int
+				var score int
 				for k := range marks[j] {
 					switch marks[j][k] {
 					case MarkMiss:
-						// 0
+						// no score
 					case MarkMisplaced:
-						key += 1
+						score++
 					case MarkExact:
-						key += 3
+						score += 3
 					}
 				}
-				scores[key] = append(scores[key], words[j])
+				scores[score] = append(scores[score], words[j])
 			}
 		}
 		for key, vals := range scores {
@@ -267,7 +267,6 @@ func (s *Elimination) Apply(words Dictionary) Dictionary {
 		return i > j
 	})
 }
-*/
 
 // Chain chains multiple strategies to sort the wordlist
 type Chain struct {
