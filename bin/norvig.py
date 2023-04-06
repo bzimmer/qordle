@@ -128,7 +128,7 @@ for letter, frequency in c.findall(frequencies):
 print("}")
 print()
 print("// letter frequencies by position")
-print("var _ = map[rune]map[int]float64{")
+print("var positions = map[rune]map[int]float64{ //nolint:gochecknoglobals")
 for key, val in sorted(m.items()):
     m = list()
     for k, v in val.items():

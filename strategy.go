@@ -219,6 +219,76 @@ func (s *Bigram) Apply(words Dictionary) Dictionary {
 	})
 }
 
+type Elimination struct{}
+
+func (s *Elimination) String() string {
+	return "elimination"
+}
+
+func (s *Elimination) score(words Dictionary, i int) map[string]float64 {
+	secret := words[i]
+	marks, err := Check(secret, words...)
+	if err != nil {
+		log.Error().Err(err).Str("secret", secret).Msg("elimination")
+		return nil
+	}
+	scores := make(map[string]float64)
+	for j := range marks {
+		switch {
+		case i == j:
+			// skip the identity
+		default:
+			var score float64
+			for k := range marks[j] {
+				switch marks[j][k] {
+				case MarkMiss:
+					// no score
+				case MarkMisplaced:
+					score++
+				case MarkExact:
+					score += 3
+				}
+			}
+			scores[words[j]] = score
+		}
+	}
+	return scores
+}
+
+func (s *Elimination) Apply(words Dictionary) Dictionary {
+	switch len(words) {
+	case 0, 1:
+		return words
+	}
+
+	var wg sync.WaitGroup
+	scoresc := make(chan map[string]float64, len(words)/2)
+	for i := range words {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			scoresc <- s.score(words, i)
+		}(i)
+	}
+	go func() {
+		defer close(scoresc)
+		wg.Wait()
+	}()
+
+	res := make(map[string]float64)
+	for scores := range scoresc {
+		if scores == nil {
+			return nil
+		}
+		for key, val := range scores {
+			res[key] += val
+		}
+	}
+	return mkdictf(res, func(i, j float64) bool {
+		return i > j
+	})
+}
+
 // Chain chains multiple strategies to sort the wordlist
 type Chain struct {
 	strategies []Strategy

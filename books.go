@@ -33,7 +33,7 @@ var frequencies = map[rune]float64{ //nolint:gochecknoglobals
 }
 
 // letter frequencies by position
-var _ = map[rune]map[int]float64{
+var positions = map[rune]map[int]float64{ //nolint:gochecknoglobals
 	'a': {0: 11.682, 1: 09.849, 2: 07.366, 3: 04.916, 4: 05.481, 5: 06.467, 6: 07.402},
 	'b': {0: 04.434, 1: 00.519, 2: 00.873, 3: 00.929, 4: 00.571, 5: 00.916, 6: 00.701},
 	'c': {0: 05.238, 1: 00.948, 2: 03.428, 3: 03.902, 4: 03.339, 5: 03.992, 6: 03.099},
