@@ -2,7 +2,7 @@
 package qordle
 
 // letter frequencies
-var frequencies = map[rune]float64{ //nolint:gochecknoglobals
+var frequencies = map[rune]float64{
 	'a': 0.0847, 'b': 0.0183, 'c': 0.0437, 'd': 0.0324, 'e': 0.1077,
 	'f': 0.0113, 'g': 0.0236, 'h': 0.0264, 'i': 0.0894, 'j': 0.0016,
 	'k': 0.0078, 'l': 0.0557, 'm': 0.0301, 'n': 0.0718, 'o': 0.0720,
@@ -12,7 +12,7 @@ var frequencies = map[rune]float64{ //nolint:gochecknoglobals
 }
 
 // letter frequencies by position for all words lte to 7 letters
-var positions = map[rune]map[int]float64{ //nolint:gochecknoglobals
+var positions = map[rune]map[int]float64{
 	'a': {0: 0.0689, 1: 0.1757, 2: 0.0856, 3: 0.0872, 4: 0.0917, 5: 0.0756, 6: 0.0571},
 	'b': {0: 0.0700, 1: 0.0069, 2: 0.0307, 3: 0.0266, 4: 0.0121, 5: 0.0042, 6: 0.0016},
 	'c': {0: 0.0813, 1: 0.0171, 2: 0.0408, 3: 0.0338, 4: 0.0221, 5: 0.0232, 6: 0.0210},
@@ -42,7 +42,7 @@ var positions = map[rune]map[int]float64{ //nolint:gochecknoglobals
 }
 
 // bigram frequencies for all bigrams with frequencies gte to 0.0001
-var bigrams = map[string]float64{ //nolint:gochecknoglobals
+var bigrams = map[string]float64{
 	"ab": 0.0048, "ac": 0.0064, "ad": 0.0032, "ae": 0.0010, "af": 0.0007, "ag": 0.0030,
 	"ah": 0.0004, "ai": 0.0023, "aj": 0.0001, "ak": 0.0010, "al": 0.0102, "am": 0.0039,
 	"an": 0.0120, "ao": 0.0001, "ap": 0.0037, "aq": 0.0001, "ar": 0.0107, "as": 0.0052,
