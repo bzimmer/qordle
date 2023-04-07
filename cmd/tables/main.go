@@ -16,7 +16,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-const length = 6
+const length = 7
 const cutoff = 0.0001
 
 type TableFunc func(qordle.Dictionary) (string, string)
@@ -30,12 +30,12 @@ var frequencies = map[rune]float64{ //nolint:gochecknoglobals
 	{{.frequencies}}
 }
 
-// letter frequencies by position for all words less than {{.length}} letters
+// letter frequencies by position for all words lte to {{.length}} letters
 var positions = map[rune]map[int]float64{ //nolint:gochecknoglobals
 	{{.positions}}
 }
 
-// bigram frequencies for all bigrams with frequencies greater than {{.cutoff}}
+// bigram frequencies for all bigrams with frequencies gte to {{.cutoff}}
 var bigrams = map[string]float64{ //nolint:gochecknoglobals
 	{{.bigrams}}
 }
