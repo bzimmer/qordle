@@ -244,9 +244,9 @@ func (s *Elimination) score(words Dictionary, i int) map[string]float64 {
 				case MarkMiss:
 					// no score
 				case MarkMisplaced:
-					score++
+					score += positions[rune(secret[k])][k]
 				case MarkExact:
-					score += 3
+					score += (2 * positions[rune(secret[k])][k])
 				}
 			}
 			scores[words[j]] = score

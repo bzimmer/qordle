@@ -65,7 +65,7 @@ func frequencies(words qordle.Dictionary) (string, string) {
 	}
 	sort.Slice(builder, func(i, j int) bool { return builder[i] < builder[j] })
 	var output []string
-	for _, val := range chunk(builder, 5) {
+	for _, val := range chunk(builder, 6) {
 		output = append(output, strings.Join(val, " "))
 	}
 	return "frequencies", strings.Join(output, "\n")
