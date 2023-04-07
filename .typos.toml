@@ -2,8 +2,7 @@
 
 [files]
 extend-exclude = [
-  "books.go",
+  "tables.go",
   "data/*.txt",
-  "bin/norvig.py",
   "testdata/*",
 ]

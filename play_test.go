@@ -252,7 +252,7 @@ func TestPlayCommand(t *testing.T) {
 			after: func(c *cli.Context) error {
 				round := decode(c)
 				a.True(round.Success)
-				a.Equal([]string{"t.h.ere", ".h.en.ds", "icHED", "poHED", "AAHED"}, round.Scores)
+				a.Equal([]string{".ering", "lAtED", "cAsED", ".hAdED", "AAHED"}, round.Scores)
 				return nil
 			},
 		},

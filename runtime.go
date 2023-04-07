@@ -1,5 +1,7 @@
 package qordle
 
+//go:generate go run cmd/tables/main.go -- tables.go
+
 import (
 	"net/http"
 	"time"

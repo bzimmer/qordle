@@ -55,38 +55,38 @@ func CommandValidate() *cli.Command {
 	}
 }
 
-func CommandBooks() *cli.Command {
+func CommandTable() *cli.Command {
 	return &cli.Command{
-		Name:  "books",
-		Usage: "detailed information from google books",
+		Name:  "table",
+		Usage: "detailed information from letter frequency tables",
 		Description: `Sum all the percentages for letters in position 2:
 
-	$ qordle books | jq '.positions | flatten | map(."2") | add'
+	$ qordle table | jq '.positions | flatten | map(."2") | add'
 
 Compute the score for a word:
 
-	$ qordle books brown | jq .words
+	$ qordle table brown | jq .words
 	{
 		"brown": {
 		  "frequencies": {
 			"ranks": {
-			  "0": 1.48,
-			  "1": 6.28,
-			  "2": 7.64,
-			  "3": 1.68,
-			  "4": 7.23
+			  "0": 0.0183,
+			  "1": 0.0704,
+			  "2": 0.0720,
+			  "3": 0.0065,
+			  "4": 0.0718
 			},
-			"total": 24.31
+			"total": 0.2390
 		  },
 		  "positions": {
 			"ranks": {
-			  "0": 4.434,
-			  "1": 5.891,
-			  "2": 5.97,
-			  "3": 1.107,
-			  "4": 6.536
+			  "0": 0.0698,
+			  "1": 0.0649,
+			  "2": 0.0638,
+			  "3": 0.0101,
+			  "4": 0.0644
 			},
-			"total": 23.937999999999995
+			"total": 0.2730
 		  }
 		}
 	}`,
