@@ -179,7 +179,8 @@ func action(c *cli.Context) error {
 	}
 	for i := 0; i < c.NArg(); i++ {
 		if err = func(name string) error {
-			fp, err := os.Create(name)
+			var fp *os.File
+			fp, err = os.Create(name)
 			if err != nil {
 				return err
 			}
