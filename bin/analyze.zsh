@@ -29,23 +29,6 @@ csvq -c '
         rounds, secret, strategy
 ' < ${regression}
 
-# print -P "%F{magenta}\nSummary statistics%f\n" 1>&2
-# csvq -c '
-#     select
-#         strategy,
-#         avg(rounds) as avg_rounds,
-#         stdev(rounds) as stdev_rounds,
-#         max(rounds) as max_rounds,
-#         min(rounds) as min_rounds,
-#         avg(elapsed) as avg_elapsed
-#     from
-#         stdin
-#     group by
-#         strategy
-#     order by
-#         strategy
-# ' < ${regression}
-
 print -P "%F{magenta}\nHistograms%f\n" 1>&2
 csvq -c '
     select
@@ -56,4 +39,29 @@ csvq -c '
         strategy, rounds
     order by
         len(strategy), strategy, rounds, bins
+' < ${regression}
+
+print -P "%F{magenta}\nWinners%f\n" 1>&2
+csvq -c '
+    with
+        totals
+    as (
+        select
+            strategy, count(*) as total
+        from
+            stdin
+        group by
+            strategy
+    )
+    select
+        stdin.strategy, count(stdin.rounds) as winners, format("%0.1f", 100 * (float(winners) / totals.total)) as pct
+    from
+        stdin, totals
+    where
+        stdin.rounds <= 6
+        and stdin.strategy = totals.strategy
+    group by
+        stdin.strategy, totals.total
+    order by
+        winners desc, len(stdin.strategy), stdin.strategy
 ' < ${regression}

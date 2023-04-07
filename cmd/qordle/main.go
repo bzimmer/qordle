@@ -72,6 +72,7 @@ func main() {
 			for _, strategy := range []qordle.Strategy{
 				new(qordle.Alpha),
 				new(qordle.Bigram),
+				new(qordle.Elimination),
 				new(qordle.Frequency),
 				new(qordle.Position),
 			} {
@@ -91,6 +92,7 @@ func main() {
 		},
 		Commands: []*cli.Command{
 			qordle.CommandBee(),
+			qordle.CommandTable(),
 			qordle.CommandLetterBox(),
 			qordle.CommandPlay(),
 			qordle.CommandScore(),

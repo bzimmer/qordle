@@ -9,12 +9,17 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// criterion describes the state for a letter
 type criterion struct {
 	exact  rune
 	misses map[rune]struct{}
 }
 
+// FilterFunc performs a validation on the word
 type FilterFunc func(string) bool
+
+// parsed holds letter -> index -> mark
+type parsed map[rune]map[int]Mark
 
 var ErrInvalidFormat = errors.New("invalid pattern format")
 
@@ -101,7 +106,7 @@ func filter(criteria []*criterion, required map[rune]int) FilterFunc {
 	}
 }
 
-func compile(marks map[rune]map[int]Mark) FilterFunc { //nolint:gocognit
+func compile(marks parsed) ([]*criterion, map[rune]int) { //nolint:gocognit
 	var criteria []*criterion
 	for _, states := range marks {
 		for range states {
@@ -110,26 +115,26 @@ func compile(marks map[rune]map[int]Mark) FilterFunc { //nolint:gocognit
 	}
 	required := make(map[rune]int)
 	for letter, states := range marks {
-		/*
-			if the same letter exists as a misplaced or exact mark for any
-			index, then only add the miss to the current index otherwise add
-			it to indices
-		*/
 		var constrained bool
 		for index, mark := range states {
 			switch mark {
 			case MarkExact:
 				constrained = true
 				required[letter]++
+				// letter must appear at this index
 				criteria[index].exact = letter
 			case MarkMisplaced:
 				constrained = true
 				required[letter]++
+				// letter cannot appear at this index but can appear elsewhere
 				criteria[index].misses[letter] = struct{}{}
 			case MarkMiss:
+				// letter cannot appear at this index but can appear elsewhere
+				// only if unconstrained
 				criteria[index].misses[letter] = struct{}{}
 			}
 		}
+		// if unconstrained, the current letter is not found in the word at any index
 		for i := 0; !constrained && i < len(criteria); i++ {
 			criteria[i].misses[letter] = struct{}{}
 		}
@@ -148,17 +153,20 @@ func compile(marks map[rune]map[int]Mark) FilterFunc { //nolint:gocognit
 				buf.WriteString("[^" + strings.Join(bar, "") + "]")
 			}
 		}
+		req := make(map[string]int, len(required))
+		for key, val := range required {
+			req[string(key)] = val
+		}
 		log.Debug().
 			Str("pattern", buf.String()).
-			Any("required", required).
+			Any("required", req).
 			Msg("compile")
 	}
-	return filter(criteria, required)
+	return criteria, required
 }
 
-func parse(feedback string) (FilterFunc, error) {
-	ix, rs := 0, []rune(feedback)
-	marks := make(map[rune]map[int]Mark)
+func parse(feedback string) (parsed, error) {
+	ix, rs, marks := 0, []rune(feedback), make(parsed)
 	for i := 0; i < len(rs); i++ {
 		var mark Mark
 		switch {
@@ -179,7 +187,7 @@ func parse(feedback string) (FilterFunc, error) {
 					Int("i", i).
 					Int("len", len(rs)).
 					Str("reason", "length").
-					Msg("filter")
+					Msg("parse")
 				return nil, ErrInvalidFormat
 			case unicode.IsLower(rs[i]):
 				mark = MarkMisplaced
@@ -189,7 +197,7 @@ func parse(feedback string) (FilterFunc, error) {
 					Int("i", i).
 					Str("rune", string(rs[i])).
 					Str("reason", "invalid").
-					Msg("filter")
+					Msg("parse")
 				return nil, ErrInvalidFormat
 			}
 		}
@@ -202,7 +210,7 @@ func parse(feedback string) (FilterFunc, error) {
 		m[ix] = mark
 		ix++
 	}
-	return compile(marks), nil
+	return marks, nil
 }
 
 func Guess(guesses ...string) (FilterFunc, error) {
@@ -211,11 +219,11 @@ func Guess(guesses ...string) (FilterFunc, error) {
 		if guess == "" {
 			continue
 		}
-		ff, err := parse(guess)
+		marks, err := parse(guess)
 		if err != nil {
 			return nil, err
 		}
-		fns = append(fns, ff)
+		fns = append(fns, filter(compile(marks)))
 	}
 	if len(fns) == 0 {
 		return NoOp, nil

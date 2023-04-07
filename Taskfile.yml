@@ -57,11 +57,17 @@ tasks:
       - rm -rf {{.DIST}}
 
   build:
-    desc: Build all cmds
+    desc: Build all commands
     deps: [dist]
     cmds:
       - go build -o {{.DIST}}/{{.APP}} cmd/{{.APP}}/*.go
       - go build -o {{.DIST}}/{{.APP}}d cmd/{{.APP}}d/*.go
+
+  build:generate:
+    desc: Generate and build all commands
+    cmds:
+      - go generate
+      - task: build
 
   lint:
     desc: Runs golint
@@ -115,9 +121,3 @@ tasks:
     cmds:
       - go test -outputdir {{.DIST}} -cpuprofile cpu.prof -memprofile mem.prof -bench .
       - go tool pprof -http=":8000" ./qordle.test {{.DIST}}/mem.prof
-
-  books:
-    desc: Generate the google books data structures
-    cmds:
-      - python3 {{.CWD}}/bin/norvig.py > {{.CWD}}/books.go
-      - task: goimports

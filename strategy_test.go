@@ -143,6 +143,50 @@ func TestFrequency(t *testing.T) {
 	}
 }
 
+func TestElimination(t *testing.T) {
+	t.Parallel()
+	for _, tt := range []struct {
+		name          string
+		words, result qordle.Dictionary
+	}{
+		{
+			name:   "elimination one",
+			words:  qordle.Dictionary{"easle", "false", "fause", "hatse", "haste"},
+			result: qordle.Dictionary{"false", "hatse", "fause", "haste", "easle"},
+		},
+		{
+			name:   "elimination two",
+			words:  qordle.Dictionary{"poiuy", "unyki", "uiybq", "bnhyu"},
+			result: qordle.Dictionary{"uiybq", "unyki", "bnhyu", "poiuy"},
+		},
+		{
+			name:   "empty",
+			words:  qordle.Dictionary{},
+			result: qordle.Dictionary{},
+		},
+		{
+			name:   "one word",
+			words:  qordle.Dictionary{"qordle"},
+			result: qordle.Dictionary{"qordle"},
+		},
+		{
+			name:   "different length words",
+			words:  qordle.Dictionary{"abcde", "abcdef"},
+			result: qordle.Dictionary(nil),
+		},
+	} {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			a := assert.New(t)
+			s := new(qordle.Elimination)
+			dictionary := s.Apply(tt.words)
+			a.Equal(tt.result, dictionary)
+			a.Equal("elimination", s.String())
+		})
+	}
+}
+
 func TestPosition(t *testing.T) {
 	t.Parallel()
 	for _, tt := range []struct {

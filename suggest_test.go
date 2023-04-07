@@ -115,3 +115,21 @@ func TestValidateCommand(t *testing.T) {
 		})
 	}
 }
+
+func TestTableCommand(t *testing.T) {
+	for _, tt := range []harness{
+		{
+			name: "simple",
+			args: []string{"table"},
+		},
+		{
+			name: "words",
+			args: []string{"table", "brown"},
+		},
+	} {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			run(t, &tt, qordle.CommandTable)
+		})
+	}
+}
