@@ -152,12 +152,12 @@ func TestElimination(t *testing.T) {
 		{
 			name:   "elimination one",
 			words:  qordle.Dictionary{"easle", "false", "fause", "hatse", "haste"},
-			result: qordle.Dictionary{"hatse", "false", "fause", "haste", "easle"},
+			result: qordle.Dictionary{"false", "hatse", "fause", "haste", "easle"},
 		},
 		{
 			name:   "elimination two",
 			words:  qordle.Dictionary{"poiuy", "unyki", "uiybq", "bnhyu"},
-			result: qordle.Dictionary{"unyki", "uiybq", "bnhyu", "poiuy"},
+			result: qordle.Dictionary{"uiybq", "unyki", "bnhyu", "poiuy"},
 		},
 		{
 			name:   "empty",
