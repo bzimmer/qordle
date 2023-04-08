@@ -216,17 +216,11 @@ func parse(feedback string) (parsed, error) {
 func Guess(guesses ...string) (FilterFunc, error) {
 	var fns []FilterFunc
 	for _, guess := range guesses {
-		if guess == "" {
-			continue
-		}
 		marks, err := parse(guess)
 		if err != nil {
 			return nil, err
 		}
 		fns = append(fns, filter(compile(marks)))
-	}
-	if len(fns) == 0 {
-		return NoOp, nil
 	}
 	return func(word string) bool {
 		for _, fn := range fns {

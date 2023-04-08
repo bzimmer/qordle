@@ -101,9 +101,21 @@ func TestGuesses(t *testing.T) {
 		err        error
 	}{
 		{
-			name:    "no guesses",
+			name:    "empty string guess filter word",
 			word:    "hoody",
 			guesses: []string{""},
+			result:  false,
+		},
+		{
+			name:    "empty string guess filter empty string",
+			word:    "",
+			guesses: []string{""},
+			result:  true,
+		},
+		{
+			name:    "no guesses",
+			word:    "hoody",
+			guesses: []string{},
 			result:  true,
 		},
 		{
