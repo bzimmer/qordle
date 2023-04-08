@@ -144,6 +144,11 @@ func TestOrderCommand(t *testing.T) {
 			name: "several words",
 			args: []string{"order", "brand", "brown", "poker", "tares", "raise"},
 		},
+		{
+			name: "bad strateg",
+			args: []string{"order", "-s", "foobar", "brand", "brown", "poker", "tares", "raise"},
+			err:  "unknown strategy `foobar`",
+		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
