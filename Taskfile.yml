@@ -40,7 +40,7 @@ tasks:
       - "{{.CWD}}/bin/regression.zsh"
       - "{{.CWD}}/bin/analyze.zsh"
 
-  fuzz:
+  test:fuzz:
     desc: Run fuzz tests
     cmds:
       - go test -fuzz=Fuzz{{.CLI_ARGS}} -fuzztime 10s
