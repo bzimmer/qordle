@@ -133,3 +133,21 @@ func TestRanksCommand(t *testing.T) {
 		})
 	}
 }
+
+func TestOrderCommand(t *testing.T) {
+	for _, tt := range []harness{
+		{
+			name: "no words",
+			args: []string{"order"},
+		},
+		{
+			name: "several words",
+			args: []string{"order", "brand", "brown", "poker", "tares", "raise"},
+		},
+	} {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			run(t, &tt, qordle.CommandOrder)
+		})
+	}
+}
