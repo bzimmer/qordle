@@ -6,9 +6,9 @@ import (
 
 func CommandSuggest() *cli.Command {
 	return &cli.Command{
-		Name:        "suggest",
-		Usage:       "suggest the next guess",
-		Description: "suggest the next guess",
+		Name:     "suggest",
+		Category: "wordle",
+		Usage:    "Suggest the next guess",
 		Flags: append(
 			[]cli.Flag{
 				&cli.IntFlag{
@@ -37,7 +37,8 @@ func CommandSuggest() *cli.Command {
 func CommandValidate() *cli.Command {
 	return &cli.Command{
 		Name:      "validate",
-		Usage:     "validate the word against the pattern",
+		Category:  "wordle",
+		Usage:     "Validate the word against the pattern",
 		ArgsUsage: "<word to validate> <scored word> [, <scored word>]",
 		Action: func(c *cli.Context) error {
 			word := c.Args().First()
@@ -55,17 +56,18 @@ func CommandValidate() *cli.Command {
 	}
 }
 
-func CommandTable() *cli.Command {
+func CommandRanks() *cli.Command {
 	return &cli.Command{
-		Name:  "table",
-		Usage: "detailed information from letter frequency tables",
+		Name:     "ranks",
+		Category: "wordle",
+		Usage:    "Detailed rank information from letter frequency tables",
 		Description: `Sum all the percentages for letters in position 2:
 
-	$ qordle table | jq '.positions | flatten | map(."2") | add'
+	$ qordle ranks | jq '.positions | flatten | map(."2") | add'
 
 Compute the score for a word:
 
-	$ qordle table brown | jq .words
+	$ qordle ranks brown | jq .words
 	{
 		"brown": {
 		  "frequencies": {
@@ -93,17 +95,27 @@ Compute the score for a word:
 		Action: func(c *cli.Context) error {
 			words := make(map[string]any, c.NArg())
 			for i := 0; i < c.NArg(); i++ {
-				var pt, ft float64
-				w := []rune(c.Args().Get(i))
+				var bt, ft, pt float64
+				word := c.Args().Get(i)
+				w := []rune(word)
 				p := make(map[int]float64, len(w))
 				f := make(map[int]float64, len(w))
+				b := make(map[string]float64, len(w))
 				for j := range w {
 					p[j] = positions[w[j]][j]
 					pt += p[j]
 					f[j] = frequencies[w[j]]
 					ft += f[j]
+
+					k := 0
+					for k+2 <= len(word) {
+						bt += bigrams[word[k:k+2]]
+						b[word[k:k+2]] = bigrams[word[k:k+2]]
+						k++
+					}
 				}
 				words[string(w)] = map[string]any{
+					"bigrams":     map[string]any{"ranks": b, "total": bt},
 					"positions":   map[string]any{"ranks": p, "total": pt},
 					"frequencies": map[string]any{"ranks": f, "total": ft},
 				}
@@ -114,6 +126,24 @@ Compute the score for a word:
 				"positions":   positions,
 				"words":       words,
 			})
+		},
+	}
+}
+
+func CommandOrder() *cli.Command {
+	return &cli.Command{
+		Name:      "order",
+		Category:  "wordle",
+		Usage:     "Order the arguments per the strategy",
+		ArgsUsage: "word [, word, ...]",
+		Flags:     strategyFlags(),
+		Action: func(c *cli.Context) error {
+			dictionary := Dictionary(c.Args().Slice())
+			_, strategy, err := prepare(c)
+			if err != nil {
+				return err
+			}
+			return Runtime(c).Encoder.Encode(strategy.Apply(dictionary))
 		},
 	}
 }

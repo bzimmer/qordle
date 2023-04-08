@@ -116,20 +116,43 @@ func TestValidateCommand(t *testing.T) {
 	}
 }
 
-func TestTableCommand(t *testing.T) {
+func TestRanksCommand(t *testing.T) {
 	for _, tt := range []harness{
 		{
 			name: "simple",
-			args: []string{"table"},
+			args: []string{"ranks"},
 		},
 		{
 			name: "words",
-			args: []string{"table", "brown"},
+			args: []string{"ranks", "brown"},
 		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			run(t, &tt, qordle.CommandTable)
+			run(t, &tt, qordle.CommandRanks)
+		})
+	}
+}
+
+func TestOrderCommand(t *testing.T) {
+	for _, tt := range []harness{
+		{
+			name: "no words",
+			args: []string{"order"},
+		},
+		{
+			name: "several words",
+			args: []string{"order", "brand", "brown", "poker", "tares", "raise"},
+		},
+		{
+			name: "bad strateg",
+			args: []string{"order", "-s", "foobar", "brand", "brown", "poker", "tares", "raise"},
+			err:  "unknown strategy `foobar`",
+		},
+	} {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			run(t, &tt, qordle.CommandOrder)
 		})
 	}
 }

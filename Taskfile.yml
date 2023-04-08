@@ -121,3 +121,15 @@ tasks:
     cmds:
       - go test -outputdir {{.DIST}} -cpuprofile cpu.prof -memprofile mem.prof -bench .
       - go tool pprof -http=":8000" ./qordle.test {{.DIST}}/mem.prof
+
+  docs:build:
+    desc: Generate the documentation
+    deps: [dist]
+    cmds:
+      - "{{.CWD}}/env/bin/mkdocs build"
+
+  docs:serve:
+    desc: Serve the documentation
+    deps: [dist]
+    cmds:
+      - "{{.CWD}}/env/bin/mkdocs serve"

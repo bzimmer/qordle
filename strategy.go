@@ -29,10 +29,9 @@ func strategyFlags() []cli.Flag {
 
 func CommandStrategies() *cli.Command {
 	return &cli.Command{
-		Name:        "strategies",
-		HelpName:    "strategies",
-		Usage:       "List all available strategies",
-		Description: "List all available strategies",
+		Name:     "strategies",
+		Category: "wordle",
+		Usage:    "List all available strategies",
 		Action: func(c *cli.Context) error {
 			strategies := Runtime(c).Strategies.Strategies()
 			sort.Strings(strategies)
@@ -204,7 +203,7 @@ func (s *Bigram) Apply(words Dictionary) Dictionary {
 		case 0, 1:
 		default:
 			i, val = 0, 0.0
-			for i+2 < n {
+			for i+2 <= n {
 				val += bigrams[word[i:i+2]]
 				i++
 			}

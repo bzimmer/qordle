@@ -92,9 +92,10 @@ func main() {
 		},
 		Commands: []*cli.Command{
 			qordle.CommandBee(),
-			qordle.CommandTable(),
 			qordle.CommandLetterBox(),
+			qordle.CommandOrder(),
 			qordle.CommandPlay(),
+			qordle.CommandRanks(),
 			qordle.CommandScore(),
 			qordle.CommandStrategies(),
 			qordle.CommandSuggest(),

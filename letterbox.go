@@ -219,8 +219,9 @@ func trie(c *cli.Context) (int, *Trie[any], error) {
 
 func CommandLetterBox() *cli.Command {
 	return &cli.Command{
-		Name:  "letterbox",
-		Usage: "play letterbox",
+		Name:     "letterbox",
+		Category: "letterbox",
+		Usage:    "Solve the NYT letterbox",
 		Flags: append(
 			[]cli.Flag{
 				&cli.IntFlag{
