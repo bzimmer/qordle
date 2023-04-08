@@ -122,8 +122,9 @@ func wordlists(c *cli.Context, wordlists ...string) (Dictionary, error) {
 
 func CommandWordlists() *cli.Command {
 	return &cli.Command{
-		Name:  "wordlists",
-		Usage: "list all available wordlists",
+		Name:     "wordlists",
+		Category: "wordle",
+		Usage:    "List all available wordlists",
 		Action: func(c *cli.Context) error {
 			var lists []string
 			if err := fs.WalkDir(dataFs, data, func(path string, d fs.DirEntry, err error) error {

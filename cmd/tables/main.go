@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"go/format"
+	"io"
 	"os"
 	"sort"
 	"strings"
@@ -131,11 +132,8 @@ func bigrams(words qordle.Dictionary) (string, string) {
 	var all []string
 	for key, val := range grams {
 		v := val / total
-		switch {
-		case v > cutoff:
+		if v > cutoff {
 			all = append(all, fmt.Sprintf(`"%s": %0.4f`, key, v))
-		default:
-			// too small to matter
 		}
 	}
 	sort.Slice(all, func(i, j int) bool {
@@ -177,13 +175,18 @@ func action(c *cli.Context) error {
 	}
 	for i := 0; i < c.NArg(); i++ {
 		if err = func(name string) error {
-			var fp *os.File
-			fp, err = os.Create(name)
-			if err != nil {
-				return err
+			var fp io.WriteCloser
+			switch name {
+			case "-":
+				fp = os.Stdout
+			default:
+				fp, err = os.Create(name)
+				if err != nil {
+					return err
+				}
+				defer fp.Close()
 			}
-			defer fp.Close()
-			_, err = fp.WriteString(string(formatted))
+			_, err = fp.Write(formatted)
 			return err
 		}(c.Args().Get(i)); err != nil {
 			return err
@@ -194,8 +197,8 @@ func action(c *cli.Context) error {
 
 func main() {
 	app := &cli.App{
-		Name:        "letters",
-		HelpName:    "letters",
+		Name:        "tables",
+		HelpName:    "tables",
 		Usage:       "generates the letter frequency tables",
 		Description: "generates the letter frequency tables",
 		Action:      action,

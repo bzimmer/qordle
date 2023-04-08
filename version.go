@@ -19,10 +19,9 @@ var (
 
 func CommandVersion() *cli.Command {
 	return &cli.Command{
-		Name:        "version",
-		HelpName:    "version",
-		Usage:       "Show the version information of the binary",
-		Description: "Show the version information of the binary",
+		Name:    "version",
+		Aliases: []string{"v"},
+		Usage:   "Show the version information of the binary",
 		Action: func(c *cli.Context) error {
 			return Runtime(c).Encoder.Encode(map[string]string{
 				"version":  buildVersion,
