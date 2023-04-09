@@ -160,19 +160,15 @@ $ qordle play --start brain table | jq
 `qordle` supports a number of different strategies and those strategies can be chain
 to build new strategies.
 
-```txt
-Winners
+Performance of different strategy compositions for 2000 randomly sampled words
 
-+----------------------------------------------+---------+-------+
-|                   strategy                   | winners |  pct  |
-+----------------------------------------------+---------+-------+
-| speculate{chain{frequency,position}}         |    1930 | 96.5  |
-| speculate{chain{frequency,position,bigram}}  |    1915 | 95.8  |
-| speculate{chain{frequency,bigram}}           |    1903 | 95.2  |
-| speculate{chain{frequency,elimination}}      |    1901 | 95.0  |
-| speculate{frequency}                         |    1875 | 93.8  |
-| speculate{position}                          |    1858 | 92.9  |
-| speculate{elimination}                       |    1851 | 92.5  |
-| speculate{bigram}                            |    1753 | 87.6  |
-+----------------------------------------------+---------+-------+
-```
+|                   strategy                   | winners | total |  pct  |
+|----------------------------------------------|--------:|-------|-------|
+| speculate{chain{frequency,position}}         |    1930 |  2000 | 96.5  |
+| speculate{chain{frequency,position,bigram}}  |    1915 |  2000 | 95.8  |
+| speculate{chain{frequency,elimination}}      |    1911 |  2000 | 95.5  |
+| speculate{chain{frequency,bigram}}           |    1877 |  2000 | 93.8  |
+| speculate{frequency}                         |    1875 |  2000 | 93.8  |
+| speculate{elimination}                       |    1868 |  2000 | 93.4  |
+| speculate{position}                          |    1858 |  2000 | 92.9  |
+| speculate{bigram}                            |    1663 |  2000 | 83.2  |

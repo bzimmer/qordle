@@ -1,5 +1,6 @@
 site_name: qordle
 site_dir: dist/site
+site_url: https://bzimmer.github.io/qordle
 
 theme:
   name: material
@@ -14,3 +15,27 @@ theme:
       toggle:
         icon: material/brightness-7
         name: light mode
+  features:
+    - content.code.annotate
+    - navigation.top
+    - navigation.instant
+    - navigation.expand
+    - navigation.sections
+    - navigation.tabs
+    - navigation.tabs.sticky
+
+plugins:
+  - git-revision-date-localized
+  - search
+  - tags
+
+extra_javascript:
+  - https://unpkg.com/tablesort@5.3.0/dist/tablesort.min.js
+  - js/tablesort.js
+
+markdown_extensions:
+  - pymdownx.critic
+  - pymdownx.caret
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.tilde
