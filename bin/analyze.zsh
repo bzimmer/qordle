@@ -54,7 +54,7 @@ csvq -c '
             strategy
     )
     select
-        stdin.strategy, count(stdin.rounds) as winners, format("%0.1f", 100 * (float(winners) / totals.total)) as pct
+        stdin.strategy, count(stdin.rounds) as winners, totals.total, format("%0.1f", 100 * (float(winners) / totals.total)) as pct
     from
         stdin, totals
     where
