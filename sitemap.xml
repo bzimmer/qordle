@@ -2,17 +2,32 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://bzimmer.github.io/qordle/</loc>
-         <lastmod>2023-04-09</lastmod>
+         <lastmod>2023-04-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://bzimmer.github.io/qordle/commands/</loc>
-         <lastmod>2023-04-09</lastmod>
+         <lastmod>2023-04-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://bzimmer.github.io/qordle/strategies/</loc>
-         <lastmod>2023-04-09</lastmod>
+         <lastmod>2023-04-10</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bzimmer.github.io/qordle/commands/ranks/</loc>
+         <lastmod>2023-04-10</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bzimmer.github.io/qordle/commands/suggest/</loc>
+         <lastmod>2023-04-10</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bzimmer.github.io/qordle/commands/validate/</loc>
+         <lastmod>2023-04-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
