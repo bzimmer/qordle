@@ -63,5 +63,5 @@ csvq -c '
     group by
         stdin.strategy, totals.total
     order by
-        winners desc, len(stdin.strategy), stdin.strategy
+        winners desc, stdin.strategy
 ' < ${regression}

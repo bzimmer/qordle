@@ -2,8 +2,18 @@ site_name: qordle
 site_dir: dist/site
 site_url: https://bzimmer.github.io/qordle
 
+repo_url: https://github.com/bzimmer/qordle
+
+nav:
+    - Home: index.md
+    - Winning: winning.md
+    - Commands: commands.md
+    - Strategies: strategies.md
+
 theme:
   name: material
+  icon:
+    repo: fontawesome/brands/github
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -17,6 +27,8 @@ theme:
         name: light mode
   features:
     - content.code.annotate
+    - content.code.copy
+    - content.code.select
     - navigation.top
     - navigation.instant
     - navigation.expand
@@ -33,9 +45,19 @@ extra_javascript:
   - https://unpkg.com/tablesort@5.3.0/dist/tablesort.min.js
   - js/tablesort.js
 
+extra_css:
+  - css/extra.css
+
 markdown_extensions:
   - pymdownx.critic
   - pymdownx.caret
   - pymdownx.keys
   - pymdownx.mark
   - pymdownx.tilde
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences

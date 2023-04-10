@@ -217,11 +217,11 @@ func trie(c *cli.Context) (int, *Trie[any], error) {
 	return len(dictionary), trie, nil
 }
 
-func CommandLetterBox() *cli.Command {
+func CommandLetterBoxed() *cli.Command {
 	return &cli.Command{
-		Name:     "letterbox",
-		Category: "letterbox",
-		Usage:    "Solve the NYT letterbox",
+		Name:     "letterboxed",
+		Category: "letterboxed",
+		Usage:    "Solve the NYT Letter Boxed puzzle",
 		Flags: append(
 			[]cli.Flag{
 				&cli.IntFlag{
