@@ -48,13 +48,28 @@ all child strategies and sorts by accumulating the word rank in resulting word l
 The following table shows the number of winning rounds from 2000 randomly chosen words
 using different strategies.
 
-|                   strategy                   | winners | total |  pct  |
-|----------------------------------------------|--------:|-------|-------|
-| speculate{chain{frequency,position}}         |    1930 |  2000 | 96.5  |
-| speculate{chain{frequency,position,bigram}}  |    1915 |  2000 | 95.8  |
-| speculate{chain{frequency,elimination}}      |    1911 |  2000 | 95.5  |
-| speculate{chain{frequency,bigram}}           |    1877 |  2000 | 93.8  |
-| speculate{frequency}                         |    1875 |  2000 | 93.8  |
-| speculate{elimination}                       |    1868 |  2000 | 93.4  |
-| speculate{position}                          |    1858 |  2000 | 92.9  |
-| speculate{bigram}                            |    1663 |  2000 | 83.2  |
+|                         strategy                         | winners | total |  pct  |
+|----------------------------------------------------------|--------:|-------|-------|
+| speculate{chain{frequency,position}}                     |    1930 |  2000 | 96.5  |
+| speculate{chain{frequency,position,bigram}}              |    1915 |  2000 | 95.8  |
+| speculate{chain{frequency,elimination}}                  |    1911 |  2000 | 95.5  |
+| speculate{chain{frequency,position,bigram,elimination}}  |    1910 |  2000 | 95.5  |
+| speculate{chain{frequency,elimination,bigram}}           |    1899 |  2000 | 95.0  |
+| speculate{chain{frequency,bigram}}                       |    1877 |  2000 | 93.8  |
+| speculate{frequency}                                     |    1875 |  2000 | 93.8  |
+| speculate{elimination}                                   |    1870 |  2000 | 93.5  |
+| speculate{position}                                      |    1858 |  2000 | 92.9  |
+| speculate{bigram}                                        |    1663 |  2000 | 83.2  |
+
+|                         strategy                         | winners | total |  pct  |
+|----------------------------------------------------------|--------:|-------|-------|
+| speculate{chain{frequency,position}}                     |    1870 |  2000 | 93.5  |
+| speculate{chain{frequency,elimination}}                  |    1860 |  2000 | 93.0  |
+| speculate{chain{frequency,position,bigram,elimination}}  |    1858 |  2000 | 92.9  |
+| speculate{chain{frequency,position,bigram}}              |    1858 |  2000 | 92.9  |
+| speculate{chain{frequency,elimination,bigram}}           |    1851 |  2000 | 92.5  |
+| speculate{chain{frequency,bigram}}                       |    1846 |  2000 | 92.3  |
+| speculate{elimination}                                   |    1839 |  2000 | 92.0  |
+| speculate{frequency}                                     |    1834 |  2000 | 91.7  |
+| speculate{position}                                      |    1778 |  2000 | 88.9  |
+| speculate{bigram}                                        |    1597 |  2000 | 79.8  |

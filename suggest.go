@@ -6,9 +6,10 @@ import (
 
 func CommandSuggest() *cli.Command {
 	return &cli.Command{
-		Name:     "suggest",
-		Category: "wordle",
-		Usage:    "Suggest the next guess",
+		Name:      "suggest",
+		Category:  "wordle",
+		Usage:     "Suggest the next word to guess incorporating the already scored patterns",
+		ArgsUsage: "<pattern>...",
 		Flags: append(
 			[]cli.Flag{
 				&cli.IntFlag{
@@ -39,18 +40,18 @@ func CommandValidate() *cli.Command {
 		Name:      "validate",
 		Category:  "wordle",
 		Usage:     "Validate the word against the pattern",
-		ArgsUsage: "<word to validate> <scored word> [, <scored word>]",
+		ArgsUsage: "<guess> <secret>...",
 		Action: func(c *cli.Context) error {
-			word := c.Args().First()
-			scores := c.Args().Tail()
-			guess, err := Guess(scores...)
+			guess := c.Args().First()
+			secrets := c.Args().Tail()
+			ff, err := Guess(secrets...)
 			if err != nil {
 				return err
 			}
 			return Runtime(c).Encoder.Encode(map[string]any{
-				"ok":     guess(word),
-				"scores": scores,
-				"word":   word,
+				"ok":      ff(guess),
+				"secrets": secrets,
+				"guess":   guess,
 			})
 		},
 	}
@@ -58,40 +59,10 @@ func CommandValidate() *cli.Command {
 
 func CommandRanks() *cli.Command {
 	return &cli.Command{
-		Name:     "ranks",
-		Category: "wordle",
-		Usage:    "Detailed rank information from letter frequency tables",
-		Description: `Sum all the percentages for letters in position 2:
-
-	$ qordle ranks | jq '.positions | flatten | map(."2") | add'
-
-Compute the score for a word:
-
-	$ qordle ranks brown | jq .words
-	{
-		"brown": {
-		  "frequencies": {
-			"ranks": {
-			  "0": 0.0183,
-			  "1": 0.0704,
-			  "2": 0.0720,
-			  "3": 0.0065,
-			  "4": 0.0718
-			},
-			"total": 0.2390
-		  },
-		  "positions": {
-			"ranks": {
-			  "0": 0.0698,
-			  "1": 0.0649,
-			  "2": 0.0638,
-			  "3": 0.0101,
-			  "4": 0.0644
-			},
-			"total": 0.2730
-		  }
-		}
-	}`,
+		Name:      "ranks",
+		Category:  "wordle",
+		Usage:     "Detailed rank information from letter frequency tables",
+		ArgsUsage: "<word> ...",
 		Action: func(c *cli.Context) error {
 			words := make(map[string]any, c.NArg())
 			for i := 0; i < c.NArg(); i++ {

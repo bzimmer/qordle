@@ -12,7 +12,7 @@ import (
 	"github.com/bzimmer/qordle"
 )
 
-func TestLetterboxCommand(t *testing.T) {
+func TestLetterboxedCommand(t *testing.T) {
 	a := assert.New(t)
 	decode := func(c *cli.Context) [][]string {
 		var results [][]string
@@ -31,43 +31,43 @@ func TestLetterboxCommand(t *testing.T) {
 	}
 	for _, tt := range []harness{
 		{
-			name: "letterbox with 0 arguments",
-			args: []string{"letterbox", "-w", "solutions", "--max", "4"},
+			name: "letterboxed with 0 arguments",
+			args: []string{"letterboxed", "-w", "solutions", "--max", "4"},
 			after: func(c *cli.Context) error {
 				a.Equal(3, len(decode(c)))
 				return nil
 			},
 		},
 		{
-			name: "letterbox with 1 argument",
-			args: []string{"letterbox", "-w", "solutions", "--max", "4", "rul-eya-gdh-opb"},
+			name: "letterboxed with 1 argument",
+			args: []string{"letterboxed", "-w", "solutions", "--max", "4", "rul-eya-gdh-opb"},
 			after: func(c *cli.Context) error {
 				a.Equal(57, len(decode(c)))
 				return nil
 			},
 		},
 		{
-			name: "letterbox with 4 arguments",
-			args: []string{"letterbox", "-w", "solutions", "--max", "4", "rul", "eya", "gdh", "opb"},
+			name: "letterboxed with 4 arguments",
+			args: []string{"letterboxed", "-w", "solutions", "--max", "4", "rul", "eya", "gdh", "opb"},
 			after: func(c *cli.Context) error {
 				a.Equal(57, len(decode(c)))
 				return nil
 			},
 		},
 		{
-			name: "letterbox with invalid wordlist",
-			args: []string{"letterbox", "-w", "missing", "--max", "4"},
+			name: "letterboxed with invalid wordlist",
+			args: []string{"letterboxed", "-w", "missing", "--max", "4"},
 			err:  "invalid wordlist `missing`",
 		},
 		{
-			name: "letterbox with 5 arguments",
-			args: []string{"letterbox", "-w", "solutions", "--max", "4", "rul", "eya", "gdh", "opb", "qst"},
+			name: "letterboxed with 5 arguments",
+			args: []string{"letterboxed", "-w", "solutions", "--max", "4", "rul", "eya", "gdh", "opb", "qst"},
 			err:  "found 5 sides",
 		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			run(t, &tt, qordle.CommandLetterBox)
+			run(t, &tt, qordle.CommandLetterBoxed)
 		})
 	}
 }

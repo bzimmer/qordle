@@ -14,6 +14,7 @@ import (
 	"github.com/rs/zerolog/pkgerrors"
 	"github.com/urfave/cli/v2"
 
+	"github.com/bzimmer/manual"
 	"github.com/bzimmer/qordle"
 )
 
@@ -92,7 +93,7 @@ func main() {
 		},
 		Commands: []*cli.Command{
 			qordle.CommandBee(),
-			qordle.CommandLetterBox(),
+			qordle.CommandLetterBoxed(),
 			qordle.CommandOrder(),
 			qordle.CommandPlay(),
 			qordle.CommandRanks(),
@@ -102,6 +103,7 @@ func main() {
 			qordle.CommandValidate(),
 			qordle.CommandVersion(),
 			qordle.CommandWordlists(),
+			manual.Manual(),
 		},
 	}
 	var err error
