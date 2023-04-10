@@ -456,7 +456,7 @@ the top ten words.</p>
 </span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="o">}</span>
 </span></code></pre></div>
 <p>To see how <code>qordle</code> might have played a word using different strategies, use the
-<a href="../commands/#play">play</a> command. The following is a short script I use
+<a href="../commands/#play">play</a> command. The following is a short script I use to
 abbreviate the results.</p>
 <div class="language-zsh highlight"><span class="filename">qordle-play</span><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="ch">#!/usr/bin/env zsh</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
@@ -465,8 +465,9 @@ abbreviate the results.</p>
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>qordle<span class="w"> </span>play<span class="w"> </span>-s<span class="w"> </span>frequency<span class="w"> </span>-s<span class="w"> </span>position<span class="w"> </span>-S<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$@</span><span class="s2">&quot;</span><span class="w"> </span><span class="p">|</span>
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span>jq<span class="w"> </span>-s<span class="w"> </span><span class="s1">&#39;map({secret:.secret, words:(.rounds|last|.words)})&#39;</span>
 </span></code></pre></div>
-<p>If no starting word is provided, <code>qordle</code> will automatically find the appropriate
-starting word for the specified strategy. In this case it chose <em>tares</em>.</p>
+<p>If no starting word is provided, <code>qordle</code> will automatically find the optimal
+starting word for the specified strategies. In this case it ranked <em>tares</em>
+best.</p>
 <div class="language-zsh highlight"><span class="filename">play with freq and pos strategies</span><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>$<span class="w"> </span>qordle-play<span class="w"> </span>under
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="o">[</span>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="o">{</span>
