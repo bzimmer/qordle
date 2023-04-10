@@ -46,7 +46,7 @@ $ qordle-suggest t.a.res g.r.ain m.o.l.a.r
 ```
 
 To see how `qordle` might have played a word using different strategies, use the
-[play](commands.md#play) command. The following is a short script I use
+[play](commands.md#play) command. The following is a short script I use to
 abbreviate the results.
 
 ``` zsh title="qordle-play"
@@ -58,8 +58,9 @@ qordle play -s frequency -s position -S "$@" |
     jq -s 'map({secret:.secret, words:(.rounds|last|.words)})'
 ```
 
-If no starting word is provided, `qordle` will automatically find the appropriate
-starting word for the specified strategy. In this case it chose *tares*.
+If no starting word is provided, `qordle` will automatically find the optimal
+starting word for the specified strategies. In this case it ranked *tares*
+best.
 
 ``` zsh title="play with freq and pos strategies"
 $ qordle-play under
