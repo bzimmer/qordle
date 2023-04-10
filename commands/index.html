@@ -44,6 +44,8 @@
       
     
     
+      <link rel="stylesheet" href="../css/extra.css">
+    
     <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
@@ -871,6 +873,7 @@
 <p><strong>Example</strong></p>
 <p>Sum all the percentages for letters in position 2</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>$<span class="w"> </span>qordle<span class="w"> </span>ranks<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.positions | flatten | map(.&quot;2&quot;) | add&#39;</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="m">1</span>
 </span></code></pre></div>
 <p>Compute the score for the words</p>
 <div class="language-shell highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>$<span class="w"> </span>qordle<span class="w"> </span>ranks<span class="w"> </span>brown<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.words
@@ -1017,6 +1020,14 @@ guesses to sort the remaining words.</p>
 <p>List all available wordlists</p>
 <p><strong>Syntax</strong></p>
 <div class="language-sh highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>$<span class="w"> </span>qordle<span class="w"> </span>wordlists<span class="w"> </span><span class="o">[</span>flags<span class="o">]</span>
+</span></code></pre></div>
+<p><strong>Example</strong></p>
+<div class="language-shell highlight"><span class="filename">List all available wordlists</span><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>$<span class="w"> </span>qordle<span class="w"> </span>wordlists<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="o">[</span>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="w">  </span><span class="s2">&quot;possible&quot;</span>,
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="w">  </span><span class="s2">&quot;qordle&quot;</span>,
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="w">  </span><span class="s2">&quot;solutions&quot;</span>
+</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="o">]</span>
 </span></code></pre></div>
 
   <hr>
