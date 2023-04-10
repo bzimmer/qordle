@@ -4,6 +4,7 @@ site_url: https://bzimmer.github.io/qordle
 
 nav:
     - Home: index.md
+    - Winning: winning.md
     - Commands: commands.md
     - Strategies: strategies.md
 
@@ -22,6 +23,8 @@ theme:
         name: light mode
   features:
     - content.code.annotate
+    - content.code.copy
+    - content.code.select
     - navigation.top
     - navigation.instant
     - navigation.expand
@@ -44,3 +47,10 @@ markdown_extensions:
   - pymdownx.keys
   - pymdownx.mark
   - pymdownx.tilde
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences

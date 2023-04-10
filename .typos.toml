@@ -6,3 +6,6 @@ extend-exclude = [
   "data/*.txt",
   "testdata/*",
 ]
+
+[default.extend-words]
+loca="loca"

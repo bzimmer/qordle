@@ -1,5 +1,12 @@
 # Commands
 
+## Input Patterns
+
+Many of the commands take an input pattern as feedback from guessing a word.
+
+* **Miss**      &rarr; a lower case letter (eg "local")
+* **Misplaced** &rarr; a lower case letter proceeded by a '.' (eg "l.ocal")
+* **Exact**     &rarr; an upper case letter (eg "LOcal")
 
 
 ## Global Flags
@@ -307,7 +314,7 @@ $ qordle validate [flags] <guess> <secret>...
 **Example**
 
 This command is useful for understanding why a guess was rejected against the secret. The
---debug flag is your friend as it will show all reasons for a word to be rejected.
+`--debug` flag is your friend as it will show the first reason for a word to be rejected.
 
 ```shell
 $ qordle --debug validate brown local

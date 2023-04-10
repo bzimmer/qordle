@@ -13,8 +13,12 @@ and sorts the word list highest to lowest
 
 ### elimination
 
-==*Note: This strategy is far slower than the rest so best used when the word list has
-been filtered.*==
+{==
+
+Note: This strategy is far slower than the rest so best used when the word list has
+been filtered.
+
+==}
 
 The elimination strategy uses each word in the word list as a secret and scores all the
 remaining words against it. The accumulated sum for the letter & position from
@@ -47,19 +51,6 @@ all child strategies and sorts by accumulating the word rank in resulting word l
 
 The following table shows the number of winning rounds from 2000 randomly chosen words
 using different strategies.
-
-|                         strategy                         | winners | total |  pct  |
-|----------------------------------------------------------|--------:|-------|-------|
-| speculate{chain{frequency,position}}                     |    1930 |  2000 | 96.5  |
-| speculate{chain{frequency,position,bigram}}              |    1915 |  2000 | 95.8  |
-| speculate{chain{frequency,elimination}}                  |    1911 |  2000 | 95.5  |
-| speculate{chain{frequency,position,bigram,elimination}}  |    1910 |  2000 | 95.5  |
-| speculate{chain{frequency,elimination,bigram}}           |    1899 |  2000 | 95.0  |
-| speculate{chain{frequency,bigram}}                       |    1877 |  2000 | 93.8  |
-| speculate{frequency}                                     |    1875 |  2000 | 93.8  |
-| speculate{elimination}                                   |    1870 |  2000 | 93.5  |
-| speculate{position}                                      |    1858 |  2000 | 92.9  |
-| speculate{bigram}                                        |    1663 |  2000 | 83.2  |
 
 |                         strategy                         | winners | total |  pct  |
 |----------------------------------------------------------|--------:|-------|-------|
