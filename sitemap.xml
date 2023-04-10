@@ -16,6 +16,16 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://bzimmer.github.io/qordle/winning/</loc>
+         <lastmod>2023-04-10</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://bzimmer.github.io/qordle/commands/_qordle/</loc>
+         <lastmod>2023-04-10</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://bzimmer.github.io/qordle/commands/ranks/</loc>
          <lastmod>2023-04-10</lastmod>
          <changefreq>daily</changefreq>

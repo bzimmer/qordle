@@ -195,6 +195,18 @@
 
 
   <li class="md-tabs__item">
+    <a href="../winning/" class="md-tabs__link">
+      Winning
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
     <a href="../commands/" class="md-tabs__link">
       Commands
     </a>
@@ -263,6 +275,21 @@
     <li class="md-nav__item">
       <a href=".." class="md-nav__link">
         Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../winning/" class="md-nav__link">
+        Winning
       </a>
     </li>
   
@@ -520,8 +547,10 @@ The strategies are designed to be composable via <a href="#chaining">chaining</a
 <a href="https://github.com/bzimmer/qordle/blob/main/tables.go">bigram frequency table</a>
 and sorts the word list highest to lowest</p>
 <h3 id="elimination">elimination</h3>
-<p><mark><em>Note: This strategy is far slower than the rest so best used when the word list has
-been filtered.</em></mark></p>
+<mark class="critic block">
+<p>Note: This strategy is far slower than the rest so best used when the word list has
+been filtered.</p>
+</mark>
 <p>The elimination strategy uses each word in the word list as a secret and scores all the
 remaining words against it. The accumulated sum for the letter &amp; position from
 <a href="https://github.com/bzimmer/qordle/blob/main/tables.go">position frequency table</a> is used
@@ -548,78 +577,6 @@ all child strategies and sorts by accumulating the word rank in resulting word l
 <h2 id="performance">Performance</h2>
 <p>The following table shows the number of winning rounds from 2000 randomly chosen words
 using different strategies.</p>
-<table>
-<thead>
-<tr>
-<th>strategy</th>
-<th align="right">winners</th>
-<th>total</th>
-<th>pct</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>speculate{chain{frequency,position}}</td>
-<td align="right">1930</td>
-<td>2000</td>
-<td>96.5</td>
-</tr>
-<tr>
-<td>speculate{chain{frequency,position,bigram}}</td>
-<td align="right">1915</td>
-<td>2000</td>
-<td>95.8</td>
-</tr>
-<tr>
-<td>speculate{chain{frequency,elimination}}</td>
-<td align="right">1911</td>
-<td>2000</td>
-<td>95.5</td>
-</tr>
-<tr>
-<td>speculate{chain{frequency,position,bigram,elimination}}</td>
-<td align="right">1910</td>
-<td>2000</td>
-<td>95.5</td>
-</tr>
-<tr>
-<td>speculate{chain{frequency,elimination,bigram}}</td>
-<td align="right">1899</td>
-<td>2000</td>
-<td>95.0</td>
-</tr>
-<tr>
-<td>speculate{chain{frequency,bigram}}</td>
-<td align="right">1877</td>
-<td>2000</td>
-<td>93.8</td>
-</tr>
-<tr>
-<td>speculate{frequency}</td>
-<td align="right">1875</td>
-<td>2000</td>
-<td>93.8</td>
-</tr>
-<tr>
-<td>speculate{elimination}</td>
-<td align="right">1870</td>
-<td>2000</td>
-<td>93.5</td>
-</tr>
-<tr>
-<td>speculate{position}</td>
-<td align="right">1858</td>
-<td>2000</td>
-<td>92.9</td>
-</tr>
-<tr>
-<td>speculate{bigram}</td>
-<td align="right">1663</td>
-<td>2000</td>
-<td>83.2</td>
-</tr>
-</tbody>
-</table>
 <table>
 <thead>
 <tr>
@@ -745,7 +702,7 @@ using different strategies.</p>
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.annotate", "navigation.top", "navigation.instant", "navigation.expand", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky"], "search": "../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.annotate", "content.code.copy", "content.code.select", "navigation.top", "navigation.instant", "navigation.expand", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky"], "search": "../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
       <script src="../assets/javascripts/bundle.51198bba.min.js"></script>
