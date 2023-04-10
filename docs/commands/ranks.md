@@ -1,12 +1,13 @@
 Sum all the percentages for letters in position 2
 
-```shell
+``` shell
 $ qordle ranks | jq '.positions | flatten | map(."2") | add'
+1
 ```
 
 Compute the score for the words
 
-```shell
+``` shell
 $ qordle ranks brown | jq .words
 {
     "brown": {

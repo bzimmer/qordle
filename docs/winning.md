@@ -7,7 +7,7 @@ a ranking of the best next guesses. I wrote a simple shell script to facilitate
 using two different [strategy](strategies.md) combinations and `jq` to show only
 the top ten words.
 
-``` zsh title="qordle-suggest"
+``` shell title="qordle-suggest"
 #!/usr/bin/env zsh
 
 set -eo pipefail
@@ -29,7 +29,7 @@ done
 
 An example session of a few guesses might follow the below pattern.
 
-``` zsh title="qordle suggest session"
+``` shell title="qordle suggest session"
 $ qordle-suggest t.a.res g.r.ain m.o.l.a.r
 {
   "strategy": "-s freq -s pos",
@@ -49,7 +49,7 @@ To see how `qordle` might have played a word using different strategies, use the
 [play](commands.md#play) command. The following is a short script I use to
 abbreviate the results.
 
-``` zsh title="qordle-play"
+``` shell title="qordle-play"
 #!/usr/bin/env zsh
 
 set -eo pipefail
@@ -62,7 +62,7 @@ If no starting word is provided, `qordle` will automatically find the optimal
 starting word for the specified strategies. In this case it ranked *tares*
 best.
 
-``` zsh title="play with freq and pos strategies"
+``` shell title="play with freq and pos strategies"
 $ qordle-play under
 [
   {
@@ -80,7 +80,7 @@ $ qordle-play under
 [Chaining](strategies.md#chaining) the [bigram](strategies.md#bigram) strategy would
 have resulted in a faster path to the solution.
 
-``` zsh title="play with freq, pos, and bigram strategies"
+``` shell title="play with freq, pos, and bigram strategies"
 qordle play -s freq -s pos -s b -S under | jq -s 'map({secret:.secret, words:(.rounds|last|.words)})'
 [
   {

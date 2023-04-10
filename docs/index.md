@@ -15,13 +15,11 @@ $ brew install bzimmer/tap/qordle
 
 ## Examples
 
-```shell
-# Suggest words using the elimination strategy after the first guess of 'brain'
+```shell title="Suggest words using the elimination strategy after the first guess of 'brain'"
 $ qordle suggest -s el brAin
 ```
 
-```shell
-# Auto-play with frequency, position, and bigrams strategies for 'ledge'
+```shell title="Auto-play with frequency, position, and bigrams strategies for 'ledge'"
 $ qordle play -s f -s p -s bi ledge | jq ".rounds | last"
 {
   "dictionary": 1,
