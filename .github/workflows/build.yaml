@@ -32,4 +32,13 @@ jobs:
         uses: arduino/setup-task@v1
 
       - name: run regression
-        run: task test:regression -- 20
+        run: |
+
+          sudo apt-get update
+          sudo apt-get install fd-find
+
+          mkdir -p ${HOME}/.local/bin
+          ln -s $(which fdfind) ${HOME}/.local/bin/fd
+          echo "${HOME}/.local/bin" >> $GITHUB_PATH
+
+          task test:regression -- 20
