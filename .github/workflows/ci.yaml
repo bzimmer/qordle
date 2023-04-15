@@ -40,6 +40,9 @@ jobs:
       - name: install task
         uses: arduino/setup-task@v1
 
+      - name: install zsh
+        run: sudo apt-get update; sudo apt-get install zsh
+
       - name: install fd
         run: |
           sudo apt install fd-find
