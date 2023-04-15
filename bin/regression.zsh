@@ -2,7 +2,7 @@
 
 set -eo pipefail
 
-N=2000
+N="${1:-2000}"
 repo=$(git rev-parse --show-toplevel)
 strategies=(
     '-s bigram'

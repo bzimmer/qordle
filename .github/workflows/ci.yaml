@@ -1,0 +1,86 @@
+name: ci
+
+on:
+  push
+
+permissions:
+  contents: read
+
+jobs:
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+
+      - name: run typos
+        uses: crate-ci/typos@master
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
+          version: latest
+          # Optional: golangci-lint command line arguments.
+          args: -v
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v3
+
+      - name: install go
+        uses: actions/setup-go@v4
+        with:
+          go-version-file: go.mod
+          check-latest: true
+
+      - name: install task
+        uses: arduino/setup-task@v1
+
+      - name: install fd
+        run: |
+          sudo apt install fd-find
+          mkdir -p ${HOME}/.local/bin
+          ln -s $(which fdfind) ${HOME}/.local/bin/fd
+          echo "${HOME}/.local/bin" >> $GITHUB_PATH
+
+      - name: go format
+        run: gofmt -s -w . && git diff --exit-code
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go tidy
+        run: go mod tidy && git diff --exit-code
+
+      - name: go mod
+        run: go mod download
+
+      - name: go mod verify
+        run: go mod verify
+
+      - name: go generate
+        run: go generate ./... && git diff --exit-code
+
+      - name: go build
+        run: task build
+
+      - name: go test
+        run: task test
+
+      - name: go benchmark
+        run: go test -v -shuffle=on -run=- -bench=. -benchtime=1x ./...
+
+      - name: upload code coverage
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./dist/coverage.txt
+          verbose: true
+        if: true
+
+      - name: run regression
+        run: task test:regression -- 20

@@ -30,8 +30,8 @@ tasks:
     desc: Run regression test
     deps: [build]
     cmds:
-      - "{{.CWD}}/bin/regression.zsh"
-      - "{{.CWD}}/bin/analyze.zsh"
+      - "{{.ROOT_DIR}}/bin/regression.zsh {{.CLI_ARGS}}"
+      - "{{.ROOT_DIR}}/bin/analyze.zsh"
 
   test:fuzz:
     desc: Run fuzz tests
@@ -49,6 +49,12 @@ tasks:
     cmds:
       - rm -rf {{.DIST}}
 
+  build:all:
+    desc: Build all artifacts
+    cmds:
+      - task: generate
+      - task: build
+
   build:
     desc: Build all cmds
     deps: [dist]
@@ -62,11 +68,10 @@ tasks:
         go build -o {{$.DIST}}/{{.}} cmd/{{.}}/*.go
         {{ end -}}
 
-  build:generate:
+  generate:
     desc: Generate and build all commands
     cmds:
-      - go generate
-      - task: build
+      - go generate ./...
 
   lint:
     desc: Runs golint
