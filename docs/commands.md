@@ -10,11 +10,11 @@ Many of the commands take an input pattern as feedback from guessing a word.
 
 
 ## Global Flags
-|Name|Aliases|Description|
-|-|-|-|
-|debug||enable debug log level|
-|monochrome||disable color output|
-|help|h|show help|
+|Name|Aliases|EnvVars|Description|
+|-|-|-|-|
+|debug|||enable debug log level|
+|monochrome|||disable color output|
+|help|h||show help|
 
 ## Commands
 * [bee](#bee)

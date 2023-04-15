@@ -5,16 +5,8 @@ version: '3'
 dotenv: [".clean.env"]
 
 vars:
-  CWD:
-    sh: git rev-parse --show-toplevel
-  APP:
-    sh: basename {{.CWD}}
-  PKG:
-    github.com/bzimmer/{{.APP}}
   DIST:
-    "{{.CWD}}/dist"
-  COMMIT:
-    sh: git rev-parse --short HEAD
+    "{{.ROOT_DIR}}/dist"
 
 tasks:
   default:
@@ -23,6 +15,7 @@ tasks:
 
   dist:
     desc: Create dist directory
+    internal: true
     cmds:
       - mkdir -p {{.DIST}}
 
@@ -57,11 +50,17 @@ tasks:
       - rm -rf {{.DIST}}
 
   build:
-    desc: Build all commands
+    desc: Build all cmds
     deps: [dist]
+    vars:
+      binaries:
+        sh: fd -t d --max-depth 1 . {{.ROOT_DIR}}/cmd -x echo {/}
     cmds:
-      - go build -o {{.DIST}}/{{.APP}} cmd/{{.APP}}/*.go
-      - go build -o {{.DIST}}/{{.APP}}d cmd/{{.APP}}d/*.go
+      - |
+
+        {{ range ( .binaries | trim | splitLines ) -}}
+        go build -o {{$.DIST}}/{{.}} cmd/{{.}}/*.go
+        {{ end -}}
 
   build:generate:
     desc: Generate and build all commands
@@ -92,7 +91,7 @@ tasks:
   scc:
     desc: Run scc (https://github.com/boyter/scc)
     cmds:
-      - scc -i go {{.CWD}}
+      - scc -i go {{.ROOT_DIR}}
 
   goimports:
     desc: Run goimports
@@ -122,19 +121,14 @@ tasks:
       - go test -outputdir {{.DIST}} -cpuprofile cpu.prof -memprofile mem.prof -bench .
       - go tool pprof -http=":8000" ./qordle.test {{.DIST}}/mem.prof
 
-  docs:generate:
-    desc: Generate the commands manual
-    cmds:
-      - go run "{{.CWD}}/cmd/qordle" manual {{.CWD}}/docs/commands > {{.CWD}}/docs/commands.md
-
   docs:build:
     desc: Statically generate the documentation
     deps: [dist]
     cmds:
-      - "{{.CWD}}/env/bin/mkdocs build"
+      - "{{.ROOT_DIR}}/env/bin/mkdocs build"
 
   docs:serve:
     desc: Serve the documentation
     deps: [docs:generate]
     cmds:
-      - "{{.CWD}}/env/bin/mkdocs serve"
+      - "{{.ROOT_DIR}}/env/bin/mkdocs serve"
