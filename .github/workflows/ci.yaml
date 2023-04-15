@@ -8,13 +8,13 @@ permissions:
 
 jobs:
   ci:
-    uses: bzimmer/actions/.github/workflows/ci.yml@main
+    uses: bzimmer/actions/.github/workflows/ci.yaml@main
     with:
       skipTests: false
       skipBuilds: false
 
   vuln:
-    uses: bzimmer/actions/.github/workflows/vuln.yml@main
+    uses: bzimmer/actions/.github/workflows/vuln.yaml@main
 
   regression:
     runs-on: ubuntu-latest
