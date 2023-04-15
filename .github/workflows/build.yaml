@@ -7,7 +7,7 @@ permissions:
   contents: read
 
 jobs:
-  ci:
+  build:
     uses: bzimmer/actions/.github/workflows/build.yaml@main
     with:
       skipBuild: false
@@ -31,14 +31,15 @@ jobs:
       - name: install task
         uses: arduino/setup-task@v1
 
-      - name: run regression
+      - name: install dependencies
         run: |
-
+          sudo add-apt-repository ppa:mithrandie/csvq
           sudo apt-get update
-          sudo apt-get install fd-find
+          sudo apt-get install zsh fd-find csvq
 
           mkdir -p ${HOME}/.local/bin
           ln -s $(which fdfind) ${HOME}/.local/bin/fd
           echo "${HOME}/.local/bin" >> $GITHUB_PATH
 
-          task test:regression -- 20
+      - name: run regression
+        run: task test:regression -- 20
