@@ -10,8 +10,8 @@ jobs:
   ci:
     uses: bzimmer/actions/.github/workflows/build.yaml@main
     with:
-      skipTests: false
-      skipBuilds: false
+      skipTest: false
+      skipBuild: false
 
   vuln:
     uses: bzimmer/actions/.github/workflows/vuln.yaml@main
