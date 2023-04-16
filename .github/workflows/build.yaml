@@ -16,6 +16,9 @@ jobs:
   vuln:
     uses: bzimmer/actions/.github/workflows/vuln.yaml@main
 
+  mkdocs:
+    uses: bzimmer/actions/.github/workflows/mkdocs.yaml@main
+
   regression:
     runs-on: ubuntu-latest
     steps:
