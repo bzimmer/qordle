@@ -4,8 +4,7 @@ on:
   push
 
 permissions:
-  # write is required mkdocs
-  contents: [read, write]
+  contents: read
 
 jobs:
   build:
@@ -19,6 +18,8 @@ jobs:
 
   mkdocs:
     uses: bzimmer/actions/.github/workflows/mkdocs.yaml@main
+    permissions:
+      contents: read
 
   regression:
     runs-on: ubuntu-latest
