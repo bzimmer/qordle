@@ -19,7 +19,7 @@ jobs:
   mkdocs:
     uses: bzimmer/actions/.github/workflows/mkdocs.yaml@main
     permissions:
-      contents: read
+      contents: write
 
   regression:
     runs-on: ubuntu-latest
