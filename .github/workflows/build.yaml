@@ -7,6 +7,7 @@ permissions:
   contents: read
 
 jobs:
+
   build:
     uses: bzimmer/actions/.github/workflows/build.yaml@main
     with:
