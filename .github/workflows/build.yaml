@@ -38,9 +38,9 @@ jobs:
           sudo apt-get update
           sudo apt-get install csvq fd-find zsh jq
 
-          mkdir -p ${HOME}/.local/bin
-          ln -s $(which fdfind) ${HOME}/.local/bin/fd
-          echo "${HOME}/.local/bin" >> $GITHUB_PATH
+          mkdir -p "${HOME}/.local/bin"
+          ln -s "$(which fdfind)" "${HOME}/.local/bin/fd"
+          echo "${HOME}/.local/bin" >> "$GITHUB_PATH"
 
       - name: run regression
         run: task test:regression -- 20

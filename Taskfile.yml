@@ -2,88 +2,25 @@
 
 version: '3'
 
-dotenv: [".clean.env"]
+includes:
+  build: ./Taskfile-build.yml
 
-vars:
-  DIST:
-    "{{.ROOT_DIR}}/dist"
+dotenv: [".clean.env"]
 
 tasks:
   default:
     cmds:
-      - task: build
-
-  dist:
-    desc: Create dist directory
-    internal: true
-    cmds:
-      - mkdir -p {{.DIST}}
-
-  test:
-    desc: Run unit tests
-    deps: [dist]
-    cmds:
-      # https://github.com/golang/go/issues/49138
-      - go test {{.CLI_ARGS}} -timeout 20s -race -count=1 -covermode atomic -coverprofile {{.DIST}}/coverage.txt ./...
-
-  test:regression:
-    desc: Run regression test
-    deps: [build]
-    cmds:
-      - "{{.ROOT_DIR}}/bin/regression.zsh {{.CLI_ARGS}}"
-      - "{{.ROOT_DIR}}/bin/analyze.zsh"
-
-  test:fuzz:
-    desc: Run fuzz tests
-    cmds:
-      - go test -fuzz=Fuzz{{.CLI_ARGS}} -fuzztime 10s
-
-  cover:
-    desc: Visualize test coverage
-    deps: [test]
-    cmds:
-      - go tool cover -html={{.DIST}}/coverage.txt
-
-  clean:
-    desc: Remove build artifacts
-    cmds:
-      - rm -rf {{.DIST}}
-
-  build:all:
-    desc: Build all artifacts
-    cmds:
-      - task: generate
-      - task: build
+      - task -l
 
   build:
-    desc: Build all cmds
-    deps: [dist]
-    vars:
-      binaries:
-        sh: fd -t d --max-depth 1 . {{.ROOT_DIR}}/cmd -x echo {/}
+    desc: Build all binaries
     cmds:
-      - |
+      - task: build:build
 
-        {{ range ( .binaries | trim | splitLines ) -}}
-        go build -o {{$.DIST}}/{{.}} cmd/{{.}}/*.go
-        {{ end -}}
-
-  generate:
-    desc: Generate and build all commands
+  test:
+    desc: Run all tests
     cmds:
-      - go generate ./...
-
-  lint:
-    desc: Runs golint
-    cmds:
-      - golangci-lint -v run
-      - typos
-
-  snapshot:
-    desc: Build a snapshot
-    deps: [test, lint]
-    cmds:
-      - goreleaser --debug release --snapshot --clean
+      - task: build:test
 
   qordled:
     desc: Run qordled
@@ -93,47 +30,15 @@ tasks:
     cmds:
       - "{{.DIST}}/qordled --port 8091"
 
-  scc:
-    desc: Run scc (https://github.com/boyter/scc)
-    cmds:
-      - scc -i go {{.ROOT_DIR}}
-
-  goimports:
-    desc: Run goimports
-    vars:
-      Module:
-        sh: go mod edit -json | jq -r .Module.Path
-    cmds:
-      - goimports -w -local "{{.Module}}" .
-
   hyperfine:
     desc: Run hyperfine
     deps: [build]
     vars:
       binaries:
-        ./dist/qordle,/opt/homebrew/bin/qordle
+        "{{.DIST}}/qordle,/opt/homebrew/bin/qordle"
       options:
         -S -w solutions -w possible
       secrets:
         mound board brain lills qwert 12345
     cmds:
-      - |
-        hyperfine -N -w 3 --runs=100 -L binary {{.binaries}} "{binary} play {{.options}} {{.secrets}}"
-
-  profile:
-    desc: Run the profiler
-    cmds:
-      - go test -outputdir {{.DIST}} -cpuprofile cpu.prof -memprofile mem.prof -bench .
-      - go tool pprof -http=":8000" ./qordle.test {{.DIST}}/mem.prof
-
-  docs:build:
-    desc: Statically generate the documentation
-    deps: [dist]
-    cmds:
-      - "{{.ROOT_DIR}}/env/bin/mkdocs build"
-
-  docs:serve:
-    desc: Serve the documentation
-    deps: [docs:generate]
-    cmds:
-      - "{{.ROOT_DIR}}/env/bin/mkdocs serve"
+      - hyperfine -N -w 3 --runs=100 -L binary {{.binaries}} "{binary} play {{.options}} {{.secrets}}"
