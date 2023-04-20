@@ -12,9 +12,10 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/bzimmer/qordle"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
+
+	"github.com/bzimmer/qordle"
 )
 
 const length = 7

@@ -11,11 +11,11 @@ import (
 	"os"
 	"time"
 
+	"github.com/bzimmer/manual"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
 
-	"github.com/bzimmer/manual"
 	"github.com/bzimmer/qordle"
 )
 

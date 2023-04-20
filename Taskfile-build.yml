@@ -63,9 +63,9 @@ tasks:
     cmds:
       - |
 
-        {{ range $i, $binary := ( .binaries | trim | splitLines ) -}}
-          {{ if $binary }}
-        go build -o {{ $.DIST }}/{{ $binary }} {{ $.cmds }}/{{ $binary }}/*.go
+        {{- if .binaries -}}
+          {{ range ( .binaries | trim | splitLines ) }}
+        go build -o {{ $.DIST }}/{{ . }} {{ $.cmds }}/{{ . }}/*.go
           {{- end -}}
         {{- end -}}
 

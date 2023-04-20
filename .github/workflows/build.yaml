@@ -43,4 +43,4 @@ jobs:
           echo "${HOME}/.local/bin" >> "$GITHUB_PATH"
 
       - name: run regression
-        run: task test:regression -- 20
+        run: task regression -- 20
