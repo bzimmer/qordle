@@ -2,84 +2,25 @@
 
 version: '3'
 
-dotenv: [".clean.env"]
+includes:
+  build: ./Taskfile-build.yml
 
-vars:
-  CWD:
-    sh: git rev-parse --show-toplevel
-  APP:
-    sh: basename {{.CWD}}
-  PKG:
-    github.com/bzimmer/{{.APP}}
-  DIST:
-    "{{.CWD}}/dist"
-  COMMIT:
-    sh: git rev-parse --short HEAD
+dotenv: [".clean.env"]
 
 tasks:
   default:
     cmds:
-      - task: build
-
-  dist:
-    desc: Create dist directory
-    cmds:
-      - mkdir -p {{.DIST}}
-
-  test:
-    desc: Run unit tests
-    deps: [dist]
-    cmds:
-      # https://github.com/golang/go/issues/49138
-      - go test {{.CLI_ARGS}} -timeout 20s -race -count=1 -covermode atomic -coverprofile {{.DIST}}/coverage.txt {{.PKG}}
-
-  test:regression:
-    desc: Run regression test
-    deps: [build]
-    cmds:
-      - "{{.CWD}}/bin/regression.zsh"
-      - "{{.CWD}}/bin/analyze.zsh"
-
-  test:fuzz:
-    desc: Run fuzz tests
-    cmds:
-      - go test -fuzz=Fuzz{{.CLI_ARGS}} -fuzztime 10s
-
-  cover:
-    desc: Visualize test coverage
-    deps: [test]
-    cmds:
-      - go tool cover -html={{.DIST}}/coverage.txt
-
-  clean:
-    desc: Remove build artifacts
-    cmds:
-      - rm -rf {{.DIST}}
+      - task -l
 
   build:
-    desc: Build all commands
-    deps: [dist]
+    desc: Build all binaries
     cmds:
-      - go build -o {{.DIST}}/{{.APP}} cmd/{{.APP}}/*.go
-      - go build -o {{.DIST}}/{{.APP}}d cmd/{{.APP}}d/*.go
+      - task: build:build
 
-  build:generate:
-    desc: Generate and build all commands
+  test:
+    desc: Run all tests
     cmds:
-      - go generate
-      - task: build
-
-  lint:
-    desc: Runs golint
-    cmds:
-      - golangci-lint -v run
-      - typos
-
-  snapshot:
-    desc: Build a snapshot
-    deps: [test, lint]
-    cmds:
-      - goreleaser --debug release --snapshot --clean
+      - task: build:test
 
   qordled:
     desc: Run qordled
@@ -89,52 +30,22 @@ tasks:
     cmds:
       - "{{.DIST}}/qordled --port 8091"
 
-  scc:
-    desc: Run scc (https://github.com/boyter/scc)
-    cmds:
-      - scc -i go {{.CWD}}
-
-  goimports:
-    desc: Run goimports
-    vars:
-      Module:
-        sh: go mod edit -json | jq -r .Module.Path
-    cmds:
-      - goimports -w -local "{{.Module}}" .
-
   hyperfine:
     desc: Run hyperfine
     deps: [build]
     vars:
       binaries:
-        ./dist/qordle,/opt/homebrew/bin/qordle
+        "{{.DIST}}/qordle,/opt/homebrew/bin/qordle"
       options:
         -S -w solutions -w possible
       secrets:
         mound board brain lills qwert 12345
     cmds:
-      - |
-        hyperfine -N -w 3 --runs=100 -L binary {{.binaries}} "{binary} play {{.options}} {{.secrets}}"
+      - hyperfine -N -w 3 --runs=100 -L binary {{.binaries}} "{binary} play {{.options}} {{.secrets}}"
 
-  profile:
-    desc: Run the profiler
+  regression:
+    desc: Run regression test
+    deps: [build]
     cmds:
-      - go test -outputdir {{.DIST}} -cpuprofile cpu.prof -memprofile mem.prof -bench .
-      - go tool pprof -http=":8000" ./qordle.test {{.DIST}}/mem.prof
-
-  docs:generate:
-    desc: Generate the commands manual
-    cmds:
-      - go run "{{.CWD}}/cmd/qordle" manual {{.CWD}}/docs/commands > {{.CWD}}/docs/commands.md
-
-  docs:build:
-    desc: Statically generate the documentation
-    deps: [dist]
-    cmds:
-      - "{{.CWD}}/env/bin/mkdocs build"
-
-  docs:serve:
-    desc: Serve the documentation
-    deps: [docs:generate]
-    cmds:
-      - "{{.CWD}}/env/bin/mkdocs serve"
+      - "{{.ROOT_DIR}}/bin/regression.zsh {{.CLI_ARGS}}"
+      - "{{.ROOT_DIR}}/bin/analyze.zsh"

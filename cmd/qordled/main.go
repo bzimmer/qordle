@@ -16,7 +16,6 @@ import (
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"github.com/rs/zerolog/pkgerrors"
 	"github.com/urfave/cli/v2"
 
 	"github.com/bzimmer/qordle"
@@ -154,7 +153,6 @@ func main() {
 			zerolog.SetGlobalLevel(level)
 			zerolog.DurationFieldUnit = time.Millisecond
 			zerolog.DurationFieldInteger = false
-			zerolog.ErrorStackMarshaler = pkgerrors.MarshalStack
 			log.Logger = log.Output(
 				zerolog.ConsoleWriter{
 					Out:        c.App.ErrWriter,
