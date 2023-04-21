@@ -15,6 +15,7 @@ $ brew install qordle
 ## Usage
 
 `qordle` uses the hits, misses, and a pattern (if known) to suggest words matching the solution.
+See the complete [manual](https://bzimmer.github.io/qordle) for more features and documentation.
 
 ## Input
 
