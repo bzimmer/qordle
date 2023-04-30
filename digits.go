@@ -83,6 +83,29 @@ func (o Operations) String() string {
 	return strings.Join(val, ",")
 }
 
+func (o Operations) simplify() Operations {
+	// [432,24]
+	// 	{"op":0,"lhs": 25,"rhs": 23,"val": 48}
+	// 	{"op":0,"lhs": 20,"rhs": 11,"val": 31}
+	// 	{"op":1,"lhs": 48,"rhs":  9,"val":432}
+	// 	{"op":2,"lhs":432,"rhs": 19,"val":413}
+
+	// [413]
+	//  {"op":1,"lhs": 20,"rhs": 19,"val":380}
+	//  {"op":0,"lhs": 25,"rhs": 23,"val": 48}
+	//  {"op":2,"lhs":  5,"rhs":  2,"val":  3}
+	//  {"op":2,"lhs":380,"rhs":  3,"val":377}
+	//  {"op":0,"lhs":380,"rhs": 33,"val":413}
+
+	// [413]
+	//  {"op":1,"lhs": 25,"rhs": 11,"val":275}
+	//  {"op":0,"lhs":275,"rhs": 23,"val":298}
+	//  {"op":1,"lhs": 19,"rhs":  5,"val": 95}
+	//  {"op":2,"lhs":298,"rhs": 95,"val":203}
+	//  {"op":0,"lhs":298,"rhs":115,"val":413}
+	return o
+}
+
 type candidate struct {
 	Board Board      `json:"board"`
 	Ops   Operations `json:"ops"`
@@ -127,9 +150,7 @@ func operations(board Board, ops Operations) []candidate {
 }
 
 func digits(c *cli.Context) error {
-	target := c.Int("target")
-	var board []int
-
+	var board Board
 	for i := 0; i < c.NArg(); i++ {
 		val, err := strconv.Atoi(c.Args().Get(i))
 		if err != nil {
@@ -139,15 +160,16 @@ func digits(c *cli.Context) error {
 	}
 
 	enc := Runtime(c).Encoder
+	target := c.Int("target")
 	queue := lane.NewPriorityQueue[candidate](lane.Minimum[int])
-	queue.Push(candidate{Board: Board(board), Ops: nil}, 0)
+	queue.Push(candidate{Board: board, Ops: nil}, 0)
 	for !queue.Empty() {
 		val, steps, _ := queue.Pop()
 	loop:
 		for _, candidate := range operations(val.Board, val.Ops) {
 			for i := 0; i < len(candidate.Ops); i++ {
 				if candidate.Ops[i].Val == target {
-					if err := enc.Encode([]any{candidate.Board, candidate.Ops}); err != nil {
+					if err := enc.Encode([]any{candidate.Board, candidate.Ops.simplify()}); err != nil {
 						return err
 					}
 					break loop
