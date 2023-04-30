@@ -10,6 +10,7 @@ require (
 	github.com/cheggaaa/pb/v3 v3.1.2
 	github.com/kelindar/bitmap v1.4.1
 	github.com/labstack/echo/v4 v4.10.2
+	github.com/oleiade/lane/v2 v2.0.0
 	github.com/rs/zerolog v1.29.1
 	github.com/stretchr/testify v1.8.1
 	github.com/urfave/cli/v2 v2.25.1
