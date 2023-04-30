@@ -84,6 +84,8 @@ func (o Operations) String() string {
 }
 
 func (o Operations) simplify() Operations {
+	// -t 413 5 11 19 20 23 25
+
 	// [432,24]
 	// 	{"op":0,"lhs": 25,"rhs": 23,"val": 48}
 	// 	{"op":0,"lhs": 20,"rhs": 11,"val": 31}
