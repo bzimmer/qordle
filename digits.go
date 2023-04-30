@@ -94,6 +94,7 @@ func operations(board Board, ops Operations) []candidate {
 	}
 
 	var candidates []candidate
+	operations := []Op{OpAdd, OpMultiply, OpSubtract, OpDivide}
 	for i := 0; i < len(board); i++ {
 		for j := i + 1; j < len(board); j++ {
 			lhs, rhs := board[i], board[j]
@@ -104,23 +105,24 @@ func operations(board Board, ops Operations) []candidate {
 			next = append(next, board[0:i]...)
 			next = append(next, board[i+1:j]...)
 			next = append(next, board[j+1:]...)
-			for _, op := range []Op{OpAdd, OpMultiply, OpSubtract, OpDivide} {
+			for _, op := range operations {
 				if !op.valid(lhs, rhs) {
 					continue
 				}
-				op := Operation{
+				operation := Operation{
 					Op:  op,
 					LHS: lhs,
 					RHS: rhs,
 					Val: op.apply(lhs, rhs),
 				}
 				candidates = append(candidates, candidate{
-					Board: append(next, op.Val),
-					Ops:   append(ops, op),
+					Board: append(next, operation.Val),
+					Ops:   append(ops, operation),
 				})
 			}
 		}
 	}
+
 	return candidates
 }
 
