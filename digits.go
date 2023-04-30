@@ -1,9 +1,8 @@
 package qordle
 
 import (
-	"encoding/json"
 	"fmt"
-	"io"
+	"strconv"
 	"strings"
 
 	"github.com/oleiade/lane/v2"
@@ -21,18 +20,44 @@ const (
 )
 
 func (o Op) String() string {
+	var sign string
 	switch o {
 	case OpAdd:
-		return "+"
+		sign = "+"
 	case OpSubtract:
-		return "-"
+		sign = "-"
 	case OpMultiply:
-		return "*"
+		sign = "*"
 	case OpDivide:
-		return "/"
-	default:
-		return "!!!!"
+		sign = "/"
 	}
+	return sign
+}
+
+func (o Op) valid(lhs, rhs int) bool {
+	switch o {
+	case OpAdd, OpMultiply:
+	case OpSubtract:
+		return lhs >= rhs
+	case OpDivide:
+		return rhs > 0 && lhs%rhs == 0
+	}
+	return true
+}
+
+func (o Op) apply(lhs, rhs int) int {
+	var val int
+	switch o {
+	case OpAdd:
+		val = lhs + rhs
+	case OpSubtract:
+		val = lhs - rhs
+	case OpMultiply:
+		val = lhs * rhs
+	case OpDivide:
+		val = lhs / rhs
+	}
+	return val
 }
 
 type Board []int
@@ -64,73 +89,35 @@ type candidate struct {
 }
 
 func operations(board Board, ops Operations) []candidate {
-	var candidates []candidate
 	if len(board) == 1 {
-		return candidates
+		return nil
 	}
-	enc := json.NewEncoder(io.Discard)
-	enc.Encode([]any{nil, candidate{Board: board}})
 
+	var candidates []candidate
 	for i := 0; i < len(board); i++ {
 		for j := i + 1; j < len(board); j++ {
 			lhs, rhs := board[i], board[j]
 			if lhs < rhs {
 				lhs, rhs = rhs, lhs
 			}
-			// var cb Board
-			cb := make(Board, i)
-			copy(cb, board[0:i])
-			cb = append(cb, board[i+1:j]...)
-			cb = append(cb, board[j+1:]...)
-			// addition
-			op := Operation{
-				Op:  OpAdd,
-				LHS: lhs,
-				RHS: rhs,
-				Val: lhs + rhs,
-			}
-			candidates = append(candidates, candidate{
-				Board: append(cb, op.Val),
-				Ops:   append(ops, op),
-			})
-			enc.Encode([]any{[]int{i, j}, candidates[len(candidates)-1]})
-			// multiply
-			op = Operation{
-				Op:  OpMultiply,
-				LHS: lhs,
-				RHS: rhs,
-				Val: lhs * rhs,
-			}
-			candidates = append(candidates, candidate{
-				Board: append(cb, op.Val),
-				Ops:   append(ops, op),
-			})
-			enc.Encode([]any{[]int{i, j}, candidates[len(candidates)-1]})
-			// subtraction
-			op = Operation{
-				Op:  OpSubtract,
-				LHS: lhs,
-				RHS: rhs,
-				Val: lhs - rhs,
-			}
-			candidates = append(candidates, candidate{
-				Board: append(cb, op.Val),
-				Ops:   append(ops, op),
-			})
-			enc.Encode([]any{[]int{i, j}, candidates[len(candidates)-1]})
-			// division
-			if rhs != 0 && lhs%rhs == 0 {
-				op = Operation{
-					Op:  OpDivide,
+			next := make(Board, 0)
+			next = append(next, board[0:i]...)
+			next = append(next, board[i+1:j]...)
+			next = append(next, board[j+1:]...)
+			for _, op := range []Op{OpAdd, OpMultiply, OpSubtract, OpDivide} {
+				if !op.valid(lhs, rhs) {
+					continue
+				}
+				op := Operation{
+					Op:  op,
 					LHS: lhs,
 					RHS: rhs,
-					Val: lhs / rhs,
+					Val: op.apply(lhs, rhs),
 				}
 				candidates = append(candidates, candidate{
-					Board: append(cb, op.Val),
+					Board: append(next, op.Val),
 					Ops:   append(ops, op),
 				})
-				enc.Encode([]any{[]int{i, j}, candidates[len(candidates)-1]})
 			}
 		}
 	}
@@ -138,8 +125,16 @@ func operations(board Board, ops Operations) []candidate {
 }
 
 func digits(c *cli.Context) error {
-	target := 413
-	board := []int{5, 11, 19, 20, 23, 25}
+	target := c.Int("target")
+	var board []int
+
+	for i := 0; i < c.NArg(); i++ {
+		val, err := strconv.Atoi(c.Args().Get(i))
+		if err != nil {
+			return err
+		}
+		board = append(board, val)
+	}
 
 	enc := Runtime(c).Encoder
 	queue := lane.NewPriorityQueue[candidate](lane.Minimum[int])
@@ -150,7 +145,7 @@ func digits(c *cli.Context) error {
 		for _, candidate := range operations(val.Board, val.Ops) {
 			for i := 0; i < len(candidate.Ops); i++ {
 				if candidate.Ops[i].Val == target {
-					if err := enc.Encode(candidate.Ops); err != nil {
+					if err := enc.Encode([]any{candidate.Board, candidate.Ops}); err != nil {
 						return err
 					}
 					break loop
