@@ -1,6 +1,7 @@
 package qordle
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -62,6 +63,15 @@ func (o Op) apply(lhs, rhs int) int {
 
 type Board []int
 
+func (b Board) contains(target int) bool {
+	for i := 0; i < len(b); i++ {
+		if b[i] == target {
+			return true
+		}
+	}
+	return false
+}
+
 type Operation struct {
 	Op  Op  `json:"op"`
 	LHS int `json:"lhs"`
@@ -80,46 +90,24 @@ func (o Operations) String() string {
 	for _, x := range o {
 		val = append(val, x.String())
 	}
-	return strings.Join(val, ",")
+	return strings.Join(val, ", ")
 }
 
-func (o Operations) simplify() Operations {
-	// -t 413 5 11 19 20 23 25
-
-	// [432,24]
-	// 	{"op":0,"lhs": 25,"rhs": 23,"val": 48}
-	// 	{"op":0,"lhs": 20,"rhs": 11,"val": 31}
-	// 	{"op":1,"lhs": 48,"rhs":  9,"val":432}
-	// 	{"op":2,"lhs":432,"rhs": 19,"val":413}
-
-	// [413]
-	//  {"op":1,"lhs": 20,"rhs": 19,"val":380}
-	//  {"op":0,"lhs": 25,"rhs": 23,"val": 48}
-	//  {"op":2,"lhs":  5,"rhs":  2,"val":  3}
-	//  {"op":2,"lhs":380,"rhs":  3,"val":377}
-	//  {"op":0,"lhs":380,"rhs": 33,"val":413}
-
-	// [413]
-	//  {"op":1,"lhs": 25,"rhs": 11,"val":275}
-	//  {"op":0,"lhs":275,"rhs": 23,"val":298}
-	//  {"op":1,"lhs": 19,"rhs":  5,"val": 95}
-	//  {"op":2,"lhs":298,"rhs": 95,"val":203}
-	//  {"op":0,"lhs":298,"rhs":115,"val":413}
-	return o
-}
-
-type candidate struct {
+type Candidate struct {
 	Board Board      `json:"board"`
 	Ops   Operations `json:"ops"`
 }
 
-func operations(board Board, ops Operations) []candidate {
+type Digits struct{}
+
+func (d Digits) operations(board Board, ops Operations, target int) []Candidate {
 	if len(board) == 1 {
 		return nil
 	}
 
-	var candidates []candidate
 	operations := []Op{OpAdd, OpMultiply, OpSubtract, OpDivide}
+
+	var candidates []Candidate
 	for i := 0; i < len(board); i++ {
 		for j := i + 1; j < len(board); j++ {
 			lhs, rhs := board[i], board[j]
@@ -140,10 +128,13 @@ func operations(board Board, ops Operations) []candidate {
 					RHS: rhs,
 					Val: op.apply(lhs, rhs),
 				}
-				candidates = append(candidates, candidate{
+				candidates = append(candidates, Candidate{
 					Board: append(next, operation.Val),
 					Ops:   append(ops, operation),
 				})
+				if operation.Val == target {
+					return candidates
+				}
 			}
 		}
 	}
@@ -151,35 +142,47 @@ func operations(board Board, ops Operations) []candidate {
 	return candidates
 }
 
+func (d Digits) Play(ctx context.Context, board Board, target int) <-chan Candidate {
+	c := make(chan Candidate)
+	go func() {
+		defer close(c)
+		queue := lane.NewPriorityQueue[Candidate](lane.Minimum[int])
+		queue.Push(Candidate{Board: board, Ops: nil}, 0)
+		for !queue.Empty() {
+			val, steps, _ := queue.Pop()
+			for _, candidate := range d.operations(val.Board, val.Ops, target) {
+				if candidate.Board.contains(target) {
+					select {
+					case <-ctx.Done():
+					case c <- candidate:
+					}
+				} else {
+					queue.Push(candidate, steps+1)
+				}
+			}
+		}
+	}()
+	return c
+}
+
 func digits(c *cli.Context) error {
 	var board Board
 	for i := 0; i < c.NArg(); i++ {
 		val, err := strconv.Atoi(c.Args().Get(i))
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to convert '%s'", c.Args().Get(i))
 		}
 		board = append(board, val)
 	}
 
+	var digits Digits
 	enc := Runtime(c).Encoder
-	target := c.Int("target")
-	queue := lane.NewPriorityQueue[candidate](lane.Minimum[int])
-	queue.Push(candidate{Board: board, Ops: nil}, 0)
-	for !queue.Empty() {
-		val, steps, _ := queue.Pop()
-	loop:
-		for _, candidate := range operations(val.Board, val.Ops) {
-			for i := 0; i < len(candidate.Ops); i++ {
-				if candidate.Ops[i].Val == target {
-					if err := enc.Encode([]any{candidate.Board, candidate.Ops.simplify()}); err != nil {
-						return err
-					}
-					break loop
-				}
-			}
-			queue.Push(candidate, steps+1)
+	for candidate := range digits.Play(c.Context, board, c.Int("target")) {
+		if err := enc.Encode(candidate); err != nil {
+			return err
 		}
 	}
+
 	return nil
 }
 
