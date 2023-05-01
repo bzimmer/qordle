@@ -4,9 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bzimmer/qordle"
 	"github.com/stretchr/testify/assert"
 	"golang.org/x/net/context"
+
+	"github.com/bzimmer/qordle"
 )
 
 func TestOp(t *testing.T) {
