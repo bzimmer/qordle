@@ -79,7 +79,7 @@ func today(c *cli.Context) error {
 func CommandBee() *cli.Command {
 	return &cli.Command{
 		Name:     "bee",
-		Category: "spelling bee",
+		Category: "puzzles",
 		Usage:    "Download the NYT spelling bee",
 		Subcommands: []*cli.Command{
 			{

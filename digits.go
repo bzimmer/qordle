@@ -98,6 +98,10 @@ type Candidate struct {
 	Ops   Operations `json:"ops"`
 }
 
+func (c Candidate) contains(target int) bool {
+	return c.Board.contains(target)
+}
+
 type Digits struct{}
 
 func (d Digits) operations(board Board, ops Operations, target int) []Candidate {
@@ -151,12 +155,14 @@ func (d Digits) Play(ctx context.Context, board Board, target int) <-chan Candid
 		for !queue.Empty() {
 			val, steps, _ := queue.Pop()
 			for _, candidate := range d.operations(val.Board, val.Ops, target) {
-				if candidate.Board.contains(target) {
+				switch candidate.contains(target) {
+				case true:
 					select {
 					case <-ctx.Done():
+						return
 					case c <- candidate:
 					}
-				} else {
+				default:
 					queue.Push(candidate, steps+1)
 				}
 			}
@@ -189,7 +195,7 @@ func digits(c *cli.Context) error {
 func CommandDigits() *cli.Command {
 	return &cli.Command{
 		Name:     "digits",
-		Category: "wordle",
+		Category: "puzzles",
 		Usage:    "Play digits automatically",
 		Flags: []cli.Flag{
 			&cli.IntFlag{

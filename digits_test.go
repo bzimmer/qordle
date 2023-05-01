@@ -2,15 +2,68 @@ package qordle_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/bzimmer/qordle"
+	"github.com/stretchr/testify/assert"
+	"golang.org/x/net/context"
 )
+
+func TestOp(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+	a.Equal("+", qordle.OpAdd.String())
+	a.Equal("*", qordle.OpMultiply.String())
+	a.Equal("/", qordle.OpDivide.String())
+	a.Equal("-", qordle.OpSubtract.String())
+}
+
+func TestOeration(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+	o := qordle.Operation{Op: qordle.OpAdd, LHS: 1, RHS: 3, Val: 4}
+	a.Equal("0001 + 0003 = 0004", o.String())
+}
+
+func TestOerations(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+	o := []qordle.Operation{
+		{Op: qordle.OpAdd, LHS: 1, RHS: 3, Val: 4},
+		{Op: qordle.OpSubtract, LHS: 10, RHS: 3, Val: 7},
+	}
+	os := qordle.Operations(o)
+	a.Equal("0001 + 0003 = 0004, 0010 - 0003 = 0007", os.String())
+}
+
+func TestDigits(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+
+	var digits qordle.Digits
+	var candidates []qordle.Candidate
+	for c := range digits.Play(context.Background(), qordle.Board{1, 2, 6, 3}, 5) {
+		candidates = append(candidates, c)
+	}
+	a.Len(candidates, 13)
+
+	ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(-time.Hour))
+	cancel()
+
+	candidates = []qordle.Candidate{}
+	for c := range digits.Play(ctx, qordle.Board{1, 2, 6, 3}, 5) {
+		candidates = append(candidates, c)
+	}
+	// lte to 1 to account for race conditions
+	// we know 13 is the correct answer above so 0 or 1 is fine here
+	a.LessOrEqual(len(candidates), 1)
+}
 
 func TestDigitsCommand(t *testing.T) {
 	for _, tt := range []harness{
 		{
 			name: "digits",
-			args: []string{"digits", "-t", "413", "5", "11", "19", "20", "23", "25"},
+			args: []string{"digits", "-t", "5", "1", "2", "6", "3"},
 		},
 		{
 			name: "invalid number",
