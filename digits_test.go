@@ -55,9 +55,7 @@ func TestDigits(t *testing.T) {
 	for c := range digits.Play(ctx, qordle.Board{1, 2, 6, 3}, 5) {
 		candidates = append(candidates, c)
 	}
-	// lte to 1 to account for race conditions
-	// we know 13 is the correct answer above so 0 or 1 is fine here
-	a.LessOrEqual(len(candidates), 1)
+	a.LessOrEqual(len(candidates), 0)
 }
 
 func TestDigitsCommand(t *testing.T) {

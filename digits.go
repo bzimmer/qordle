@@ -154,6 +154,9 @@ func (d Digits) Play(ctx context.Context, board Board, target int) <-chan Candid
 		queue.Push(Candidate{Board: board, Ops: nil}, 0)
 		for !queue.Empty() {
 			val, steps, _ := queue.Pop()
+			if ctx.Err() != nil {
+				return
+			}
 			for _, candidate := range d.operations(val.Board, val.Ops, target) {
 				switch candidate.contains(target) {
 				case true:
