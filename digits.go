@@ -111,15 +111,14 @@ func (d Digits) operations(
 				if !operator.valid(lhs, rhs) {
 					continue
 				}
-				val := operator.apply(lhs, rhs)
-				if seen.Contains(val) {
-					continue
-				}
 				operation := Operation{
 					Op:  operator,
 					LHS: lhs,
 					RHS: rhs,
-					Val: val,
+					Val: operator.apply(lhs, rhs),
+				}
+				if seen.Contains(operation.Val) {
+					continue
 				}
 				seen.Add(operation.Val)
 				candidate := Candidate{
