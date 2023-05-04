@@ -25,7 +25,7 @@ func TestOeration(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
 	o := qordle.Operation{Op: qordle.OpAdd, LHS: 1, RHS: 3, Val: 4}
-	a.Equal("0001 + 0003 = 0004", o.String())
+	a.Equal("1 + 3 = 4", o.String())
 }
 
 func TestOerations(t *testing.T) {
@@ -36,7 +36,7 @@ func TestOerations(t *testing.T) {
 		{Op: qordle.OpSubtract, LHS: 10, RHS: 3, Val: 7},
 	}
 	os := qordle.Operations(o)
-	a.Equal("0001 + 0003 = 0004, 0010 - 0003 = 0007", os.String())
+	a.Equal("1 + 3 = 4, 10 - 3 = 7", os.String())
 }
 
 func TestDigits(t *testing.T) {
@@ -52,7 +52,58 @@ func TestDigits(t *testing.T) {
 				for c := range digits.Play(context.Background(), qordle.Board{1, 2, 6, 3}, 5) {
 					candidates = append(candidates, c)
 				}
-				a.Len(candidates, 13)
+				a.Len(candidates, 68)
+			},
+		},
+		{
+			name: "large number",
+			f: func(a *assert.Assertions, digits qordle.Digits) {
+				var candidates []qordle.Candidate
+				for c := range digits.Play(context.Background(), qordle.Board{1, 3, 5, 9, 17, 34}, 78132) {
+					candidates = append(candidates, c)
+				}
+				/*
+					-t 78132 1 3 5 9 17 34
+					{
+					  "board": [
+					    78132
+					  ],
+					  "ops": [
+					    {
+					      "op": 1,
+					      "lhs": 34,
+					      "rhs": 3,
+					      "val": 102
+					    },
+					    {
+					      "op": 1,
+					      "lhs": 9,
+					      "rhs": 5,
+					      "val": 45
+					    },
+					    {
+					      "op": 1,
+					      "lhs": 45,
+					      "rhs": 17,
+					      "val": 765
+					    },
+					    {
+					      "op": 2,
+					      "lhs": 765,
+					      "rhs": 102,
+					      "val": 663
+					    },
+					    {
+					      "op": 1,
+					      "lhs": 766,
+					      "rhs": 102,
+					      "val": 78132
+					    }
+					  ]
+					}
+				*/
+				// the above solution is wrong, the second to last step should `765 + 1 = 766`
+				a.Len(candidates, 1)
 			},
 		},
 		{

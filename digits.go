@@ -63,15 +63,6 @@ func (o Op) apply(lhs, rhs int) int {
 
 type Board []int
 
-func (b Board) contains(target int) bool {
-	for i := 0; i < len(b); i++ {
-		if b[i] == target {
-			return true
-		}
-	}
-	return false
-}
-
 type Operation struct {
 	Op  Op  `json:"op"`
 	LHS int `json:"lhs"`
@@ -80,7 +71,7 @@ type Operation struct {
 }
 
 func (o Operation) String() string {
-	return fmt.Sprintf("%04d %s %04d = %04d", o.LHS, o.Op, o.RHS, o.Val)
+	return fmt.Sprintf("%d %s %d = %d", o.LHS, o.Op, o.RHS, o.Val)
 }
 
 type Operations []Operation
@@ -98,20 +89,21 @@ type Candidate struct {
 	Ops   Operations `json:"ops"`
 }
 
-func (c Candidate) contains(target int) bool {
-	return c.Board.contains(target)
-}
-
 type Digits struct{}
 
-func (d Digits) operations(board Board, ops Operations, target int) []Candidate {
+func (d Digits) operations(board Board, ops Operations, target int) ([]Candidate, []Candidate) {
 	if len(board) == 1 {
-		return nil
+		return nil, nil
 	}
 
 	operations := []Op{OpAdd, OpMultiply, OpSubtract, OpDivide}
 
-	var candidates []Candidate
+	// rows := make([][]string, len(board)-1)
+	// for i := 0; i < len(rows); i++ {
+	// 	rows[i] = make([]string, len(operations))
+	// }
+
+	var solutions, candidates []Candidate
 	for i := 0; i < len(board); i++ {
 		for j := i + 1; j < len(board); j++ {
 			lhs, rhs := board[i], board[j]
@@ -123,6 +115,7 @@ func (d Digits) operations(board Board, ops Operations, target int) []Candidate 
 			next = append(next, board[i+1:j]...)
 			next = append(next, board[j+1:]...)
 			for _, op := range operations {
+				// rows[i][k] = "-"
 				if !op.valid(lhs, rhs) {
 					continue
 				}
@@ -132,18 +125,27 @@ func (d Digits) operations(board Board, ops Operations, target int) []Candidate 
 					RHS: rhs,
 					Val: op.apply(lhs, rhs),
 				}
-				candidates = append(candidates, Candidate{
+				candidate := Candidate{
 					Board: append(next, operation.Val),
 					Ops:   append(ops, operation),
-				})
-				if operation.Val == target {
-					return candidates
 				}
+				switch {
+				case operation.Val == target:
+					solutions = append(solutions, candidate)
+				default:
+					candidates = append(candidates, candidate)
+				}
+				// rows[i][k] = fmt.Sprintf("%s => %v", operation.String(), append(next, operation.Val))
 			}
 		}
 	}
+	// table := tablewriter.NewWriter(os.Stderr)
+	// table.AppendBulk(rows)
+	// table.SetColWidth(75)
+	// table.Render()
+	// fmt.Fprintln(os.Stderr)
 
-	return candidates
+	return solutions, candidates
 }
 
 func (d Digits) Play(ctx context.Context, board Board, target int) <-chan Candidate {
@@ -157,17 +159,17 @@ func (d Digits) Play(ctx context.Context, board Board, target int) <-chan Candid
 			if ctx.Err() != nil {
 				return
 			}
-			for _, candidate := range d.operations(val.Board, val.Ops, target) {
-				switch candidate.contains(target) {
-				case true:
-					select {
-					case <-ctx.Done():
-						return
-					case c <- candidate:
-					}
-				default:
-					queue.Push(candidate, steps+1)
+			// fmt.Fprintf(os.Stderr, "step: %d, board: %v, ops: %v\n", steps, val.Board, val.Ops)
+			solutions, candidates := d.operations(val.Board, val.Ops, target)
+			for _, solution := range solutions {
+				select {
+				case <-ctx.Done():
+					return
+				case c <- solution:
 				}
+			}
+			for _, candidate := range candidates {
+				queue.Push(candidate, steps+1)
 			}
 		}
 	}()
@@ -176,6 +178,7 @@ func (d Digits) Play(ctx context.Context, board Board, target int) <-chan Candid
 
 func digits(c *cli.Context) error {
 	var board Board
+	var digits Digits
 	for i := 0; i < c.NArg(); i++ {
 		val, err := strconv.Atoi(c.Args().Get(i))
 		if err != nil {
@@ -184,7 +187,6 @@ func digits(c *cli.Context) error {
 		board = append(board, val)
 	}
 
-	var digits Digits
 	enc := Runtime(c).Encoder
 	for candidate := range digits.Play(c.Context, board, c.Int("target")) {
 		if err := enc.Encode(candidate); err != nil {
@@ -210,3 +212,79 @@ func CommandDigits() *cli.Command {
 		Action: digits,
 	}
 }
+
+/*
+-t 78132 1 3 5 9 17 34
+{
+	"board": [
+	  78132
+	],
+	"ops": [
+	  {
+		"op": 1,
+		"lhs": 34,
+		"rhs": 3,
+		"val": 102
+	  },
+	  {
+		"op": 1,
+		"lhs": 9,
+		"rhs": 5,
+		"val": 45
+	  },
+	  {
+		"op": 1,
+		"lhs": 45,
+		"rhs": 17,
+		"val": 765
+	  },
+	  {
+		"op": 2,
+		"lhs": 765,
+		"rhs": 102,
+		"val": 663
+	  },
+	  {
+		"op": 1,
+		"lhs": 766,
+		"rhs": 102,
+		"val": 78132
+	  }
+	]
+  }
+*/
+
+/*
+-t 781 1 3 5 9 17 34 | jq -s "first"
+{
+  "board": [
+    5,
+    781
+  ],
+  "ops": [
+    {
+      "op": 0,
+      "lhs": 9,
+      "rhs": 3,
+      "val": 12
+    },
+    {
+      "op": 0,
+      "lhs": 34,
+      "rhs": 12,
+      "val": 46
+    },
+    {
+      "op": 1,
+      "lhs": 46,
+      "rhs": 17,
+      "val": 782
+    },
+    {
+      "op": 2,
+      "lhs": 782,
+      "rhs": 5,
+      "val": 777
+    }
+  ]
+}*/
