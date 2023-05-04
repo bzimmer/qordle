@@ -62,48 +62,7 @@ func TestDigits(t *testing.T) {
 				for c := range digits.Play(context.Background(), qordle.Board{1, 3, 5, 9, 17, 34}, 78132) {
 					candidates = append(candidates, c)
 				}
-				/*
-					-t 78132 1 3 5 9 17 34
-					{
-					  "board": [
-					    78132
-					  ],
-					  "ops": [
-					    {
-					      "op": 1,
-					      "lhs": 34,
-					      "rhs": 3,
-					      "val": 102
-					    },
-					    {
-					      "op": 1,
-					      "lhs": 9,
-					      "rhs": 5,
-					      "val": 45
-					    },
-					    {
-					      "op": 1,
-					      "lhs": 45,
-					      "rhs": 17,
-					      "val": 765
-					    },
-					    {
-					      "op": 2,
-					      "lhs": 765,
-					      "rhs": 102,
-					      "val": 663
-					    },
-					    {
-					      "op": 1,
-					      "lhs": 766,
-					      "rhs": 102,
-					      "val": 78132
-					    }
-					  ]
-					}
-				*/
-				// the above solution is wrong, the second to last step should `765 + 1 = 766`
-				a.Len(candidates, 1)
+				a.Len(candidates, 18)
 			},
 		},
 		{

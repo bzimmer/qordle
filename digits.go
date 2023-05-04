@@ -10,17 +10,16 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// Op represents an operation
-type Op int
+type Operator int
 
 const (
-	OpAdd      Op = 0
-	OpMultiply Op = 1
-	OpSubtract Op = 2
-	OpDivide   Op = 3
+	OpAdd      Operator = 0
+	OpMultiply Operator = 1
+	OpSubtract Operator = 2
+	OpDivide   Operator = 3
 )
 
-func (o Op) String() string {
+func (o Operator) String() string {
 	var sign string
 	switch o {
 	case OpAdd:
@@ -35,7 +34,7 @@ func (o Op) String() string {
 	return sign
 }
 
-func (o Op) valid(lhs, rhs int) bool {
+func (o Operator) valid(lhs, rhs int) bool {
 	switch o {
 	case OpAdd, OpMultiply:
 	case OpSubtract:
@@ -46,7 +45,7 @@ func (o Op) valid(lhs, rhs int) bool {
 	return true
 }
 
-func (o Op) apply(lhs, rhs int) int {
+func (o Operator) apply(lhs, rhs int) int {
 	var val int
 	switch o {
 	case OpAdd:
@@ -64,10 +63,10 @@ func (o Op) apply(lhs, rhs int) int {
 type Board []int
 
 type Operation struct {
-	Op  Op  `json:"op"`
-	LHS int `json:"lhs"`
-	RHS int `json:"rhs"`
-	Val int `json:"val"`
+	Op  Operator `json:"op"`
+	LHS int      `json:"lhs"`
+	RHS int      `json:"rhs"`
+	Val int      `json:"val"`
 }
 
 func (o Operation) String() string {
@@ -91,17 +90,13 @@ type Candidate struct {
 
 type Digits struct{}
 
-func (d Digits) operations(board Board, ops Operations, target int) ([]Candidate, []Candidate) {
+func (d Digits) operations(
+	board Board, operations Operations, target int) ([]Candidate, []Candidate) {
 	if len(board) == 1 {
 		return nil, nil
 	}
 
-	operations := []Op{OpAdd, OpMultiply, OpSubtract, OpDivide}
-
-	// rows := make([][]string, len(board)-1)
-	// for i := 0; i < len(rows); i++ {
-	// 	rows[i] = make([]string, len(operations))
-	// }
+	operators := []Operator{OpAdd, OpMultiply, OpSubtract, OpDivide}
 
 	var solutions, candidates []Candidate
 	for i := 0; i < len(board); i++ {
@@ -110,40 +105,35 @@ func (d Digits) operations(board Board, ops Operations, target int) ([]Candidate
 			if lhs < rhs {
 				lhs, rhs = rhs, lhs
 			}
-			next := make(Board, 0)
-			next = append(next, board[0:i]...)
-			next = append(next, board[i+1:j]...)
-			next = append(next, board[j+1:]...)
-			for _, op := range operations {
-				// rows[i][k] = "-"
-				if !op.valid(lhs, rhs) {
+			for _, operator := range operators {
+				if !operator.valid(lhs, rhs) {
 					continue
 				}
 				operation := Operation{
-					Op:  op,
+					Op:  operator,
 					LHS: lhs,
 					RHS: rhs,
-					Val: op.apply(lhs, rhs),
+					Val: operator.apply(lhs, rhs),
 				}
 				candidate := Candidate{
-					Board: append(next, operation.Val),
-					Ops:   append(ops, operation),
+					Board: make(Board, 0, len(board)+1),
+					Ops:   make(Operations, 0, len(operations)+1),
 				}
+				candidate.Ops = append(candidate.Ops, operations...)
+				candidate.Ops = append(candidate.Ops, operation)
+				candidate.Board = append(candidate.Board, board[0:i]...)
+				candidate.Board = append(candidate.Board, board[i+1:j]...)
+				candidate.Board = append(candidate.Board, board[j+1:]...)
+				candidate.Board = append(candidate.Board, operation.Val)
 				switch {
 				case operation.Val == target:
 					solutions = append(solutions, candidate)
 				default:
 					candidates = append(candidates, candidate)
 				}
-				// rows[i][k] = fmt.Sprintf("%s => %v", operation.String(), append(next, operation.Val))
 			}
 		}
 	}
-	// table := tablewriter.NewWriter(os.Stderr)
-	// table.AppendBulk(rows)
-	// table.SetColWidth(75)
-	// table.Render()
-	// fmt.Fprintln(os.Stderr)
 
 	return solutions, candidates
 }
@@ -159,7 +149,6 @@ func (d Digits) Play(ctx context.Context, board Board, target int) <-chan Candid
 			if ctx.Err() != nil {
 				return
 			}
-			// fmt.Fprintf(os.Stderr, "step: %d, board: %v, ops: %v\n", steps, val.Board, val.Ops)
 			solutions, candidates := d.operations(val.Board, val.Ops, target)
 			for _, solution := range solutions {
 				select {
@@ -212,79 +201,3 @@ func CommandDigits() *cli.Command {
 		Action: digits,
 	}
 }
-
-/*
--t 78132 1 3 5 9 17 34
-{
-	"board": [
-	  78132
-	],
-	"ops": [
-	  {
-		"op": 1,
-		"lhs": 34,
-		"rhs": 3,
-		"val": 102
-	  },
-	  {
-		"op": 1,
-		"lhs": 9,
-		"rhs": 5,
-		"val": 45
-	  },
-	  {
-		"op": 1,
-		"lhs": 45,
-		"rhs": 17,
-		"val": 765
-	  },
-	  {
-		"op": 2,
-		"lhs": 765,
-		"rhs": 102,
-		"val": 663
-	  },
-	  {
-		"op": 1,
-		"lhs": 766,
-		"rhs": 102,
-		"val": 78132
-	  }
-	]
-  }
-*/
-
-/*
--t 781 1 3 5 9 17 34 | jq -s "first"
-{
-  "board": [
-    5,
-    781
-  ],
-  "ops": [
-    {
-      "op": 0,
-      "lhs": 9,
-      "rhs": 3,
-      "val": 12
-    },
-    {
-      "op": 0,
-      "lhs": 34,
-      "rhs": 12,
-      "val": 46
-    },
-    {
-      "op": 1,
-      "lhs": 46,
-      "rhs": 17,
-      "val": 782
-    },
-    {
-      "op": 2,
-      "lhs": 782,
-      "rhs": 5,
-      "val": 777
-    }
-  ]
-}*/
