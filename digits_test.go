@@ -52,7 +52,7 @@ func TestDigits(t *testing.T) {
 				for c := range digits.Play(context.Background(), qordle.Board{1, 2, 6, 3}, 5) {
 					candidates = append(candidates, c)
 				}
-				a.Len(candidates, 68)
+				a.Len(candidates, 6)
 			},
 		},
 		{

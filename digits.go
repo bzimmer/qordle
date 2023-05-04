@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	set "github.com/deckarep/golang-set/v2"
 	"github.com/oleiade/lane/v2"
 	"github.com/urfave/cli/v2"
 )
@@ -96,6 +97,7 @@ func (d Digits) operations(
 		return nil, nil
 	}
 
+	seen := set.NewThreadUnsafeSet(board...)
 	operators := []Operator{OpAdd, OpMultiply, OpSubtract, OpDivide}
 
 	var solutions, candidates []Candidate
@@ -109,14 +111,19 @@ func (d Digits) operations(
 				if !operator.valid(lhs, rhs) {
 					continue
 				}
+				val := operator.apply(lhs, rhs)
+				if seen.Contains(val) {
+					continue
+				}
 				operation := Operation{
 					Op:  operator,
 					LHS: lhs,
 					RHS: rhs,
-					Val: operator.apply(lhs, rhs),
+					Val: val,
 				}
+				seen.Add(operation.Val)
 				candidate := Candidate{
-					Board: make(Board, 0, len(board)+1),
+					Board: make(Board, 0, len(board)-1),
 					Ops:   make(Operations, 0, len(operations)+1),
 				}
 				candidate.Ops = append(candidate.Ops, operations...)

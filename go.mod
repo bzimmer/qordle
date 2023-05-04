@@ -8,6 +8,7 @@ require (
 	github.com/awslabs/aws-lambda-go-api-proxy v0.14.0
 	github.com/bzimmer/manual v0.1.3
 	github.com/cheggaaa/pb/v3 v3.1.2
+	github.com/deckarep/golang-set/v2 v2.3.0
 	github.com/kelindar/bitmap v1.4.1
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/oleiade/lane/v2 v2.0.0
