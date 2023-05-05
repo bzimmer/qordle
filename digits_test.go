@@ -62,7 +62,23 @@ func TestDigits(t *testing.T) {
 				for c := range digits.Play(context.Background(), qordle.Board{1, 3, 5, 9, 17, 34}, 78132) {
 					candidates = append(candidates, c)
 				}
-				a.Len(candidates, 18)
+				a.Len(candidates, 9)
+			},
+		},
+		{
+			name: "single answer",
+			// without hashing results all combinations are produced
+			// $ qordle digits -t 2125 1 2 3 4 18 15 | sort | uniq -c | sort -nr
+			//    1 {"board":[2125],"ops":[{"op":0,"lhs":4,"rhs":3,"val":7},{"op":1,"lhs":18,"rhs":7,"val":126},
+			//		{"op":2,"lhs":126,"rhs":1,"val":125},{"op":0,"lhs":15,"rhs":2,"val":17},{"op":1,"lhs":125,"rhs":17,"val":2125}]}
+			//    1 {"board":[2125],"ops":[{"op":0,"lhs":4,"rhs":3,"val":7},{"op":1,"lhs":18,"rhs":7,"val":126},
+			//		{"op":0,"lhs":15,"rhs":2,"val":17},{"op":2,"lhs":126,"rhs":1,"val":125},{"op":1,"lhs":125,"rhs":17,"val":2125}]}
+			f: func(a *assert.Assertions, digits qordle.Digits) {
+				var candidates []qordle.Candidate
+				for c := range digits.Play(context.Background(), qordle.Board{1, 2, 3, 4, 18, 15}, 2125) {
+					candidates = append(candidates, c)
+				}
+				a.Len(candidates, 1)
 			},
 		},
 		{

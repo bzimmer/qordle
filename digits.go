@@ -3,6 +3,7 @@ package qordle
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -77,6 +78,15 @@ func (o Operations) String() string {
 	return strings.Join(val, ", ")
 }
 
+func (o Operations) Hash() string {
+	res := make([]string, len(o))
+	for i, x := range o {
+		res[i] = x.String()
+	}
+	sort.Slice(res, func(i, j int) bool { return res[i] < res[j] })
+	return strings.Join(res, "; ")
+}
+
 type Candidate struct {
 	Board Board      `json:"board"`
 	Ops   Operations `json:"ops"`
@@ -140,6 +150,7 @@ func (d Digits) Play(ctx context.Context, board Board, target int) <-chan Candid
 	c := make(chan Candidate)
 	go func() {
 		defer close(c)
+		seen := set.NewSet[string]()
 		queue := lane.NewPriorityQueue[Candidate](lane.Minimum[int])
 		queue.Push(Candidate{Board: board, Ops: nil}, 0)
 		for !queue.Empty() {
@@ -149,10 +160,15 @@ func (d Digits) Play(ctx context.Context, board Board, target int) <-chan Candid
 			}
 			solutions, candidates := d.operations(candidate.Board, candidate.Ops, target)
 			for _, solution := range solutions {
+				q := solution.Ops.Hash()
+				if seen.Contains(q) {
+					continue
+				}
 				select {
 				case <-ctx.Done():
 					return
 				case c <- solution:
+					seen.Add(q)
 				}
 			}
 			for _, candidate := range candidates {
@@ -179,6 +195,7 @@ func digits(c *cli.Context) error {
 	for candidate := range digits.Play(c.Context, board, c.Int("target")) {
 		switch {
 		case eq:
+			fmt.Fprintln(c.App.Writer)
 			for _, op := range candidate.Ops {
 				fmt.Fprintln(c.App.Writer, op)
 			}
