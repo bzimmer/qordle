@@ -35,30 +35,23 @@ func (o Operator) String() string {
 	return sign
 }
 
-func (o Operator) valid(lhs, rhs int) bool {
-	switch o {
-	case OpAdd, OpMultiply:
-	case OpSubtract:
-		return lhs >= rhs
-	case OpDivide:
-		return rhs > 0 && lhs%rhs == 0
-	}
-	return true
-}
-
-func (o Operator) apply(lhs, rhs int) int {
+func (o Operator) apply(lhs, rhs int) (int, bool) {
+	var ok bool
 	var val int
 	switch o {
 	case OpAdd:
-		val = lhs + rhs
+		val, ok = lhs+rhs, true
 	case OpSubtract:
-		val = lhs - rhs
+		val, ok = lhs-rhs, lhs >= rhs
 	case OpMultiply:
-		val = lhs * rhs
+		val, ok = lhs*rhs, true
 	case OpDivide:
-		val = lhs / rhs
+		ok = rhs > 0 && lhs%rhs == 0
+		if ok {
+			val = lhs / rhs
+		}
 	}
-	return val
+	return val, ok
 }
 
 type Board []int
@@ -108,34 +101,33 @@ func (d Digits) operations(
 				lhs, rhs = rhs, lhs
 			}
 			for _, operator := range operators {
-				if !operator.valid(lhs, rhs) {
-					continue
-				}
-				operation := Operation{
-					Op:  operator,
-					LHS: lhs,
-					RHS: rhs,
-					Val: operator.apply(lhs, rhs),
-				}
-				if seen.Contains(operation.Val) {
-					continue
-				}
-				seen.Add(operation.Val)
-				candidate := Candidate{
-					Board: make(Board, 0, len(board)-1),
-					Ops:   make(Operations, 0, len(operations)+1),
-				}
-				candidate.Ops = append(candidate.Ops, operations...)
-				candidate.Ops = append(candidate.Ops, operation)
-				candidate.Board = append(candidate.Board, board[0:i]...)
-				candidate.Board = append(candidate.Board, board[i+1:j]...)
-				candidate.Board = append(candidate.Board, board[j+1:]...)
-				candidate.Board = append(candidate.Board, operation.Val)
+				val, ok := operator.apply(lhs, rhs)
 				switch {
-				case operation.Val == target:
-					solutions = append(solutions, candidate)
+				case !ok:
+					continue
+				case seen.Contains(val):
+					continue
 				default:
-					candidates = append(candidates, candidate)
+					seen.Add(val)
+					operation := Operation{
+						Op: operator, LHS: lhs, RHS: rhs, Val: val,
+					}
+					candidate := Candidate{
+						Board: make(Board, 0, len(board)-1),
+						Ops:   make(Operations, 0, len(operations)+1),
+					}
+					candidate.Ops = append(candidate.Ops, operations...)
+					candidate.Ops = append(candidate.Ops, operation)
+					candidate.Board = append(candidate.Board, board[0:i]...)
+					candidate.Board = append(candidate.Board, board[i+1:j]...)
+					candidate.Board = append(candidate.Board, board[j+1:]...)
+					candidate.Board = append(candidate.Board, operation.Val)
+					switch {
+					case operation.Val == target:
+						solutions = append(solutions, candidate)
+					default:
+						candidates = append(candidates, candidate)
+					}
 				}
 			}
 		}
@@ -151,11 +143,11 @@ func (d Digits) Play(ctx context.Context, board Board, target int) <-chan Candid
 		queue := lane.NewPriorityQueue[Candidate](lane.Minimum[int])
 		queue.Push(Candidate{Board: board, Ops: nil}, 0)
 		for !queue.Empty() {
-			val, steps, _ := queue.Pop()
+			candidate, step, _ := queue.Pop()
 			if ctx.Err() != nil {
 				return
 			}
-			solutions, candidates := d.operations(val.Board, val.Ops, target)
+			solutions, candidates := d.operations(candidate.Board, candidate.Ops, target)
 			for _, solution := range solutions {
 				select {
 				case <-ctx.Done():
@@ -164,7 +156,7 @@ func (d Digits) Play(ctx context.Context, board Board, target int) <-chan Candid
 				}
 			}
 			for _, candidate := range candidates {
-				queue.Push(candidate, steps+1)
+				queue.Push(candidate, step+1)
 			}
 		}
 	}()
