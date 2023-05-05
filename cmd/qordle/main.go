@@ -5,7 +5,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -112,13 +111,10 @@ func main() {
 		if r := recover(); r != nil {
 			switch v := r.(type) {
 			case error:
-				log.Error().Err(v).Msg(app.Name)
-			case string:
-				log.Error().Err(errors.New(v)).Msg(app.Name)
+				err = v
 			default:
-				log.Error().Err(fmt.Errorf("%v", v)).Msg(app.Name)
+				err = fmt.Errorf("%v", v)
 			}
-			os.Exit(1)
 		}
 		if err != nil {
 			log.Error().Err(err).Msg(app.Name)
