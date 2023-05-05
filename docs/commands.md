@@ -77,6 +77,7 @@ $ qordle digits [flags]
 |Name|Aliases|EnvVars|Description|
 |-|-|-|-|
 |target|t|||
+|equation|e|||
 
 
 ### *help*

@@ -122,6 +122,10 @@ func TestDigitsCommand(t *testing.T) {
 			},
 			err: ErrEncoding.Error(),
 		},
+		{
+			name: "equation",
+			args: []string{"digits", "-e", "-t", "5", "1", "2", "6", "3"},
+		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {

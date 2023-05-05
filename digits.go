@@ -174,10 +174,19 @@ func digits(c *cli.Context) error {
 		board = append(board, val)
 	}
 
+	eq := c.Bool("equation")
 	enc := Runtime(c).Encoder
 	for candidate := range digits.Play(c.Context, board, c.Int("target")) {
-		if err := enc.Encode(candidate); err != nil {
-			return err
+		switch {
+		case eq:
+			for _, op := range candidate.Ops {
+				fmt.Fprintln(c.App.Writer, op)
+			}
+			fmt.Fprintln(c.App.Writer)
+		default:
+			if err := enc.Encode(candidate); err != nil {
+				return err
+			}
 		}
 	}
 
@@ -194,6 +203,11 @@ func CommandDigits() *cli.Command {
 				Name:    "target",
 				Aliases: []string{"t"},
 				Value:   0,
+			},
+			&cli.BoolFlag{
+				Name:    "equation",
+				Aliases: []string{"e"},
+				Value:   false,
 			},
 		},
 		Action: digits,
