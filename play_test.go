@@ -256,6 +256,15 @@ func TestPlayCommand(t *testing.T) {
 				return nil
 			},
 		},
+		{
+			name: "encoding error",
+			args: []string{"play", "-s", "bigram", "-S", "aahed"},
+			before: func(c *cli.Context) error {
+				qordle.Runtime(c).Encoder = json.NewEncoder(new(errWriter))
+				return nil
+			},
+			err: ErrEncoding.Error(),
+		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {

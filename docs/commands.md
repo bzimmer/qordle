@@ -19,6 +19,7 @@ Many of the commands take an input pattern as feedback from guessing a word.
 ## Commands
 * [bee](#bee)
 * [bee today](#bee-today)
+* [digits](#digits)
 * [help](#help)
 * [letterboxed](#letterboxed)
 * [order](#order)
@@ -54,6 +55,29 @@ Download the NYT spelling bee
 $ qordle bee today [flags]
 ```
 
+
+
+### *digits*
+
+**Description**
+
+Play digits automatically
+
+
+
+**Syntax**
+
+```sh
+$ qordle digits [flags]
+```
+
+
+**Flags**
+
+|Name|Aliases|EnvVars|Description|
+|-|-|-|-|
+|target|t|||
+|equation|e|||
 
 
 ### *help*

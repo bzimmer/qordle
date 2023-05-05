@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -17,6 +18,14 @@ import (
 
 	"github.com/bzimmer/qordle"
 )
+
+var ErrEncoding = errors.New("encoding error")
+
+type errWriter struct{}
+
+func (w *errWriter) Write(_ []byte) (int, error) {
+	return 0, ErrEncoding
+}
 
 func TestMain(m *testing.M) {
 	zerolog.SetGlobalLevel(zerolog.Disabled)

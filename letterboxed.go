@@ -220,7 +220,7 @@ func trie(c *cli.Context) (int, *Trie[any], error) {
 func CommandLetterBoxed() *cli.Command {
 	return &cli.Command{
 		Name:     "letterboxed",
-		Category: "letterboxed",
+		Category: "puzzles",
 		Usage:    "Solve the NYT Letter Boxed puzzle",
 		Flags: append(
 			[]cli.Flag{
