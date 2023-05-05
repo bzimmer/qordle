@@ -80,8 +80,8 @@ func (o Operations) String() string {
 
 func (o Operations) Hash() string {
 	res := make([]string, len(o))
-	for i := 0; i < len(o); i++ {
-		res[i] = o[i].String()
+	for i, x := range o {
+		res[i] = x.String()
 	}
 	sort.Slice(res, func(i, j int) bool { return res[i] < res[j] })
 	return strings.Join(res, "; ")
@@ -195,6 +195,7 @@ func digits(c *cli.Context) error {
 	for candidate := range digits.Play(c.Context, board, c.Int("target")) {
 		switch {
 		case eq:
+			fmt.Fprintln(c.App.Writer)
 			for _, op := range candidate.Ops {
 				fmt.Fprintln(c.App.Writer, op)
 			}
