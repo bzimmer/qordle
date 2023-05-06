@@ -157,8 +157,8 @@ func TestDigitsCommand(t *testing.T) {
 			args: []string{"digits", "-e", "-t", "5", "1", "2", "6", "3"},
 		},
 		{
-			name: "count",
-			args: []string{"digits", "-t", "124", "-N", "4", "1", "2", "6", "3", "4", "8", "10"},
+			name: "count four",
+			args: []string{"digits", "-t", "124", "-N", "4", "12", "2", "6", "3", "8"},
 			after: func(c *cli.Context) error {
 				a := assert.New(t)
 				res := decode(c)
@@ -167,12 +167,22 @@ func TestDigitsCommand(t *testing.T) {
 			},
 		},
 		{
-			name: "count",
-			args: []string{"digits", "-t", "124", "-N", "1", "1", "2", "6", "3", "4", "8", "10"},
+			name: "count one",
+			args: []string{"digits", "-t", "124", "-N", "1", "12", "2", "6", "3", "8"},
 			after: func(c *cli.Context) error {
 				a := assert.New(t)
 				res := decode(c)
 				a.Len(res, 1)
+				return nil
+			},
+		},
+		{
+			name: "count negative one",
+			args: []string{"digits", "-t", "124", "-N", "-1", "12", "2", "6", "3", "8"},
+			after: func(c *cli.Context) error {
+				a := assert.New(t)
+				res := decode(c)
+				a.Len(res, 10)
 				return nil
 			},
 		},
