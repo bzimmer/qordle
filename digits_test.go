@@ -2,6 +2,7 @@ package qordle_test
 
 import (
 	"encoding/json"
+	"io"
 	"testing"
 	"time"
 
@@ -119,6 +120,19 @@ func TestDigits(t *testing.T) {
 }
 
 func TestDigitsCommand(t *testing.T) {
+	decode := func(c *cli.Context) []qordle.Candidate {
+		a := assert.New(t)
+		var res []qordle.Candidate
+		decoder := json.NewDecoder(c.App.Writer.(io.Reader))
+		for decoder.More() {
+			var candidate qordle.Candidate
+			err := decoder.Decode(&candidate)
+			a.NoError(err)
+			res = append(res, candidate)
+		}
+		return res
+	}
+
 	for _, tt := range []harness{
 		{
 			name: "digits",
@@ -141,6 +155,26 @@ func TestDigitsCommand(t *testing.T) {
 		{
 			name: "equation",
 			args: []string{"digits", "-e", "-t", "5", "1", "2", "6", "3"},
+		},
+		{
+			name: "count",
+			args: []string{"digits", "-t", "124", "-N", "4", "1", "2", "6", "3", "4", "8", "10"},
+			after: func(c *cli.Context) error {
+				a := assert.New(t)
+				res := decode(c)
+				a.Len(res, 4)
+				return nil
+			},
+		},
+		{
+			name: "count",
+			args: []string{"digits", "-t", "124", "-N", "1", "1", "2", "6", "3", "4", "8", "10"},
+			after: func(c *cli.Context) error {
+				a := assert.New(t)
+				res := decode(c)
+				a.Len(res, 1)
+				return nil
+			},
 		},
 	} {
 		tt := tt
