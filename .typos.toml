@@ -5,6 +5,7 @@ extend-exclude = [
   "tables.go",
   "data/*.txt",
   "testdata/*",
+  "go.mod",
 ]
 
 [default.extend-words]

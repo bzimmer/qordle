@@ -71,11 +71,11 @@ func (o Operation) String() string {
 type Operations []Operation
 
 func (o Operations) String() string {
-	var val []string
-	for _, x := range o {
-		val = append(val, x.String())
+	res := make([]string, len(o))
+	for i, x := range o {
+		res[i] = x.String()
 	}
-	return strings.Join(val, ", ")
+	return strings.Join(res, ", ")
 }
 
 func (o Operations) Hash() string {
@@ -190,9 +190,12 @@ func digits(c *cli.Context) error {
 		board = append(board, val)
 	}
 
-	eq := c.Bool("equation")
+	ctx, cancel := context.WithCancel(c.Context)
+	defer cancel()
+
 	enc := Runtime(c).Encoder
-	for candidate := range digits.Play(c.Context, board, c.Int("target")) {
+	n, count, eq := 0, c.Int("count"), c.Bool("equation")
+	for candidate := range digits.Play(ctx, board, c.Int("target")) {
 		switch {
 		case eq:
 			fmt.Fprintln(c.App.Writer)
@@ -204,6 +207,10 @@ func digits(c *cli.Context) error {
 			if err := enc.Encode(candidate); err != nil {
 				return err
 			}
+		}
+		n++
+		if count > 0 && n == count {
+			return nil
 		}
 	}
 
@@ -219,6 +226,11 @@ func CommandDigits() *cli.Command {
 			&cli.IntFlag{
 				Name:    "target",
 				Aliases: []string{"t"},
+				Value:   0,
+			},
+			&cli.IntFlag{
+				Name:    "count",
+				Aliases: []string{"N"},
 				Value:   0,
 			},
 			&cli.BoolFlag{
