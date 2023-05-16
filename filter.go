@@ -5,6 +5,7 @@ import (
 	"strings"
 	"unicode"
 
+	set "github.com/deckarep/golang-set/v2"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -12,7 +13,7 @@ import (
 // criterion describes the state for a letter
 type criterion struct {
 	exact  rune
-	misses map[rune]struct{}
+	misses set.Set[rune]
 }
 
 type criteria []criterion
@@ -24,11 +25,12 @@ func (c criteria) String() string {
 		case c[i].exact != rune(0):
 			buf.WriteString(string(c[i].exact))
 		default:
-			var bar []string
-			for letter := range c[i].misses {
-				bar = append(bar, string(letter))
-			}
-			buf.WriteString("[^" + strings.Join(bar, "") + "]")
+			var bar []rune
+			c[i].misses.Each(func(r rune) bool {
+				bar = append(bar, r)
+				return true
+			})
+			buf.WriteString("[^" + string(bar) + "]")
 		}
 	}
 	return buf.String()
@@ -98,7 +100,7 @@ func filter(criteria criteria, required map[rune]int) FilterFunc {
 					Msg("filter")
 				return false
 			}
-			if _, ok := criteria[i].misses[ws[i]]; ok {
+			if criteria[i].misses.Contains(ws[i]) {
 				log.Debug().
 					Str("word", word).
 					Int("i", i).
@@ -129,33 +131,33 @@ func compile(marks parsed) (criteria, map[rune]int) {
 	var crit criteria
 	for _, states := range marks {
 		for range states {
-			crit = append(crit, criterion{misses: make(map[rune]struct{})})
+			crit = append(crit, criterion{misses: set.NewThreadUnsafeSet[rune]()})
 		}
 	}
 	required := make(map[rune]int)
 	for letter, states := range marks {
 		var constrained bool
-		for index, mark := range states {
+		for i, mark := range states {
 			switch mark {
 			case MarkExact:
 				constrained = true
 				required[letter]++
 				// letter must appear at this index
-				crit[index].exact = letter
+				crit[i].exact = letter
 			case MarkMisplaced:
 				constrained = true
 				required[letter]++
 				// letter cannot appear at this index but can appear elsewhere
-				crit[index].misses[letter] = struct{}{}
+				crit[i].misses.Add(letter)
 			case MarkMiss:
-				// letter cannot appear at this index but can appear elsewhere
+				// letter cannot appear at this index but can appear elsewhere but
 				// only if unconstrained
-				crit[index].misses[letter] = struct{}{}
+				crit[i].misses.Add(letter)
 			}
 		}
 		// if unconstrained, the current letter is not found in the word at any index
 		for i := 0; !constrained && i < len(crit); i++ {
-			crit[i].misses[letter] = struct{}{}
+			crit[i].misses.Add(letter)
 		}
 	}
 	if zerolog.GlobalLevel() == zerolog.DebugLevel {

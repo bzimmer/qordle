@@ -1,6 +1,6 @@
 before:
   hooks:
-    - task test
+    - go test ./...
 builds:
   - id: qordle
     binary: qordle
