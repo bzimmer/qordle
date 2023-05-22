@@ -2,6 +2,7 @@
 
 ![build](https://github.com/bzimmer/qordle/actions/workflows/build.yaml/badge.svg)
 [![codecov](https://codecov.io/gh/bzimmer/qordle/branch/main/graph/badge.svg?token=8L0KXGSM9N)](https://codecov.io/gh/bzimmer/qordle)
+[![Go Report Card](https://goreportcard.com/badge/github.com/bzimmer/qordle)](https://goreportcard.com/report/github.com/bzimmer/qordle)
 
 Simple wordle solution suggester
 
