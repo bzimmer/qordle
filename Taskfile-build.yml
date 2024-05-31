@@ -97,11 +97,25 @@ tasks:
       module:
         sh: go mod edit -json | jq -r .Module.Path
     cmds:
-      - goimports -w -local "{{.module}}" .
+      - goimports -w -local "{{.module}}/" .
+
+  docs:generate:
+    desc: Statically generate the commands documentation
+    deps: [build]
+    vars:
+      cmd:
+        sh: go mod edit -json | jq -r '.Module.Path | split("/") | last'
+    cmds:
+      - |
+
+        if [[ -d {{.ROOT_DIR}}/docs/commands ]];
+          then
+            {{.ROOT_DIR}}/dist/{{.cmd}} manual {{.ROOT_DIR}}/docs/commands > {{.ROOT_DIR}}/docs/commands.md
+        fi
 
   docs:build:
     desc: Statically generate the documentation
-    deps: [dist]
+    deps: [docs:generate]
     cmds:
       - "{{.ROOT_DIR}}/env/bin/mkdocs build"
 
@@ -110,3 +124,15 @@ tasks:
     deps: [docs:generate]
     cmds:
       - "{{.ROOT_DIR}}/env/bin/mkdocs serve"
+
+  gitleaks:
+    desc: Run gitleaks
+    deps: [dist]
+    cmds:
+      - gitleaks detect --no-banner --baseline-path {{.ROOT_DIR}}/.gitleaks-baseline.json --report-path {{.DIST}}/gitleaks-report.json
+
+  gitleaks:baseline:
+    desc: Run gitleaks
+    deps: [dist]
+    cmds:
+      - gitleaks detect --no-banner --report-path {{.ROOT_DIR}}/.gitleaks-baseline.json

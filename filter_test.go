@@ -188,7 +188,7 @@ func FuzzGuesses(f *testing.F) {
 	for _, x := range []string{"br#ain", "#l#EgAl", "foo", "start", "12345", "rüsch"} {
 		f.Add(x)
 	}
-	f.Fuzz(func(t *testing.T, s string) {
+	f.Fuzz(func(_ *testing.T, s string) {
 		_, err := qordle.Guess(s)
 		if err != nil && !errors.Is(err, qordle.ErrInvalidFormat) {
 			panic(err)

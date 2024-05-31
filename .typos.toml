@@ -2,10 +2,11 @@
 
 [files]
 extend-exclude = [
-  "tables.go",
   "data/*.txt",
-  "testdata/*",
   "go.mod",
+  "suggest_test.go",
+  "tables.go",
+  "testdata/*",
 ]
 
 [default.extend-words]
