@@ -127,7 +127,7 @@ func CommandWordlists() *cli.Command {
 		Usage:    "List all available wordlists",
 		Action: func(c *cli.Context) error {
 			var lists []string
-			if err := fs.WalkDir(dataFs, data, func(path string, d fs.DirEntry, err error) error {
+			if err := fs.WalkDir(dataFs, data, func(_ string, d fs.DirEntry, err error) error {
 				if err != nil {
 					return err
 				}

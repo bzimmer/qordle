@@ -434,7 +434,7 @@ func (s *Speculate) Apply(words Dictionary) Dictionary {
 }
 
 func NewSpeculator(words Dictionary, strategy Strategy) Strategy {
-	// four words was chosen emperically as the cut off for being useful
+	// four words was chosen empirically as the cut off for being useful
 	const speculation = 4
 	return &Speculate{words: words, strategy: strategy, speculation: speculation}
 }

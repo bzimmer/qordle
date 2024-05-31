@@ -17,8 +17,6 @@ Many of the commands take an input pattern as feedback from guessing a word.
 |help|h||show help|
 
 ## Commands
-* [bee](#bee)
-* [bee today](#bee-today)
 * [digits](#digits)
 * [help](#help)
 * [letterboxed](#letterboxed)
@@ -31,31 +29,6 @@ Many of the commands take an input pattern as feedback from guessing a word.
 * [validate](#validate)
 * [version](#version)
 * [wordlists](#wordlists)
-
-### *bee*
-
-**Description**
-
-Download the NYT spelling bee
-
-
-
-
-### *bee today*
-
-**Description**
-
-
-
-
-
-**Syntax**
-
-```sh
-$ qordle bee today [flags]
-```
-
-
 
 ### *digits*
 

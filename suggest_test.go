@@ -57,7 +57,9 @@ func TestSuggestCommand(t *testing.T) {
 		},
 		{
 			name: "speculate for ?ound",
-			args: []string{"suggest", "-w", "solutions", "-S", "--strategy", "frequency", "trai.n", ".o.u.nce", "bOUND"},
+			args: []string{
+				"suggest", "-w", "solutions", "-S", "--strategy", "frequency", "trai.n", ".o.u.nce", "bOUND",
+			},
 			after: func(c *cli.Context) error {
 				var res []string
 				dec := json.NewDecoder(c.App.Writer.(io.Reader))
