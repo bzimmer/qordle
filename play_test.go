@@ -22,7 +22,7 @@ func TestGame(t *testing.T) {
 		strategy                         qordle.Strategy
 	}{
 		{
-			name:       "no startng word",
+			name:       "no starting word",
 			secret:     "shine",
 			strategy:   new(qordle.Frequency),
 			dictionary: "solutions",
