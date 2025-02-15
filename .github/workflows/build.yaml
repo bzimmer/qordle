@@ -35,9 +35,8 @@ jobs:
 
       - name: install dependencies
         run: |
-          sudo add-apt-repository ppa:mithrandie/csvq
           sudo apt-get update
-          sudo apt-get install csvq fd-find zsh jq
+          sudo apt-get install duckdb fd-find zsh jq
 
           mkdir -p "${HOME}/.local/bin"
           ln -s "$(which fdfind)" "${HOME}/.local/bin/fd"
