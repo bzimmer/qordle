@@ -4,7 +4,7 @@
   functions = "functions"
 
 [build.environment]
-  GO_VERSION="1.22.3"
+  GO_VERSION="1.24.0"
 
 [[redirects]]
   from = "/qordle/*"

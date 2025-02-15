@@ -35,7 +35,7 @@ type Encoder interface {
 }
 
 func Runtime(c *cli.Context) *Rt {
-	return c.App.Metadata[RuntimeKey].(*Rt)
+	return c.App.Metadata[RuntimeKey].(*Rt) //nolint:errcheck // impossible to be any other value
 }
 
 func prepare(c *cli.Context, wordlist ...string) (Dictionary, Strategy, error) {

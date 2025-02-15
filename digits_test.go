@@ -22,14 +22,14 @@ func TestOp(t *testing.T) {
 	a.Equal("-", qordle.OpSubtract.String())
 }
 
-func TestOeration(t *testing.T) {
+func TestOperation(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
 	o := qordle.Operation{Op: qordle.OpAdd, LHS: 1, RHS: 3, Val: 4}
 	a.Equal("1 + 3 = 4", o.String())
 }
 
-func TestOerations(t *testing.T) {
+func TestOperations(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
 	o := []qordle.Operation{
