@@ -33,10 +33,13 @@ jobs:
       - name: install task
         uses: arduino/setup-task@v1
 
+      - name: install duckdb
+        uses: opt-nc/setup-duckdb-action@v1.0.8
+
       - name: install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install duckdb fd-find zsh jq
+          sudo apt-get install fd-find zsh jq
 
           mkdir -p "${HOME}/.local/bin"
           ln -s "$(which fdfind)" "${HOME}/.local/bin/fd"
