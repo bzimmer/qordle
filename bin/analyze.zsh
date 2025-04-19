@@ -51,7 +51,7 @@ duckdb -s '
         stdin
     as select * from read_csv("/dev/stdin");
     select
-        stdin.strategy, count(stdin.rounds) as winners, totals.total, 100 * (winners / totals.total) as pct
+        stdin.strategy, count(stdin.rounds) as winners, totals.total, (100 * (winners / totals.total))::DECIMAL(15, 2) as pct
     from
         stdin, totals
     where

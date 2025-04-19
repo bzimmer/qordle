@@ -38,10 +38,9 @@ func Check(secret string, guesses ...string) ([]Marks, error) {
 		round := make(map[byte]int, len(secret))
 		// first pass checks for exact matches
 		for i := range guess {
-			switch {
-			case secret[i] == guess[i]:
+			if secret[i] == guess[i] {
 				score[i] = MarkExact
-			default:
+			} else {
 				round[secret[i]]++
 			}
 		}
