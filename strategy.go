@@ -233,10 +233,8 @@ func (s *Elimination) score(words Dictionary, i int) map[string]float64 {
 	}
 	scores := make(map[string]float64)
 	for j := range marks {
-		switch {
-		case i == j:
+		if i != j {
 			// skip the identity
-		default:
 			var score float64
 			for k := range marks[j] {
 				switch marks[j][k] {

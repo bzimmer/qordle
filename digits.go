@@ -132,10 +132,9 @@ func (d Digits) operations(
 					candidate.Board = append(candidate.Board, board[i+1:j]...)
 					candidate.Board = append(candidate.Board, board[j+1:]...)
 					candidate.Board = append(candidate.Board, operation.Val)
-					switch {
-					case operation.Val == target:
+					if operation.Val == target {
 						solutions = append(solutions, candidate)
-					default:
+					} else {
 						candidates = append(candidates, candidate)
 					}
 				}
