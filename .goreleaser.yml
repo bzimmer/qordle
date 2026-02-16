@@ -1,3 +1,4 @@
+version: 2
 before:
   hooks:
     - go test ./...
@@ -21,7 +22,7 @@ builds:
 checksum:
   name_template: checksums.txt
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+  version_template: "{{ incpatch .Version }}-next"
 changelog:
   sort: asc
   filters:
@@ -32,7 +33,7 @@ changelog:
 announce:
   skip: true
 
-brews:
+homebrew_casks:
   - name: qordle
     homepage: https://github.com/bzimmer/qordle
     description: Wordle problem solver
@@ -40,11 +41,16 @@ brews:
     commit_author:
       name: bzimmer
       email: bzimmer@ziclix.com
-    tap:
+    repository:
       owner: bzimmer
       name: homebrew-tap
     skip_upload: auto
-    install: bin.install "qordle"
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/ma"]
+          end
   - name: qordled
     homepage: https://github.com/bzimmer/qordle
     description: Wordle problem solver daemon
@@ -52,8 +58,13 @@ brews:
     commit_author:
       name: bzimmer
       email: bzimmer@ziclix.com
-    tap:
+    repository:
       owner: bzimmer
       name: homebrew-tap
     skip_upload: auto
-    install: bin.install "qordled"
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/ma"]
+          end

@@ -3,7 +3,7 @@ package qordle
 import (
 	"context"
 	"fmt"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -83,7 +83,7 @@ func (o Operations) Hash() string {
 	for i, x := range o {
 		res[i] = x.String()
 	}
-	sort.Slice(res, func(i, j int) bool { return res[i] < res[j] })
+	slices.Sort(res)
 	return strings.Join(res, "; ")
 }
 
@@ -104,7 +104,7 @@ func (d Digits) operations(
 	operators := []Operator{OpAdd, OpMultiply, OpSubtract, OpDivide}
 
 	var solutions, candidates []Candidate
-	for i := 0; i < len(board); i++ {
+	for i := range board {
 		for j := i + 1; j < len(board); j++ {
 			lhs, rhs := board[i], board[j]
 			if lhs < rhs {

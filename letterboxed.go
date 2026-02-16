@@ -162,15 +162,13 @@ func (box *Box) Solutions(words []string) <-chan []string {
 	g := box.graph(words)
 	n := int(math.Max(1, float64(box.con)))
 	solutions := make(chan []string, 3*n)
-	for i := 0; i < n; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range n {
+		wg.Go(func() {
 			for word := range wc {
 				e := elem{b: bm(word), s: []string{word}, f: rune(word[len(word)-1])}
 				box.solutions(solutions, g, e)
 			}
-		}()
+		})
 	}
 	go func() {
 		defer func(t time.Time) {
