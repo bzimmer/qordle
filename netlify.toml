@@ -5,7 +5,7 @@
   image="ubuntu-2404"
 
 [build.environment]
-  GO_VERSION="1.24.0"
+  GO_VERSION="1.26.0"
 
 [[redirects]]
   from = "/qordle/*"
