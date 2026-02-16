@@ -71,7 +71,7 @@ func newEngine(c *cli.Context) (*echo.Echo, error) {
 		LogURI:    true,
 		LogError:  true,
 		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
-			fmt.Printf("time=%s method=%s uri=%s path=%s status=%d\n",
+			fmt.Printf("time=%s method=%s uri=%s path=%s status=%d\n", //nolint:forbidigo // log
 				time.Now().Format(time.RFC3339),
 				v.Method,
 				v.URI,
