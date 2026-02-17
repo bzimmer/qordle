@@ -29,8 +29,6 @@ tasks:
   qordled:
     desc: Run qordled
     deps: [build]
-    env:
-      BASE_URL: http://localhost:8091/qordle
     cmds:
       - "{{.DIST}}/qordled --port 8091"
 
@@ -69,4 +67,4 @@ tasks:
     desc: Run docker container
     silent: true
     cmds:
-      - docker run -d -p 8091:8091 -e BASE_URL="http://localhost:8091/qordle" --rm qordled
+      - docker run -d -p 8091:8091 --rm qordled

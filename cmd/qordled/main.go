@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -53,15 +52,8 @@ func suggest(c echo.Context) error {
 }
 
 func newEngine(c *cli.Context) (*echo.Echo, error) {
-	baseURL := c.String("base-url")
-	log.Info().Str("baseURL", baseURL).Msg("found baseURL")
-	u, err := url.Parse(baseURL)
-	if err != nil {
-		return nil, err
-	}
-	log.Info().Str("path", u.Path).Msg("root path")
-
 	engine := echo.New()
+	engine.Pre(middleware.Rewrite(map[string]string{"/qordle/*": "/$1"}))
 	engine.Pre(middleware.RemoveTrailingSlash())
 	engine.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
 		LogStatus: true,
@@ -83,7 +75,7 @@ func newEngine(c *cli.Context) (*echo.Echo, error) {
 		log.Error().Err(err).Msg("error")
 	}
 
-	base := engine.Group(u.Path)
+	base := engine.Group("")
 	methods := []string{http.MethodGet, http.MethodPost}
 	base.GET("/play/:secret", play)
 	group := base.Group("/suggest")
