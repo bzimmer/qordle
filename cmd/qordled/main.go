@@ -9,9 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-lambda-go/lambda"
-	echoadapter "github.com/awslabs/aws-lambda-go-api-proxy/echo"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog"
@@ -106,26 +103,6 @@ func serve(c *cli.Context) error {
 	return engine.Start(address)
 }
 
-func function(c *cli.Context) error {
-	engine, err := newEngine(c)
-	if err != nil {
-		return err
-	}
-	log.Info().Msg("lambda function")
-	gl := echoadapter.New(engine)
-	lambda.Start(func(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-		return gl.ProxyWithContext(ctx, req)
-	})
-	return nil
-}
-
-func action(c *cli.Context) error {
-	if c.IsSet("port") {
-		return serve(c)
-	}
-	return function(c)
-}
-
 func main() {
 	app := &cli.App{
 		Name:        "qordled",
@@ -156,7 +133,7 @@ func main() {
 			}
 			log.Error().Stack().Err(err).Msg(c.App.Name)
 		},
-		Action: action,
+		Action: serve,
 		Before: func(c *cli.Context) error {
 			level := zerolog.InfoLevel
 			if c.Bool("debug") {

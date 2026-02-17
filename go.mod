@@ -3,8 +3,6 @@ module github.com/bzimmer/qordle
 go 1.26.0
 
 require (
-	github.com/aws/aws-lambda-go v1.52.0
-	github.com/awslabs/aws-lambda-go-api-proxy v0.16.2
 	github.com/bzimmer/manual v0.1.5
 	github.com/cheggaaa/pb/v3 v3.1.7
 	github.com/deckarep/golang-set/v2 v2.8.0
