@@ -51,7 +51,7 @@ func suggest(c echo.Context) error {
 	return c.JSONPretty(http.StatusOK, dictionary, " ")
 }
 
-func newEngine(c *cli.Context) (*echo.Echo, error) {
+func newEngine() *echo.Echo {
 	engine := echo.New()
 	engine.Pre(middleware.Rewrite(map[string]string{"/qordle/*": "/$1"}))
 	engine.Pre(middleware.RemoveTrailingSlash())
@@ -81,14 +81,11 @@ func newEngine(c *cli.Context) (*echo.Echo, error) {
 	group := base.Group("/suggest")
 	group.Match(methods, "", suggest)
 	group.Match(methods, "/:guesses", suggest)
-	return engine, nil
+	return engine
 }
 
 func serve(c *cli.Context) error {
-	engine, err := newEngine(c)
-	if err != nil {
-		return err
-	}
+	engine := newEngine()
 	engine.Static("/", "public")
 	address := fmt.Sprintf(":%d", c.Int("port"))
 	log.Info().Str("address", "http://localhost"+address).Msg("http server")
