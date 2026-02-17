@@ -4,14 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 	"time"
 
-	"github.com/aws/aws-lambda-go/events"
-	"github.com/aws/aws-lambda-go/lambda"
-	echoadapter "github.com/awslabs/aws-lambda-go-api-proxy/echo"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog"
@@ -55,63 +51,45 @@ func suggest(c echo.Context) error {
 	return c.JSONPretty(http.StatusOK, dictionary, " ")
 }
 
-func newEngine(c *cli.Context) (*echo.Echo, error) {
-	baseURL := c.String("base-url")
-	log.Info().Str("baseURL", baseURL).Msg("found baseURL")
-	u, err := url.Parse(baseURL)
-	if err != nil {
-		return nil, err
-	}
-	log.Info().Str("path", u.Path).Msg("root path")
-
+func newEngine() *echo.Echo {
 	engine := echo.New()
+	engine.Pre(middleware.Rewrite(map[string]string{"/qordle/*": "/$1"}))
 	engine.Pre(middleware.RemoveTrailingSlash())
-	engine.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: "time=${time_rfc3339} method=${method} uri=${uri} path=${path} status=${status}\n",
+	engine.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+		LogStatus: true,
+		LogURI:    true,
+		LogError:  true,
+		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
+			fmt.Printf("time=%s method=%s uri=%s path=%s status=%d\n", //nolint:forbidigo // log
+				time.Now().Format(time.RFC3339),
+				v.Method,
+				v.URI,
+				c.Path(),
+				v.Status,
+			)
+			return nil
+		},
 	}))
 	engine.HTTPErrorHandler = func(err error, c echo.Context) {
 		engine.DefaultHTTPErrorHandler(err, c)
 		log.Error().Err(err).Msg("error")
 	}
 
-	base := engine.Group(u.Path)
+	base := engine.Group("")
 	methods := []string{http.MethodGet, http.MethodPost}
 	base.GET("/play/:secret", play)
 	group := base.Group("/suggest")
 	group.Match(methods, "", suggest)
 	group.Match(methods, "/:guesses", suggest)
-	return engine, nil
+	return engine
 }
 
 func serve(c *cli.Context) error {
-	engine, err := newEngine(c)
-	if err != nil {
-		return err
-	}
+	engine := newEngine()
 	engine.Static("/", "public")
 	address := fmt.Sprintf(":%d", c.Int("port"))
 	log.Info().Str("address", "http://localhost"+address).Msg("http server")
 	return engine.Start(address)
-}
-
-func function(c *cli.Context) error {
-	engine, err := newEngine(c)
-	if err != nil {
-		return err
-	}
-	log.Info().Msg("lambda function")
-	gl := echoadapter.New(engine)
-	lambda.Start(func(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
-		return gl.ProxyWithContext(ctx, req)
-	})
-	return nil
-}
-
-func action(c *cli.Context) error {
-	if c.IsSet("port") {
-		return serve(c)
-	}
-	return function(c)
 }
 
 func main() {
@@ -144,7 +122,7 @@ func main() {
 			}
 			log.Error().Stack().Err(err).Msg(c.App.Name)
 		},
-		Action: action,
+		Action: serve,
 		Before: func(c *cli.Context) error {
 			level := zerolog.InfoLevel
 			if c.Bool("debug") {

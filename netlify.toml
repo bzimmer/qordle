@@ -2,9 +2,10 @@
   command = "GOOS=linux GOARCH=amd64 go build -o functions/qordled ./cmd/qordled/main.go"
   publish = "public"
   functions = "functions"
+  image="ubuntu-2404"
 
 [build.environment]
-  GO_VERSION="1.24.0"
+  GO_VERSION="1.26.0"
 
 [[redirects]]
   from = "/qordle/*"

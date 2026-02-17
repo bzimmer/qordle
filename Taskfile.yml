@@ -7,6 +7,10 @@ includes:
 
 dotenv: [".clean.env"]
 
+vars:
+  CWD:
+    sh: git rev-parse --show-toplevel
+
 tasks:
   default:
     cmds:
@@ -25,8 +29,6 @@ tasks:
   qordled:
     desc: Run qordled
     deps: [build]
-    env:
-      BASE_URL: http://localhost:8091/qordle
     cmds:
       - "{{.DIST}}/qordled --port 8091"
 
@@ -49,3 +51,20 @@ tasks:
     cmds:
       - "{{.ROOT_DIR}}/bin/regression.zsh {{.CLI_ARGS}}"
       - "{{.ROOT_DIR}}/bin/analyze.zsh"
+
+  docker:
+    desc: Build and run docker container
+    cmds:
+      - task: docker:build
+      - task: docker:run
+
+  docker:build:
+    desc: Build docker image
+    cmds:
+      - docker build -t qordled {{$.CWD}}
+
+  docker:run:
+    desc: Run docker container
+    silent: true
+    cmds:
+      - docker run -d -p 8091:8091 --rm qordled

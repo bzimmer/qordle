@@ -1,6 +1,7 @@
 package qordle_test
 
 import (
+	"context"
 	"encoding/json"
 	"io"
 	"testing"
@@ -8,7 +9,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/net/context"
 
 	"github.com/bzimmer/qordle"
 )
