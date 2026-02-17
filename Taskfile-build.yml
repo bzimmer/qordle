@@ -84,7 +84,7 @@ tasks:
     desc: Build a snapshot
     deps: [test, lint]
     cmds:
-      - goreleaser --debug release --snapshot --clean
+      - goreleaser release --snapshot --clean
 
   scc:
     desc: Run scc (https://github.com/boyter/scc)

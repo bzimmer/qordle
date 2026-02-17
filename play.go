@@ -13,7 +13,7 @@ import (
 const rounds int = 3
 
 type Scoreboard struct {
-	Secret     string   `json:"secret"`
+	Target     string   `json:"target"`
 	Strategy   string   `json:"strategy"`
 	Dictionary int      `json:"dictionary"`
 	Rounds     []*Round `json:"rounds"`
@@ -91,7 +91,7 @@ func (g *Game) Play(secret string) (*Scoreboard, error) {
 
 func (g *Game) play(dictionary Dictionary, secret string, words []string) (*Scoreboard, error) {
 	scoreboard := &Scoreboard{
-		Secret:     secret,
+		Target:     secret,
 		Strategy:   g.strategy.String(),
 		Dictionary: len(dictionary),
 	}
