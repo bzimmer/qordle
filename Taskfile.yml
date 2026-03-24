@@ -55,8 +55,8 @@ tasks:
   qordled:
     desc: Build and run qordle container
     cmds:
-      - task: qordle:build
-      - task: qordle:run
+      - task: qordled:build
+      - task: qordled:run
 
   qordled:build:
     desc: Build qordle image
