@@ -1,6 +1,6 @@
 module github.com/bzimmer/qordle
 
-go 1.26.0
+go 1.26.1
 
 require (
 	github.com/bzimmer/manual v0.1.5
