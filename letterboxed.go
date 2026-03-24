@@ -30,6 +30,7 @@ func or(a *bitmap.Bitmap, b *bitmap.Bitmap) *bitmap.Bitmap {
 func bm(word string) *bitmap.Bitmap {
 	m := new(bitmap.Bitmap)
 	for _, r := range word {
+		//nolint:gosec // G115: rune is non-negative here
 		m.Set(uint32(r))
 	}
 	return m
