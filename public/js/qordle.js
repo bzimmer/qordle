@@ -22,6 +22,10 @@ const STATE_CYCLE = {
 // Counter used to give each row a unique numeric ID
 let rowCounter = 0;
 
+// Active tile tracking — updated by focusTileInRow; used by the keyboard proxy.
+let activeRow = null;
+let activeCol = 0;
+
 /* ==============================================
    Tile Helpers
    ============================================== */
@@ -85,6 +89,20 @@ function focusTileInRow(row, col) {
   const tiles = row.querySelectorAll('.tile');
   tiles.forEach((t, i) => t.setAttribute('tabindex', i === col ? '0' : '-1'));
   tiles[col].focus();
+  activeRow = row;
+  activeCol = col;
+}
+
+/**
+ * Update the roving-tabindex for the active row without moving focus.
+ * Used by the keyboard proxy handlers so the proxy retains focus while typing.
+ */
+function setActiveColInRow(col) {
+  activeCol = col;
+  if (activeRow) {
+    activeRow.querySelectorAll('.tile')
+      .forEach((t, i) => t.setAttribute('tabindex', i === col ? '0' : '-1'));
+  }
 }
 
 /** Handle a keydown event on a single tile. */
@@ -150,6 +168,10 @@ function onTileClick(e) {
       if (countEl) countEl.textContent = '';
     }
   }
+
+  // Focus the keyboard proxy so the on-screen keyboard appears on iOS/Android.
+  const proxy = document.getElementById('keyboardProxy');
+  if (proxy) proxy.focus();
 }
 
 /** Update visibility of all remove buttons (hidden when only 1 row). */
@@ -384,4 +406,62 @@ document.addEventListener('DOMContentLoaded', () => {
     helpToggle.setAttribute('aria-expanded', String(!expanded));
     helpContent.hidden = expanded;
   });
+
+  // Keyboard proxy — routes mobile on-screen keyboard input to the active tile.
+  // On desktop the tile's own keydown handler fires instead (tile retains focus via Tab).
+  const proxy = document.getElementById('keyboardProxy');
+  if (proxy) {
+    proxy.addEventListener('keydown', e => {
+      if (!activeRow) return;
+
+      switch (e.key) {
+        case 'Backspace':
+        case 'Delete': {
+          e.preventDefault();
+          const tile = activeRow.querySelector(`[data-col="${activeCol}"]`);
+          if (tile.dataset.letter) {
+            setTileLetter(tile, '');
+          } else if (activeCol > 0) {
+            setActiveColInRow(activeCol - 1);
+            const prev = activeRow.querySelector(`[data-col="${activeCol}"]`);
+            setTileLetter(prev, '');
+          }
+          proxy.value = '';
+          break;
+        }
+        case 'Enter':
+          e.preventDefault();
+          proxy.value = '';
+          fetchSuggestions();
+          break;
+        default:
+          if (/^[a-zA-Z]$/.test(e.key)) {
+            e.preventDefault();
+            const tile = activeRow.querySelector(`[data-col="${activeCol}"]`);
+            setTileLetter(tile, e.key.toLowerCase());
+            if (activeCol < WORD_LENGTH - 1) {
+              setActiveColInRow(activeCol + 1);
+            }
+            proxy.value = '';
+          }
+          break;
+      }
+    });
+
+    // input fires on mobile after a character is committed by the virtual keyboard.
+    // keydown already handled letters on desktop (via preventDefault), so proxy.value
+    // stays empty there; this handler only runs for real mobile input.
+    proxy.addEventListener('input', () => {
+      if (!activeRow || !proxy.value) return;
+      const ch = proxy.value.slice(-1);
+      if (/^[a-zA-Z]$/.test(ch)) {
+        const tile = activeRow.querySelector(`[data-col="${activeCol}"]`);
+        setTileLetter(tile, ch.toLowerCase());
+        if (activeCol < WORD_LENGTH - 1) {
+          setActiveColInRow(activeCol + 1);
+        }
+      }
+      proxy.value = '';
+    });
+  }
 });
