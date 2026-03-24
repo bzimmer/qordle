@@ -1,67 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Qordle — Wordle Solver</title>
+  <meta name="description" content="Qordle helps you solve Wordle puzzles by suggesting the best next words.">
+  <link href="/css/qordle.css" rel="stylesheet">
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <a href="/" class="title-link">
+        <h1 class="app-title">qordle</h1>
+      </a>
+      <p class="app-subtitle">Wordle Solver</p>
+    </header>
 
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html 
-     PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
-  <head>
-    <title>qordle -- wordle solver</title>
-    <meta name="description" content="Qordle solves wordle problems.">
-    <link href="/css/qordle.css" rel="stylesheet" type="text/css"/>
-    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
-    <script src="/js/qordle.js" type="text/javascript"></script>
-  </head>
-  <body >
-    <div id="main">
-      <div id="header">
-        <a href="/">
-        <span id="title">qordle</span>
-        </a>
-      </div>
-       <table>
-       <tr>
-        <td id="left_slash" class="slash"></td>
-        <td>
-         <table>
-          <tr>
-           <td>
-            <label id="suggest_label" for="guess">Guesses</label>
-           </td>
-          </tr>
-          <tr>
-           <td colspan="2">
-              <input id="guess" class="round" type="text" name="guess" value=""/>
-           </td>
-          </tr>
-          <tr>
-           <td colspan="2">
-            <label id="suggestions_label" for="suggestions">Suggestions</label>
-           </td>
-          </tr>
-          <tr>
-           <td colspan="2">
-            <textarea id="suggestions" class="round" name="suggestions" rows="3" cols="30"></textarea>
-           </td>
-          </tr>
-          <tr>
-            <td colspan="2">
-              <div id="footer">
-                <p>inspired by <a href="http://https://pythex.org/">pythex</a></p>
-              </div>
-            </td>
-          </tr>
-         </table>
-        </td>
-        <td id="right_slash" class="slash"></td>
-       </tr>
-      </table>
-    </div>
-    <script type="text/javascript">
-    $("#guess").on('keyup', function (e) {
-      if (e.key === 'Enter' || e.keyCode === 13) {
-        suggest();
-      }
-    });
-    </script>
-  </body>
+    <main class="app-main">
+      <section class="help-section">
+        <button class="help-toggle" id="helpToggle" aria-expanded="false" aria-controls="helpContent">
+          <span>How to use</span>
+          <svg class="toggle-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <div class="help-content" id="helpContent" hidden>
+          <p>Enter your Wordle guesses and mark each letter's result:</p>
+          <div class="legend">
+            <div class="legend-item">
+              <div class="tile tile--correct" aria-label="green tile example">A</div>
+              <span>Correct position</span>
+            </div>
+            <div class="legend-item">
+              <div class="tile tile--present" aria-label="yellow tile example">A</div>
+              <span>Wrong position</span>
+            </div>
+            <div class="legend-item">
+              <div class="tile tile--absent" aria-label="gray tile example">A</div>
+              <span>Not in word</span>
+            </div>
+          </div>
+          <ol class="instructions-list">
+            <li>Type letters into the boxes — they auto-advance to the next box</li>
+            <li>Click a filled tile to cycle: gray → yellow → green</li>
+            <li>Add more guesses with the <strong>+ Add Guess</strong> button</li>
+            <li>Press <kbd>Enter</kbd> or click <strong>Get Suggestions</strong></li>
+            <li>Click a suggestion to use it as your next guess</li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="guess-section" aria-label="Enter your guesses">
+        <div id="guessRows" class="guess-rows"></div>
+        <div class="actions">
+          <button id="addGuessBtn" class="btn btn--secondary" aria-label="Add another guess row">
+            + Add Guess
+          </button>
+          <button id="clearBtn" class="btn btn--secondary" aria-label="Clear all guesses and results">
+            Clear All
+          </button>
+          <button id="suggestBtn" class="btn btn--primary" aria-label="Get word suggestions">
+            Get Suggestions
+          </button>
+        </div>
+      </section>
+
+      <section class="results-section" aria-label="Word suggestions" aria-live="polite">
+        <div id="loadingState" class="loading-state" hidden>
+          <div class="spinner" aria-hidden="true"></div>
+          <span>Finding suggestions…</span>
+        </div>
+        <div id="errorState" class="error-state" role="alert" hidden></div>
+        <div id="resultsArea" hidden>
+          <h2 class="results-heading">
+            Suggestions
+            <span id="resultsCount" class="results-count"></span>
+          </h2>
+          <div id="suggestionGrid" class="suggestion-grid"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>Inspired by <a href="https://www.nytimes.com/games/wordle/index.html" rel="noopener noreferrer">NYT Wordle</a></p>
+    </footer>
+  </div>
+
+  <script src="/js/qordle.js"></script>
+</body>
 </html>

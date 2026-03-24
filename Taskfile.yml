@@ -26,7 +26,7 @@ tasks:
     cmds:
       - task: build:test
 
-  qordled:
+  serve:
     desc: Run qordled
     deps: [build]
     cmds:
@@ -52,19 +52,19 @@ tasks:
       - "{{.ROOT_DIR}}/bin/regression.zsh {{.CLI_ARGS}}"
       - "{{.ROOT_DIR}}/bin/analyze.zsh"
 
-  docker:
-    desc: Build and run docker container
+  qordled:
+    desc: Build and run qordle container
     cmds:
-      - task: docker:build
-      - task: docker:run
+      - task: qordled:build
+      - task: qordled:run
 
-  docker:build:
-    desc: Build docker image
+  qordled:build:
+    desc: Build qordle image
     cmds:
-      - docker build -t qordled {{$.CWD}}
+      - podman build -t qordled {{$.CWD}}
 
-  docker:run:
-    desc: Run docker container
+  qordled:run:
+    desc: Run qordle container
     silent: true
     cmds:
-      - docker run -d -p 8091:8091 --rm qordled
+      - podman run -d -p 8091:8091 --rm qordled
