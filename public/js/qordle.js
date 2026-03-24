@@ -255,8 +255,8 @@ async function fetchSuggestions() {
   suggestBtn.disabled = true;
 
   try {
-    // Build URL: spaces between guesses are encoded as %20
-    const path = guesses.length ? guesses.join('%20') : '';
+    // Build URL: each guess is individually encoded; guesses are joined with %20 (encoded space)
+    const path = guesses.map(g => encodeURIComponent(g)).join('%20');
     const url  = path ? `/qordle/suggest/${path}` : '/qordle/suggest/';
     const res  = await fetch(url, { method: 'POST' });
 
