@@ -139,6 +139,16 @@ function onTileClick(e) {
   if (tile.dataset.letter) {
     const next = STATE_CYCLE[tile.dataset.state] || STATES.ABSENT;
     setTileState(tile, next);
+
+    // If every tile in the row is now correct the word is solved — clear suggestions.
+    const allCorrect = [...row.querySelectorAll('.tile')]
+      .every(t => t.dataset.state === STATES.CORRECT);
+    if (allCorrect) {
+      const grid = document.getElementById('suggestionGrid');
+      const countEl = document.getElementById('resultsCount');
+      if (grid) grid.innerHTML = '';
+      if (countEl) countEl.textContent = '';
+    }
   }
 }
 
