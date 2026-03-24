@@ -198,16 +198,14 @@ function addGuessRow(word) {
 
   // Pre-fill with a word if provided
   if (word) {
-    const { correctByPosition, presentLetters } = buildKnowledge();
+    const { correctByPosition } = buildKnowledge();
     const tiles = tilesDiv.querySelectorAll('.tile');
     [...word.toLowerCase().slice(0, WORD_LENGTH)].forEach((ch, i) => {
       if (i < WORD_LENGTH) {
         setTileLetter(tiles[i], ch);
-        // Auto-apply known state from prior rows
+        // Auto-apply green for letters confirmed correct at this position
         if (correctByPosition[i] === ch) {
           setTileState(tiles[i], STATES.CORRECT);
-        } else if (presentLetters.has(ch)) {
-          setTileState(tiles[i], STATES.PRESENT);
         }
       }
     });
@@ -227,13 +225,11 @@ function addGuessRow(word) {
 /**
  * Scan all existing completed rows and return:
  *   correctByPosition  — Map<col, letter> for every CORRECT tile seen
- *   presentLetters     — Set of letters marked PRESENT in any prior row
  *
- * Used to auto-color tiles when a suggestion is inserted as a new row.
+ * Used to auto-color green tiles when a suggestion is inserted as a new row.
  */
 function buildKnowledge() {
   const correctByPosition = {};
-  const presentLetters    = new Set();
 
   document.querySelectorAll('.guess-row').forEach(row => {
     row.querySelectorAll('.tile').forEach(tile => {
@@ -242,13 +238,11 @@ function buildKnowledge() {
       const letter = tile.dataset.letter;
       if (tile.dataset.state === STATES.CORRECT) {
         correctByPosition[col] = letter;
-      } else if (tile.dataset.state === STATES.PRESENT) {
-        presentLetters.add(letter);
       }
     });
   });
 
-  return { correctByPosition, presentLetters };
+  return { correctByPosition };
 }
 
 /* ==============================================
