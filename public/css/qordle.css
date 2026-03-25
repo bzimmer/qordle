@@ -389,6 +389,7 @@ body {
   gap: 10px;
   margin-top: 8px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .btn {
@@ -566,9 +567,15 @@ body {
 }
 
 .suggestion-grid {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
   gap: 8px;
+}
+
+@media (max-width: 480px) {
+  .suggestion-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
 }
 
 .suggestion-tile {
@@ -584,8 +591,9 @@ body {
   min-height: 44px;
   display: flex;
   align-items: center;
+  justify-content: center;
   transition: background-color var(--transition), border-color var(--transition), color var(--transition);
-  font-family: var(--font);
+  font-family: 'Courier New', 'Courier', monospace;
   color: var(--text-primary);
 }
 
