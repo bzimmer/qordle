@@ -572,6 +572,12 @@ body {
   gap: 8px;
 }
 
+@media (max-width: 768px) {
+  .suggestion-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
 @media (max-width: 480px) {
   .suggestion-grid {
     grid-template-columns: repeat(3, 1fr);
@@ -593,7 +599,7 @@ body {
   align-items: center;
   justify-content: center;
   transition: background-color var(--transition), border-color var(--transition), color var(--transition);
-  font-family: 'Courier New', 'Courier', monospace;
+  font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', Menlo, Monaco, 'Courier New', monospace;
   color: var(--text-primary);
 }
 
