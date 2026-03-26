@@ -132,7 +132,7 @@ function checkAndFetchSuggestions(row) {
     // Clear suggestions when row becomes incomplete
     clearTimeout(checkAndFetchSuggestions.timeoutId);
     const resultsEl = document.getElementById('resultsArea');
-    if (resultsEl && !resultsEl.hidden) {
+    if (resultsEl) {
       resultsEl.hidden = true;
     }
   }
@@ -160,7 +160,7 @@ function refreshSuggestionsAfterRemoval() {
   } else {
     // Clear suggestions if no complete rows remain
     const resultsEl = document.getElementById('resultsArea');
-    if (resultsEl && !resultsEl.hidden) {
+    if (resultsEl) {
       resultsEl.hidden = true;
     }
   }
