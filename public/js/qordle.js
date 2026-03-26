@@ -142,6 +142,31 @@ function checkAndFetchSuggestions(row) {
 }
 
 /**
+ * Check all rows after removal and update suggestions accordingly.
+ * If any complete rows exist, refetch suggestions. Otherwise, clear them.
+ */
+function refreshSuggestionsAfterRemoval() {
+  const rows = document.querySelectorAll('.guess-row');
+  
+  // Check if there are any complete rows
+  const hasCompleteRow = [...rows].some(row => {
+    const tiles = row.querySelectorAll('.tile');
+    return [...tiles].every(tile => tile.dataset.letter);
+  });
+  
+  if (hasCompleteRow) {
+    // Refetch suggestions based on remaining complete rows
+    fetchSuggestions();
+  } else {
+    // Clear suggestions if no complete rows remain
+    const resultsEl = document.getElementById('resultsArea');
+    if (resultsEl && !resultsEl.hidden) {
+      resultsEl.hidden = true;
+    }
+  }
+}
+
+/**
  * Move keyboard focus to the tile at `col` within `row`, updating
  * the roving-tabindex so Tab navigation feels natural.
  */
@@ -278,6 +303,7 @@ function addGuessRow(word) {
     row.remove();
     syncRemoveButtons();
     syncAddGuessButton();
+    refreshSuggestionsAfterRemoval();
   });
 
   row.appendChild(tilesDiv);
