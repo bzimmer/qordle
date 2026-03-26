@@ -116,6 +116,7 @@ function syncAddGuessButton() {
 
 /**
  * Check if a row is complete, and if so, fetch suggestions.
+ * If the row is incomplete, clear suggestions.
  */
 function checkAndFetchSuggestions(row) {
   const tiles = row.querySelectorAll('.tile');
@@ -127,6 +128,13 @@ function checkAndFetchSuggestions(row) {
     checkAndFetchSuggestions.timeoutId = setTimeout(() => {
       fetchSuggestions();
     }, 300);
+  } else {
+    // Clear suggestions when row becomes incomplete
+    clearTimeout(checkAndFetchSuggestions.timeoutId);
+    const resultsEl = document.getElementById('resultsArea');
+    if (resultsEl && !resultsEl.hidden) {
+      resultsEl.hidden = true;
+    }
   }
   
   // Update Add Guess button state
