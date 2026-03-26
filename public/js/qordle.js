@@ -105,6 +105,17 @@ function hasEmptyRow() {
 }
 
 /**
+ * Get the first empty guess row, or null if none exist.
+ */
+function getFirstEmptyRow() {
+  const rows = document.querySelectorAll('.guess-row');
+  return [...rows].find(row => {
+    const tiles = row.querySelectorAll('.tile');
+    return [...tiles].every(tile => !tile.dataset.letter);
+  }) || null;
+}
+
+/**
  * Update the Add Guess button state based on whether there are empty rows.
  */
 function syncAddGuessButton() {
@@ -334,6 +345,28 @@ function addGuessRow(word) {
   return row;
 }
 
+/**
+ * Fill an existing empty row with a word.
+ */
+function fillRowWithWord(row, word) {
+  const { correctByPosition } = buildKnowledge();
+  const tilesDiv = row.querySelector('.guess-row__tiles');
+  const tiles = tilesDiv.querySelectorAll('.tile');
+  
+  [...word.toLowerCase().slice(0, WORD_LENGTH)].forEach((ch, i) => {
+    if (i < WORD_LENGTH) {
+      setTileLetter(tiles[i], ch);
+      // Auto-apply green for letters confirmed correct at this position
+      if (correctByPosition[i] === ch) {
+        setTileState(tiles[i], STATES.CORRECT);
+      }
+    }
+  });
+  
+  // Focus first tile so user can immediately adjust colors if needed
+  focusTileInRow(row, 0);
+}
+
 /* ==============================================
    Knowledge Inference
    ============================================== */
@@ -439,10 +472,20 @@ function displaySuggestions(suggestions) {
       btn.textContent = word;
       btn.setAttribute('aria-label', `Use "${word}" as next guess`);
       btn.addEventListener('click', () => {
-        addGuessRow(word);
-        // Scroll the new row into view
-        const newRow = document.querySelector('.guess-row:last-child');
-        newRow?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        const emptyRow = getFirstEmptyRow();
+        let targetRow;
+        
+        if (emptyRow) {
+          // Fill the existing empty row
+          fillRowWithWord(emptyRow, word);
+          targetRow = emptyRow;
+        } else {
+          // Create a new row
+          targetRow = addGuessRow(word);
+        }
+        
+        // Scroll the row into view
+        targetRow?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         // Brief visual feedback on the tile
         btn.classList.add('suggestion-tile--copied');
         setTimeout(() => btn.classList.remove('suggestion-tile--copied'), 800);
