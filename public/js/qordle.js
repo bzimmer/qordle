@@ -56,6 +56,12 @@ function setTileLetter(tile, letter) {
       ? `${letter.toUpperCase()}, ${tile.dataset.state}, position ${Number(tile.dataset.col) + 1}`
       : `Empty, position ${Number(tile.dataset.col) + 1}`
   );
+
+  // Auto-fetch suggestions when row is complete
+  const row = tile.closest('.guess-row');
+  if (row) {
+    checkAndFetchSuggestions(row);
+  }
 }
 
 /**
@@ -75,11 +81,65 @@ function setTileState(tile, state) {
       `${tile.dataset.letter.toUpperCase()}, ${state}, position ${Number(tile.dataset.col) + 1}`
     );
   }
+
+  // Auto-fetch suggestions when color changes
+  const row = tile.closest('.guess-row');
+  if (row) {
+    checkAndFetchSuggestions(row);
+  }
 }
 
 /* ==============================================
    Row Management
    ============================================== */
+
+/**
+ * Check if there are any empty guess rows.
+ */
+function hasEmptyRow() {
+  const rows = document.querySelectorAll('.guess-row');
+  return [...rows].some(row => {
+    const tiles = row.querySelectorAll('.tile');
+    return [...tiles].some(tile => !tile.dataset.letter);
+  });
+}
+
+/**
+ * Update the Add Guess button state based on whether there are empty rows.
+ */
+function syncAddGuessButton() {
+  const addGuessBtn = document.getElementById('addGuessBtn');
+  if (addGuessBtn) {
+    addGuessBtn.disabled = hasEmptyRow();
+  }
+}
+
+/**
+ * Check if a row is complete, and if so, fetch suggestions.
+ * If the row is incomplete, clear suggestions.
+ */
+function checkAndFetchSuggestions(row) {
+  const tiles = row.querySelectorAll('.tile');
+  const isComplete = [...tiles].every(tile => tile.dataset.letter);
+  
+  if (isComplete) {
+    // Small debounce to avoid multiple rapid calls
+    clearTimeout(checkAndFetchSuggestions.timeoutId);
+    checkAndFetchSuggestions.timeoutId = setTimeout(() => {
+      fetchSuggestions();
+    }, 300);
+  } else {
+    // Clear suggestions when row becomes incomplete
+    clearTimeout(checkAndFetchSuggestions.timeoutId);
+    const resultsEl = document.getElementById('resultsArea');
+    if (resultsEl && !resultsEl.hidden) {
+      resultsEl.hidden = true;
+    }
+  }
+  
+  // Update Add Guess button state
+  syncAddGuessButton();
+}
 
 /**
  * Move keyboard focus to the tile at `col` within `row`, updating
@@ -131,10 +191,6 @@ function onTileKeydown(e) {
     case 'ArrowRight':
       e.preventDefault();
       if (col < WORD_LENGTH - 1) focusTileInRow(row, col + 1);
-      break;
-    case 'Enter':
-      e.preventDefault();
-      fetchSuggestions();
       break;
     default:
       if (/^[a-zA-Z]$/.test(e.key)) {
@@ -221,12 +277,14 @@ function addGuessRow(word) {
   removeBtn.addEventListener('click', () => {
     row.remove();
     syncRemoveButtons();
+    syncAddGuessButton();
   });
 
   row.appendChild(tilesDiv);
   row.appendChild(removeBtn);
   document.getElementById('guessRows').appendChild(row);
   syncRemoveButtons();
+  syncAddGuessButton();
 
   // Pre-fill with a word if provided
   if (word) {
@@ -313,12 +371,10 @@ async function fetchSuggestions() {
   const loadingEl = document.getElementById('loadingState');
   const errorEl   = document.getElementById('errorState');
   const resultsEl = document.getElementById('resultsArea');
-  const suggestBtn = document.getElementById('suggestBtn');
 
   loadingEl.hidden = false;
   errorEl.hidden   = true;
   resultsEl.hidden = true;
-  suggestBtn.disabled = true;
 
   try {
     // Build URL: each guess is individually encoded; guesses are joined with %20 (encoded space)
@@ -335,7 +391,6 @@ async function fetchSuggestions() {
     errorEl.hidden = false;
   } finally {
     loadingEl.hidden = true;
-    suggestBtn.disabled = false;
   }
 }
 
@@ -384,6 +439,7 @@ function clearAll() {
   document.getElementById('errorState').hidden   = true;
   document.getElementById('resultsArea').hidden  = true;
   addGuessRow();
+  syncAddGuessButton();
 }
 
 /* ==============================================
@@ -396,7 +452,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('addGuessBtn').addEventListener('click', () => addGuessRow());
   document.getElementById('clearBtn').addEventListener('click', clearAll);
-  document.getElementById('suggestBtn').addEventListener('click', fetchSuggestions);
 
   // Collapsible help section
   const helpToggle  = document.getElementById('helpToggle');
@@ -429,11 +484,6 @@ document.addEventListener('DOMContentLoaded', () => {
           proxy.value = '';
           break;
         }
-        case 'Enter':
-          e.preventDefault();
-          proxy.value = '';
-          fetchSuggestions();
-          break;
         default:
           if (/^[a-zA-Z]$/.test(e.key)) {
             e.preventDefault();
