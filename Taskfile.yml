@@ -62,7 +62,7 @@ tasks:
     desc: Build qordle image
     vars:
       GO_VERSION:
-        sh: go mod edit -json | jq -r '(.Toolchain // ("go" + .Go)) | ltrimstr("go")'
+        sh: go list -m -f '{{.GoVersion}}'
     cmds:
       - podman build --build-arg GO_VERSION={{.GO_VERSION}} -t qordled {{$.CWD}}
 

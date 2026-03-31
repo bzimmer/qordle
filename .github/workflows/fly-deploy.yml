@@ -17,9 +17,14 @@ jobs:
     concurrency: deploy-group    # optional: ensure only one action runs at a time
     steps:
       - uses: actions/checkout@v4
+      - name: install go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          check-latest: true
       - name: extract go version
         id: go-version
-        run: echo "version=$(grep '^toolchain' go.mod | sed 's/toolchain go//')" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(go list -m -f '{{.GoVersion}}')" >> "$GITHUB_OUTPUT"
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - run: flyctl deploy --remote-only --build-arg GO_VERSION=${{ steps.go-version.outputs.version }}
         env:
