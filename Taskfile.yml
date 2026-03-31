@@ -62,7 +62,8 @@ tasks:
     desc: Build qordle image
     vars:
       GO_VERSION:
-        sh: go list -m -f '{{.GoVersion}}'
+        # Escape braces so Task doesn't template-expand the Go template.
+        sh: go list -m -f '{{"{{.GoVersion}}"}}'
     cmds:
       - podman build --build-arg GO_VERSION={{.GO_VERSION}} -t qordled {{$.CWD}}
 
