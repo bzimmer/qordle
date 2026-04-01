@@ -10,6 +10,7 @@ dotenv: [".clean.env"]
 vars:
   CWD:
     sh: git rev-parse --show-toplevel
+  PORT: 8091
 
 tasks:
   default:
@@ -30,7 +31,7 @@ tasks:
     desc: Run qordled
     deps: [build]
     cmds:
-      - "{{.DIST}}/qordled --port 8091"
+      - "{{.DIST}}/qordled --port {{.PORT}}"
 
   hyperfine:
     desc: Run hyperfine
@@ -60,11 +61,15 @@ tasks:
 
   qordled:build:
     desc: Build qordle image
+    vars:
+      GO_VERSION:
+        # Escape braces so Task doesn't template-expand the Go template.
+        sh: go list -m -f '{{"{{.GoVersion}}"}}'
     cmds:
-      - podman build -t qordled {{$.CWD}}
+      - podman build --build-arg GO_VERSION={{.GO_VERSION}} -t qordled {{$.CWD}}
 
   qordled:run:
     desc: Run qordle container
     silent: true
     cmds:
-      - podman run -d -p 8091:8091 --rm qordled
+      - podman run -d -p {{.PORT}}:{{.PORT}} --rm qordled

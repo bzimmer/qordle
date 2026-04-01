@@ -132,7 +132,7 @@ function syncAddGuessButton() {
 function checkAndFetchSuggestions(row) {
   const tiles = row.querySelectorAll('.tile');
   const isComplete = [...tiles].every(tile => tile.dataset.letter);
-  
+
   if (isComplete) {
     // Small debounce to avoid multiple rapid calls
     clearTimeout(checkAndFetchSuggestions.timeoutId);
@@ -147,7 +147,7 @@ function checkAndFetchSuggestions(row) {
       resultsEl.hidden = true;
     }
   }
-  
+
   // Update Add Guess button state
   syncAddGuessButton();
 }
@@ -158,13 +158,13 @@ function checkAndFetchSuggestions(row) {
  */
 function refreshSuggestionsAfterRemoval() {
   const rows = document.querySelectorAll('.guess-row');
-  
+
   // Check if there are any complete rows
   const hasCompleteRow = [...rows].some(row => {
     const tiles = row.querySelectorAll('.tile');
     return [...tiles].every(tile => tile.dataset.letter);
   });
-  
+
   if (hasCompleteRow) {
     // Refetch suggestions based on remaining complete rows
     fetchSuggestions();
@@ -352,7 +352,7 @@ function fillRowWithWord(row, word) {
   const { correctByPosition } = buildKnowledge();
   const tilesDiv = row.querySelector('.guess-row__tiles');
   const tiles = tilesDiv.querySelectorAll('.tile');
-  
+
   [...word.toLowerCase().slice(0, WORD_LENGTH)].forEach((ch, i) => {
     if (i < WORD_LENGTH) {
       setTileLetter(tiles[i], ch);
@@ -362,7 +362,7 @@ function fillRowWithWord(row, word) {
       }
     }
   });
-  
+
   // Focus first tile so user can immediately adjust colors if needed
   focusTileInRow(row, 0);
 }
@@ -474,7 +474,7 @@ function displaySuggestions(suggestions) {
       btn.addEventListener('click', () => {
         const emptyRow = getFirstEmptyRow();
         let targetRow;
-        
+
         if (emptyRow) {
           // Fill the existing empty row
           fillRowWithWord(emptyRow, word);
@@ -483,7 +483,7 @@ function displaySuggestions(suggestions) {
           // Create a new row
           targetRow = addGuessRow(word);
         }
-        
+
         // Scroll the row into view
         targetRow?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         // Brief visual feedback on the tile

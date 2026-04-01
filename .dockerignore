@@ -1,0 +1,16 @@
+# Git
+.git
+.gitignore
+
+# Build artifacts
+dist/
+tmp/
+.venv/
+Taskfile.*
+
+# Python
+__pycache__/
+*.pyc
+
+# Mac
+.DS_Store
