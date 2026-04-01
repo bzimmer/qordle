@@ -10,6 +10,7 @@ dotenv: [".clean.env"]
 vars:
   CWD:
     sh: git rev-parse --show-toplevel
+  PORT: 8091
 
 tasks:
   default:
@@ -30,7 +31,7 @@ tasks:
     desc: Run qordled
     deps: [build]
     cmds:
-      - "{{.DIST}}/qordled --port 8091"
+      - "{{.DIST}}/qordled --port {{.PORT}}"
 
   hyperfine:
     desc: Run hyperfine
@@ -71,4 +72,4 @@ tasks:
     desc: Run qordle container
     silent: true
     cmds:
-      - podman run -d -p 8091:8091 --rm qordled
+      - podman run -d -p {{.PORT}}:{{.PORT}} --rm qordled

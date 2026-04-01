@@ -6,6 +6,7 @@
 dist/
 tmp/
 .venv/
+Taskfile.*
 
 # Python
 __pycache__/
