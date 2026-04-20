@@ -231,7 +231,7 @@ func TestPlayCommand(t *testing.T) {
 				a.False(round.Success)
 				a.Equal([]string{
 					"bra.in", ".i.sLet", "kILoS", "mILdS", "hILuS",
-					"gyp.sy", "f.locS", "jowLS", "vILLS", "zILLS"},
+					"gyp.sy", "f.lowS", "cILLS", "jILLS", "vILLS"},
 					round.Scores)
 				return nil
 			},
@@ -252,7 +252,7 @@ func TestPlayCommand(t *testing.T) {
 			after: func(c *cli.Context) error {
 				round := decode(c)
 				a.True(round.Success)
-				a.Equal([]string{"linin", "rAtEr", "cAsEs", "mAmEe", ".hAdED", "AAHED"}, round.Scores)
+				a.Equal([]string{"titin", "merEr", "eAlEs", "cA.dEe", "gApED", "wAvED", "AAHED"}, round.Scores)
 				return nil
 			},
 		},
