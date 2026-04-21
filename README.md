@@ -18,15 +18,26 @@ $ brew install qordle
 `qordle` uses the hits, misses, and a pattern (if known) to suggest words matching the solution.
 See the complete [manual](https://bzimmer.github.io/qordle) for more features and documentation.
 
-## Input
+## Web Solver
+
+`qordled` is the companion web service. Open it in a browser, type your Wordle guesses, click tiles to
+set their colours (gray / yellow / green), and suggestions appear automatically. Toggle strategy pills
+to choose which ranking algorithms are applied — selection order is irrelevant because the strategies
+are [chained](#strategies) by combining their results, not by sequencing them.
+
+![Web Solver Screenshot](https://github.com/user-attachments/assets/d3a1a50c-5e23-40fe-84b1-bfde6feae470)
+
+## CLI
+
+### Input
 
 * Input correctly placed letters as an uppercase
 * Input incorrectly placed letters as a lowercase letter preceded by any symbol (`.`, `@`)
 * Input misses as lowercase letters
 
-## Example
+### Example
 
-![Screenshot](screenshot.png)
+![CLI Screenshot](screenshot.png)
 
 ```sh
 $ qordle suggest -s position -w solutions b.rAin stARt peARl
@@ -159,7 +170,7 @@ $ qordle play --start brain table | jq
 
 ## Strategies
 
-`qordle` supports a number of different strategies and those strategies can be chain
+`qordle` supports a number of different strategies and those strategies can be chained
 to build new strategies.
 
 Performance of different strategy compositions for 2000 randomly sampled words
@@ -174,3 +185,7 @@ Performance of different strategy compositions for 2000 randomly sampled words
 | speculate{elimination}                       |    1868 |  2000 | 93.4  |
 | speculate{position}                          |    1858 |  2000 | 92.9  |
 | speculate{bigram}                            |    1663 |  2000 | 83.2  |
+
+> **Note:** when using multiple strategies the selection order does not matter.
+> Each strategy scores the word list independently, and the results are combined
+> by summing the normalised rank positions — a commutative operation.
