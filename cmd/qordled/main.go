@@ -18,18 +18,20 @@ import (
 	"github.com/bzimmer/qordle"
 )
 
-// strategyDescriptions maps each strategy name to a human-readable description.
-var strategyDescriptions = map[string]string{
-	"alpha":       "Sort the word list alphabetically",
-	"bigram":      "Rank words by bigram frequency of their letters",
-	"elimination": "Rank words by how many candidates each guess eliminates",
-	"frequency":   "Rank words by the frequency of their letters in the remaining list",
-	"position":    "Rank words by how often each letter appears in its position",
+// strategyDescriptions returns a map of each strategy name to a human-readable description.
+func strategyDescriptions() map[string]string {
+	return map[string]string{
+		"alpha":       "Sort the word list alphabetically",
+		"bigram":      "Rank words by bigram frequency of their letters",
+		"elimination": "Rank words by how many candidates each guess eliminates",
+		"frequency":   "Rank words by the frequency of their letters in the remaining list",
+		"position":    "Rank words by how often each letter appears in its position",
+	}
 }
 
-// registry holds all available strategies keyed by name.
-var registry = func() qordle.Trie[qordle.Strategy] {
-	t := qordle.Trie[qordle.Strategy]{}
+// registry returns a Trie holding all available strategies keyed by name.
+func registry() *qordle.Trie[qordle.Strategy] {
+	t := &qordle.Trie[qordle.Strategy]{}
 	for _, s := range []qordle.Strategy{
 		new(qordle.Alpha),
 		new(qordle.Bigram),
@@ -40,11 +42,11 @@ var registry = func() qordle.Trie[qordle.Strategy] {
 		t.Add(s.String(), s)
 	}
 	return t
-}()
+}
 
 // strategyNames returns the sorted list of available strategy names.
 func strategyNames() []string {
-	names := registry.Strings()
+	names := registry().Strings()
 	sort.Strings(names)
 	return names
 }
@@ -56,9 +58,10 @@ func buildStrategy(names []string) (qordle.Strategy, error) {
 	if len(names) == 0 {
 		names = []string{"frequency", "position"}
 	}
+	reg := registry()
 	strategies := make([]qordle.Strategy, 0, len(names))
 	for _, name := range names {
-		s := registry.Value(name)
+		s := reg.Value(name)
 		if s == nil {
 			return nil, fmt.Errorf("unknown strategy %q", name)
 		}
@@ -72,9 +75,10 @@ func buildStrategy(names []string) (qordle.Strategy, error) {
 
 func strategies(c echo.Context) error {
 	names := strategyNames()
+	descs := strategyDescriptions()
 	result := make(map[string]string, len(names))
 	for _, name := range names {
-		result[name] = strategyDescriptions[name]
+		result[name] = descs[name]
 	}
 	return c.JSONPretty(http.StatusOK, result, " ")
 }
