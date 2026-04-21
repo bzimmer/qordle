@@ -110,7 +110,9 @@ func suggest(c echo.Context) error {
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
-	strategy = qordle.NewSpeculator(dictionary, strategy)
+	if c.QueryParam("speculate") == "true" {
+		strategy = qordle.NewSpeculator(dictionary, strategy)
+	}
 	guesser, err := qordle.Guess(strings.Split(c.Param("guesses"), " ")...)
 	if err != nil {
 		return err

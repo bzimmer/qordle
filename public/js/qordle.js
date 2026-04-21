@@ -29,6 +29,9 @@ let activeCol = 0;
 // Currently selected strategies (ordered list; empty → server default)
 let selectedStrategies = [];
 
+// Whether to request speculation from the backend
+let useSpeculate = false;
+
 /* ==============================================
    Strategy Selector
    ============================================== */
@@ -46,11 +49,8 @@ async function initStrategies() {
     if (!res.ok) throw new Error(`Server returned ${res.status}`);
     const data = await res.json();
 
-    // Support both the legacy array format and the current object format.
-    // Object format: { name: definition, ... }  Array format: [name, ...]
-    const entries = Array.isArray(data)
-      ? data.map(name => [name, ''])
-      : Object.entries(data).sort(([a], [b]) => a.localeCompare(b));
+    // Response is an object: { name: definition, ... }
+    const entries = Object.entries(data).sort(([a], [b]) => a.localeCompare(b));
 
     // Default selection: frequency and position (server default chain)
     selectedStrategies = ['frequency', 'position'];
@@ -524,10 +524,9 @@ async function fetchSuggestions() {
     const base = path ? `/qordle/suggest/${path}` : '/qordle/suggest/';
 
     // Append strategy query params when any are selected
-    const strategyParams = selectedStrategies
-      .map(s => `strategy=${encodeURIComponent(s)}`)
-      .join('&');
-    const url = strategyParams ? `${base}?${strategyParams}` : base;
+    const params = selectedStrategies.map(s => `strategy=${encodeURIComponent(s)}`);
+    if (useSpeculate) params.push('speculate=true');
+    const url = params.length ? `${base}?${params.join('&')}` : base;
 
     const res  = await fetch(url, { method: 'POST' });
 
@@ -614,6 +613,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.getElementById('addGuessBtn').addEventListener('click', () => addGuessRow());
   document.getElementById('clearBtn').addEventListener('click', clearAll);
+
+  // Speculate toggle pill
+  const speculatePill = document.getElementById('speculatePill');
+  if (speculatePill) {
+    speculatePill.addEventListener('click', () => {
+      useSpeculate = !useSpeculate;
+      speculatePill.classList.toggle('strategy-pill--active', useSpeculate);
+      speculatePill.setAttribute('aria-pressed', String(useSpeculate));
+      // Re-fetch suggestions if there are any complete rows
+      const rows = [...document.querySelectorAll('.guess-row')];
+      const hasComplete = rows.some(row =>
+        [...row.querySelectorAll('.tile')].every(t => t.dataset.letter)
+      );
+      if (hasComplete) fetchSuggestions();
+    });
+  }
 
   // Collapsible help section
   const helpToggle  = document.getElementById('helpToggle');
