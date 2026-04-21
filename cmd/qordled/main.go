@@ -18,6 +18,15 @@ import (
 	"github.com/bzimmer/qordle"
 )
 
+// strategyDescriptions maps each strategy name to a human-readable description.
+var strategyDescriptions = map[string]string{
+	"alpha":       "Sort the word list alphabetically",
+	"bigram":      "Rank words by bigram frequency of their letters",
+	"elimination": "Rank words by how many candidates each guess eliminates",
+	"frequency":   "Rank words by the frequency of their letters in the remaining list",
+	"position":    "Rank words by how often each letter appears in its position",
+}
+
 // registry holds all available strategies keyed by name.
 var registry = func() qordle.Trie[qordle.Strategy] {
 	t := qordle.Trie[qordle.Strategy]{}
@@ -62,7 +71,12 @@ func buildStrategy(names []string) (qordle.Strategy, error) {
 }
 
 func strategies(c echo.Context) error {
-	return c.JSONPretty(http.StatusOK, strategyNames(), " ")
+	names := strategyNames()
+	result := make(map[string]string, len(names))
+	for _, name := range names {
+		result[name] = strategyDescriptions[name]
+	}
+	return c.JSONPretty(http.StatusOK, result, " ")
 }
 
 func play(c echo.Context) error {

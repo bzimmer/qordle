@@ -44,18 +44,28 @@ async function initStrategies() {
   try {
     const res = await fetch('/qordle/strategies');
     if (!res.ok) throw new Error(`Server returned ${res.status}`);
-    const names = await res.json();
+    const data = await res.json();
+
+    // Support both the legacy array format and the current object format.
+    // Object format: { name: definition, ... }  Array format: [name, ...]
+    const entries = Array.isArray(data)
+      ? data.map(name => [name, ''])
+      : Object.entries(data).sort(([a], [b]) => a.localeCompare(b));
 
     // Default selection: frequency and position (server default chain)
     selectedStrategies = ['frequency', 'position'];
 
-    names.forEach(name => {
+    entries.forEach(([name, definition]) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'strategy-pill' + (selectedStrategies.includes(name) ? ' strategy-pill--active' : '');
       btn.textContent = name;
       btn.dataset.strategy = name;
       btn.setAttribute('aria-pressed', String(selectedStrategies.includes(name)));
+      if (definition) {
+        btn.title = definition;
+        btn.setAttribute('aria-description', definition);
+      }
       btn.addEventListener('click', () => toggleStrategy(btn, name));
       container.appendChild(btn);
     });
