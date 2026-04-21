@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 	"time"
 
@@ -17,12 +18,62 @@ import (
 	"github.com/bzimmer/qordle"
 )
 
+// registry holds all available strategies keyed by name.
+var registry = func() qordle.Trie[qordle.Strategy] {
+	t := qordle.Trie[qordle.Strategy]{}
+	for _, s := range []qordle.Strategy{
+		new(qordle.Alpha),
+		new(qordle.Bigram),
+		new(qordle.Elimination),
+		new(qordle.Frequency),
+		new(qordle.Position),
+	} {
+		t.Add(s.String(), s)
+	}
+	return t
+}()
+
+// strategyNames returns the sorted list of available strategy names.
+func strategyNames() []string {
+	names := registry.Strings()
+	sort.Strings(names)
+	return names
+}
+
+// buildStrategy constructs a strategy from the given names, chaining them
+// when more than one is provided. Falls back to frequency+position when
+// no names are supplied.
+func buildStrategy(names []string) (qordle.Strategy, error) {
+	if len(names) == 0 {
+		names = []string{"frequency", "position"}
+	}
+	strategies := make([]qordle.Strategy, 0, len(names))
+	for _, name := range names {
+		s := registry.Value(name)
+		if s == nil {
+			return nil, fmt.Errorf("unknown strategy %q", name)
+		}
+		strategies = append(strategies, s)
+	}
+	if len(strategies) == 1 {
+		return strategies[0], nil
+	}
+	return qordle.NewChain(strategies...), nil
+}
+
+func strategies(c echo.Context) error {
+	return c.JSONPretty(http.StatusOK, strategyNames(), " ")
+}
+
 func play(c echo.Context) error {
 	dictionary, err := qordle.Read("solutions")
 	if err != nil {
 		return err
 	}
-	strategy := qordle.NewChain(new(qordle.Frequency), new(qordle.Position))
+	strategy, err := buildStrategy(c.QueryParams()["strategy"])
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
 	strategy = qordle.NewSpeculator(dictionary, strategy)
 	secret := c.Param("secret")
 	game := qordle.NewGame(
@@ -41,7 +92,10 @@ func suggest(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	strategy := qordle.NewChain(new(qordle.Frequency), new(qordle.Position))
+	strategy, err := buildStrategy(c.QueryParams()["strategy"])
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
 	strategy = qordle.NewSpeculator(dictionary, strategy)
 	guesser, err := qordle.Guess(strings.Split(c.Param("guesses"), " ")...)
 	if err != nil {
@@ -77,6 +131,7 @@ func newEngine() *echo.Echo {
 
 	base := engine.Group("")
 	methods := []string{http.MethodGet, http.MethodPost}
+	base.GET("/strategies", strategies)
 	base.GET("/play/:secret", play)
 	group := base.Group("/suggest")
 	group.Match(methods, "", suggest)

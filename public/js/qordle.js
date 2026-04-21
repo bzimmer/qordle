@@ -26,6 +26,79 @@ let rowCounter = 0;
 let activeRow = null;
 let activeCol = 0;
 
+// Currently selected strategies (ordered list; empty → server default)
+let selectedStrategies = [];
+
+/* ==============================================
+   Strategy Selector
+   ============================================== */
+
+/**
+ * Fetch the available strategies from the backend and render pill toggles.
+ * The default selection mirrors the server default: frequency + position.
+ */
+async function initStrategies() {
+  const container = document.getElementById('strategyPills');
+  if (!container) return;
+
+  try {
+    const res = await fetch('/qordle/strategies');
+    if (!res.ok) throw new Error(`Server returned ${res.status}`);
+    const names = await res.json();
+
+    // Default selection: frequency and position (server default chain)
+    selectedStrategies = ['frequency', 'position'];
+
+    names.forEach(name => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'strategy-pill' + (selectedStrategies.includes(name) ? ' strategy-pill--active' : '');
+      btn.textContent = name;
+      btn.dataset.strategy = name;
+      btn.setAttribute('aria-pressed', String(selectedStrategies.includes(name)));
+      btn.addEventListener('click', () => toggleStrategy(btn, name));
+      container.appendChild(btn);
+    });
+  } catch (err) {
+    // Strategy selection unavailable; fall back to server default silently.
+    console.warn('Failed to load strategies:', err);
+  }
+}
+
+/**
+ * Toggle a strategy pill on/off and re-fetch suggestions.
+ */
+function toggleStrategy(btn, name) {
+  const idx = selectedStrategies.indexOf(name);
+  if (idx === -1) {
+    selectedStrategies.push(name);
+    btn.classList.add('strategy-pill--active');
+    btn.setAttribute('aria-pressed', 'true');
+  } else {
+    // Keep at least one strategy selected
+    if (selectedStrategies.length === 1) {
+      // Provide feedback that at least one strategy must remain active
+      btn.classList.add('strategy-pill--shake');
+      btn.addEventListener('animationend', () => btn.classList.remove('strategy-pill--shake'), { once: true });
+      const live = document.getElementById('strategyLive');
+      if (live) live.textContent = 'At least one strategy must be selected.';
+      return;
+    }
+    selectedStrategies.splice(idx, 1);
+    btn.classList.remove('strategy-pill--active');
+    btn.setAttribute('aria-pressed', 'false');
+  }
+  // Clear any previous live message
+  const live = document.getElementById('strategyLive');
+  if (live) live.textContent = '';
+  // Re-fetch suggestions with updated strategy selection
+  const rows = [...document.querySelectorAll('.guess-row')];
+  const hasComplete = rows.some(row =>
+    [...row.querySelectorAll('.tile')].every(t => t.dataset.letter)
+  );
+  if (hasComplete) fetchSuggestions();
+}
+
 /* ==============================================
    Tile Helpers
    ============================================== */
@@ -438,7 +511,14 @@ async function fetchSuggestions() {
   try {
     // Build URL: each guess is individually encoded; guesses are joined with %20 (encoded space)
     const path = guesses.map(g => encodeURIComponent(g)).join('%20');
-    const url  = path ? `/qordle/suggest/${path}` : '/qordle/suggest/';
+    const base = path ? `/qordle/suggest/${path}` : '/qordle/suggest/';
+
+    // Append strategy query params when any are selected
+    const strategyParams = selectedStrategies
+      .map(s => `strategy=${encodeURIComponent(s)}`)
+      .join('&');
+    const url = strategyParams ? `${base}?${strategyParams}` : base;
+
     const res  = await fetch(url, { method: 'POST' });
 
     if (!res.ok) throw new Error(`Server returned ${res.status}`);
@@ -516,6 +596,9 @@ function clearAll() {
    ============================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Load available strategies from backend and render the selector
+  initStrategies();
+
   // Seed the first guess row
   addGuessRow();
 

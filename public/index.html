@@ -50,6 +50,16 @@
         </div>
       </section>
 
+      <section class="strategy-section" aria-label="Strategy selection">
+        <div class="strategy-controls">
+          <span class="strategy-label" id="strategyLabel">Strategy:</span>
+          <div class="strategy-pills" id="strategyPills" role="group" aria-labelledby="strategyLabel">
+            <!-- Pills populated by JS -->
+          </div>
+        </div>
+        <div id="strategyLive" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+      </section>
+
       <section class="guess-section" aria-label="Enter your guesses">
         <div id="guessRows" class="guess-rows"></div>
         <div class="actions">
