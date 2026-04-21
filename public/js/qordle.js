@@ -630,14 +630,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Collapsible filters section
+  const filtersToggle  = document.getElementById('filtersToggle');
+  const filtersContent = document.getElementById('filtersContent');
+  if (filtersToggle && filtersContent) {
+    filtersToggle.addEventListener('click', () => {
+      const expanded = filtersToggle.getAttribute('aria-expanded') === 'true';
+      filtersToggle.setAttribute('aria-expanded', String(!expanded));
+      filtersContent.hidden = expanded;
+    });
+  }
+
   // Collapsible help section
   const helpToggle  = document.getElementById('helpToggle');
   const helpContent = document.getElementById('helpContent');
-  helpToggle.addEventListener('click', () => {
-    const expanded = helpToggle.getAttribute('aria-expanded') === 'true';
-    helpToggle.setAttribute('aria-expanded', String(!expanded));
-    helpContent.hidden = expanded;
-  });
+  if (helpToggle && helpContent) {
+    helpToggle.addEventListener('click', () => {
+      const expanded = helpToggle.getAttribute('aria-expanded') === 'true';
+      helpToggle.setAttribute('aria-expanded', String(!expanded));
+      helpContent.hidden = expanded;
+    });
+  }
 
   // Keyboard proxy — routes mobile on-screen keyboard input to the active tile.
   // On desktop the tile's own keydown handler fires instead (tile retains focus via Tab).

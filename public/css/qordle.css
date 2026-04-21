@@ -628,15 +628,16 @@ body {
 /* ==============================================
    Strategy Selector
    ============================================== */
-.strategy-section {
-  padding: 8px 0;
-}
 
 .strategy-controls {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.strategy-controls--spaced {
+  margin-top: 10px;
 }
 
 .strategy-label {
