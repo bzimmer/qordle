@@ -27,6 +27,12 @@ func (w *errWriter) Write(_ []byte) (int, error) {
 	return 0, ErrEncoding
 }
 
+type errReader struct{}
+
+func (r *errReader) Read(_ []byte) (int, error) {
+	return 0, errors.New("read error")
+}
+
 func TestMain(m *testing.M) {
 	zerolog.SetGlobalLevel(zerolog.Disabled)
 	os.Exit(m.Run())

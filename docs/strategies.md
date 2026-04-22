@@ -7,7 +7,7 @@ The strategies are designed to be composable via [chaining](#chaining).
 The alpha strategy sorts the word list alphabetically
 
 ### bigram
-The bigram strategy sums the bigrams for each wordin using the
+The bigram strategy sums the bigrams for each word using the
 [bigram frequency table](https://github.com/bzimmer/qordle/blob/main/tables.go)
 and sorts the word list highest to lowest
 
@@ -44,8 +44,15 @@ accumulating the differing letter and then generates a word list from those word
 of the unknown letters.
 
 ## Chaining
-All strategies are composable via chaining. The chaining, itself a strategy, executes
-all child strategies and sorts by accumulating the word rank in resulting word list.
+All strategies are composable via chaining. The chaining strategy, itself a strategy, executes
+all child strategies **concurrently** on the same word list and combines the results by accumulating
+each word's normalised rank position across every child strategy. Because this combination is a
+simple sum — a commutative operation — **the order in which strategies are specified does not
+matter**. `chain{frequency,position}` and `chain{position,frequency}` produce identical output.
+
+This also means the pill-toggle selector in the web solver works perfectly: selecting or
+deselecting strategies in any order gives the same result as specifying them on the CLI in
+any order.
 
 ## Performance
 

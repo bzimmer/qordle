@@ -50,6 +50,33 @@
         </div>
       </section>
 
+      <section class="help-section" aria-label="Filters">
+        <button class="help-toggle" id="filtersToggle" aria-expanded="false" aria-controls="filtersContent">
+          <span>Filters</span>
+          <svg class="toggle-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
+        <div class="help-content" id="filtersContent" hidden>
+          <div class="strategy-controls">
+            <span class="strategy-label" id="strategyLabel">Strategy:</span>
+            <div class="strategy-pills" id="strategyPills" role="group" aria-labelledby="strategyLabel">
+              <!-- Pills populated by JS -->
+            </div>
+          </div>
+          <div class="strategy-controls strategy-controls--spaced">
+            <span class="strategy-label" id="optionsLabel">Options:</span>
+            <div class="strategy-pills" role="group" aria-labelledby="optionsLabel">
+              <button type="button" id="speculatePill" class="strategy-pill" aria-pressed="false"
+                title="When candidates differ by a single letter, suggest a word from the full list to reveal more information">
+                speculate
+              </button>
+            </div>
+          </div>
+          <div id="strategyLive" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+        </div>
+      </section>
+
       <section class="guess-section" aria-label="Enter your guesses">
         <div id="guessRows" class="guess-rows"></div>
         <div class="actions">

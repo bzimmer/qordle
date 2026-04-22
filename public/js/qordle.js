@@ -26,6 +26,89 @@ let rowCounter = 0;
 let activeRow = null;
 let activeCol = 0;
 
+// Currently selected strategies (ordered list; empty → server default)
+let selectedStrategies = [];
+
+// Whether to request speculation from the backend
+let useSpeculate = false;
+
+/* ==============================================
+   Strategy Selector
+   ============================================== */
+
+/**
+ * Fetch the available strategies from the backend and render pill toggles.
+ * The default selection mirrors the server default: frequency + position.
+ */
+async function initStrategies() {
+  const container = document.getElementById('strategyPills');
+  if (!container) return;
+
+  try {
+    const res = await fetch('/qordle/strategies');
+    if (!res.ok) throw new Error(`Server returned ${res.status}`);
+    const data = await res.json();
+
+    // Response is an object: { name: definition, ... }
+    const entries = Object.entries(data).sort(([a], [b]) => a.localeCompare(b));
+
+    // Default selection: frequency and position (server default chain)
+    selectedStrategies = ['frequency', 'position'];
+
+    entries.forEach(([name, definition]) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'strategy-pill' + (selectedStrategies.includes(name) ? ' strategy-pill--active' : '');
+      btn.textContent = name;
+      btn.dataset.strategy = name;
+      btn.setAttribute('aria-pressed', String(selectedStrategies.includes(name)));
+      if (definition) {
+        btn.title = definition;
+        btn.setAttribute('aria-description', definition);
+      }
+      btn.addEventListener('click', () => toggleStrategy(btn, name));
+      container.appendChild(btn);
+    });
+  } catch (err) {
+    // Strategy selection unavailable; fall back to server default silently.
+    console.warn('Failed to load strategies:', err);
+  }
+}
+
+/**
+ * Toggle a strategy pill on/off and re-fetch suggestions.
+ */
+function toggleStrategy(btn, name) {
+  const idx = selectedStrategies.indexOf(name);
+  if (idx === -1) {
+    selectedStrategies.push(name);
+    btn.classList.add('strategy-pill--active');
+    btn.setAttribute('aria-pressed', 'true');
+  } else {
+    // Keep at least one strategy selected
+    if (selectedStrategies.length === 1) {
+      // Provide feedback that at least one strategy must remain active
+      btn.classList.add('strategy-pill--shake');
+      btn.addEventListener('animationend', () => btn.classList.remove('strategy-pill--shake'), { once: true });
+      const live = document.getElementById('strategyLive');
+      if (live) live.textContent = 'At least one strategy must be selected.';
+      return;
+    }
+    selectedStrategies.splice(idx, 1);
+    btn.classList.remove('strategy-pill--active');
+    btn.setAttribute('aria-pressed', 'false');
+  }
+  // Clear any previous live message
+  const live = document.getElementById('strategyLive');
+  if (live) live.textContent = '';
+  // Re-fetch suggestions with updated strategy selection
+  const rows = [...document.querySelectorAll('.guess-row')];
+  const hasComplete = rows.some(row =>
+    [...row.querySelectorAll('.tile')].every(t => t.dataset.letter)
+  );
+  if (hasComplete) fetchSuggestions();
+}
+
 /* ==============================================
    Tile Helpers
    ============================================== */
@@ -438,7 +521,13 @@ async function fetchSuggestions() {
   try {
     // Build URL: each guess is individually encoded; guesses are joined with %20 (encoded space)
     const path = guesses.map(g => encodeURIComponent(g)).join('%20');
-    const url  = path ? `/qordle/suggest/${path}` : '/qordle/suggest/';
+    const base = path ? `/qordle/suggest/${path}` : '/qordle/suggest/';
+
+    // Append strategy query params when any are selected
+    const params = selectedStrategies.map(s => `strategy=${encodeURIComponent(s)}`);
+    if (useSpeculate) params.push('speculate=true');
+    const url = params.length ? `${base}?${params.join('&')}` : base;
+
     const res  = await fetch(url, { method: 'POST' });
 
     if (!res.ok) throw new Error(`Server returned ${res.status}`);
@@ -516,20 +605,52 @@ function clearAll() {
    ============================================== */
 
 document.addEventListener('DOMContentLoaded', () => {
+  // Load available strategies from backend and render the selector
+  initStrategies();
+
   // Seed the first guess row
   addGuessRow();
 
   document.getElementById('addGuessBtn').addEventListener('click', () => addGuessRow());
   document.getElementById('clearBtn').addEventListener('click', clearAll);
 
+  // Speculate toggle pill
+  const speculatePill = document.getElementById('speculatePill');
+  if (speculatePill) {
+    speculatePill.addEventListener('click', () => {
+      useSpeculate = !useSpeculate;
+      speculatePill.classList.toggle('strategy-pill--active', useSpeculate);
+      speculatePill.setAttribute('aria-pressed', String(useSpeculate));
+      // Re-fetch suggestions if there are any complete rows
+      const rows = [...document.querySelectorAll('.guess-row')];
+      const hasComplete = rows.some(row =>
+        [...row.querySelectorAll('.tile')].every(t => t.dataset.letter)
+      );
+      if (hasComplete) fetchSuggestions();
+    });
+  }
+
+  // Collapsible filters section
+  const filtersToggle  = document.getElementById('filtersToggle');
+  const filtersContent = document.getElementById('filtersContent');
+  if (filtersToggle && filtersContent) {
+    filtersToggle.addEventListener('click', () => {
+      const expanded = filtersToggle.getAttribute('aria-expanded') === 'true';
+      filtersToggle.setAttribute('aria-expanded', String(!expanded));
+      filtersContent.hidden = expanded;
+    });
+  }
+
   // Collapsible help section
   const helpToggle  = document.getElementById('helpToggle');
   const helpContent = document.getElementById('helpContent');
-  helpToggle.addEventListener('click', () => {
-    const expanded = helpToggle.getAttribute('aria-expanded') === 'true';
-    helpToggle.setAttribute('aria-expanded', String(!expanded));
-    helpContent.hidden = expanded;
-  });
+  if (helpToggle && helpContent) {
+    helpToggle.addEventListener('click', () => {
+      const expanded = helpToggle.getAttribute('aria-expanded') === 'true';
+      helpToggle.setAttribute('aria-expanded', String(!expanded));
+      helpContent.hidden = expanded;
+    });
+  }
 
   // Keyboard proxy — routes mobile on-screen keyboard input to the active tile.
   // On desktop the tile's own keydown handler fires instead (tile retains focus via Tab).

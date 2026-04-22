@@ -2,7 +2,19 @@
 
 The original purpose for `qordle` was to solve the daily
 [wordle](https://www.nytimes.com/games/wordle/index.html) puzzle faster than my
-family. The `qordle` [suggest](commands.md#suggest) command will quickly perform
+family. There are two ways to use it:
+
+* **Web solver** — open `qordled` in a browser, type guesses into the tile grid, click
+  tiles to cycle their colour, and suggestions update automatically. Use the
+  [Strategy](strategies.md#chaining) pills to switch between ranking algorithms;
+  order doesn't matter.
+
+* **CLI** — the `qordle` [suggest](commands.md#suggest) command ranks the best next
+  guesses from the terminal.
+
+### CLI Workflow
+
+The `qordle` [suggest](commands.md#suggest) command will quickly perform
 a ranking of the best next guesses. I wrote a simple shell script to facilitate
 using two different [strategy](strategies.md) combinations and `jq` to show only
 the top ten words.
