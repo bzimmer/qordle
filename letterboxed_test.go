@@ -64,6 +64,15 @@ func TestLetterboxedCommand(t *testing.T) {
 			args: []string{"letterboxed", "-w", "solutions", "--max", "4", "rul", "eya", "gdh", "opb", "qst"},
 			err:  "found 5 sides",
 		},
+		{
+			name: "encoding error",
+			args: []string{"letterboxed", "-w", "solutions", "--max", "4"},
+			err:  ErrEncoding.Error(),
+			before: func(c *cli.Context) error {
+				qordle.Runtime(c).Encoder = json.NewEncoder(new(errWriter))
+				return nil
+			},
+		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {

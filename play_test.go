@@ -17,9 +17,9 @@ import (
 func TestGame(t *testing.T) {
 	t.Parallel()
 	for _, tt := range []struct {
-		name, start, secret, errStrategy string
-		dictionary, errDictionary        string
-		strategy                         qordle.Strategy
+		name, start, secret, errStrategy, errGame string
+		dictionary, errDictionary                 string
+		strategy                                  qordle.Strategy
 	}{
 		{
 			name:       "no starting word",
@@ -55,6 +55,14 @@ func TestGame(t *testing.T) {
 			dictionary:  "qordle",
 			errStrategy: "missing strategy",
 		},
+		{
+			name:       "start word length differs from secret",
+			start:      "toolong",
+			secret:     "train",
+			strategy:   new(qordle.Frequency),
+			dictionary: "solutions",
+			errGame:    "secret and guess lengths do not match",
+		},
 	} {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
@@ -80,6 +88,11 @@ func TestGame(t *testing.T) {
 			if tt.errDictionary != "" {
 				a.Error(err)
 				a.Equal(tt.errDictionary, err.Error())
+				return
+			}
+			if tt.errGame != "" {
+				a.Error(err)
+				a.Equal(tt.errGame, err.Error())
 				return
 			}
 			a.NoError(err)
@@ -206,6 +219,15 @@ func TestPlayCommand(t *testing.T) {
 			err:  "invalid reader",
 			before: func(c *cli.Context) error {
 				c.App.Reader = nil
+				return nil
+			},
+		},
+		{
+			name: "scanner error from stdin",
+			args: []string{"play", "-w", "qordle"},
+			err:  "read error",
+			before: func(c *cli.Context) error {
+				c.App.Reader = new(errReader)
 				return nil
 			},
 		},
