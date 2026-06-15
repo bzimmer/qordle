@@ -1,7 +1,9 @@
 version: '3'
 
-vars:
+env:
+  NO_MKDOCS_2_WARNING: 1
 
+vars:
   DIST:
     "{{.ROOT_DIR}}/dist"
 
