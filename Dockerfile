@@ -1,5 +1,5 @@
-ARG GO_VERSION
-FROM golang:${GO_VERSION}-bookworm AS builder
+ARG GO_VERSION=1.26
+FROM golang:${GO_VERSION}-trixie AS builder
 
 WORKDIR /app
 
@@ -20,6 +20,6 @@ RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/
 COPY --from=builder /app/qordled /qordled/
 COPY --from=builder /app/public /qordled/public
 
-EXPOSE 8091
+EXPOSE 8080
 
-CMD ["/qordled/qordled", "--port", "8091"]
+ENTRYPOINT ["/qordled/qordled", "--port", "8080"]
