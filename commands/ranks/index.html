@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
     
     
       
@@ -478,45 +478,45 @@
   <h1>Ranks</h1>
 
 <p>Sum all the percentages for letters in position 2</p>
-<p><code>shell
-$ qordle ranks | jq '.positions | flatten | map(."2") | add'
-1</code></p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>$<span class="w"> </span>qordle<span class="w"> </span>ranks<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span><span class="s1">&#39;.positions | flatten | map(.&quot;2&quot;) | add&#39;</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="m">1</span>
+</span></code></pre></div>
 <p>Compute the score for the words</p>
-<p><code>shell
-$ qordle ranks brown | jq .words
-{
-    "brown": {
-        "bigrams": {
-        "ranks": {
-            "br": 0.0022,
-            "ow": 0.0014,
-            "ro": 0.0112,
-            "wn": 0.0002
-        },
-        "total": 0.0750
-        },
-        "frequencies": {
-        "ranks": {
-            "0": 0.0183,
-            "1": 0.0704,
-            "2": 0.072,
-            "3": 0.0065,
-            "4": 0.0718
-        },
-        "total": 0.2390
-        },
-        "positions": {
-        "ranks": {
-            "0": 0.07,
-            "1": 0.0685,
-            "2": 0.0637,
-            "3": 0.0133,
-            "4": 0.0581
-        },
-        "total": 0.2736
-        }
-    }
-}</code></p>
+<div class="language-shell highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>$<span class="w"> </span>qordle<span class="w"> </span>ranks<span class="w"> </span>brown<span class="w"> </span><span class="p">|</span><span class="w"> </span>jq<span class="w"> </span>.words
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="o">{</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="s2">&quot;brown&quot;</span>:<span class="w"> </span><span class="o">{</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">        </span><span class="s2">&quot;bigrams&quot;</span>:<span class="w"> </span><span class="o">{</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">        </span><span class="s2">&quot;ranks&quot;</span>:<span class="w"> </span><span class="o">{</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">            </span><span class="s2">&quot;br&quot;</span>:<span class="w"> </span><span class="m">0</span>.0022,
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">            </span><span class="s2">&quot;ow&quot;</span>:<span class="w"> </span><span class="m">0</span>.0014,
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">            </span><span class="s2">&quot;ro&quot;</span>:<span class="w"> </span><span class="m">0</span>.0112,
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">            </span><span class="s2">&quot;wn&quot;</span>:<span class="w"> </span><span class="m">0</span>.0002
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">        </span><span class="o">}</span>,
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">        </span><span class="s2">&quot;total&quot;</span>:<span class="w"> </span><span class="m">0</span>.0750
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">        </span><span class="o">}</span>,
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">        </span><span class="s2">&quot;frequencies&quot;</span>:<span class="w"> </span><span class="o">{</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a><span class="w">        </span><span class="s2">&quot;ranks&quot;</span>:<span class="w"> </span><span class="o">{</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a><span class="w">            </span><span class="s2">&quot;0&quot;</span>:<span class="w"> </span><span class="m">0</span>.0183,
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a><span class="w">            </span><span class="s2">&quot;1&quot;</span>:<span class="w"> </span><span class="m">0</span>.0704,
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a><span class="w">            </span><span class="s2">&quot;2&quot;</span>:<span class="w"> </span><span class="m">0</span>.072,
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a><span class="w">            </span><span class="s2">&quot;3&quot;</span>:<span class="w"> </span><span class="m">0</span>.0065,
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a><span class="w">            </span><span class="s2">&quot;4&quot;</span>:<span class="w"> </span><span class="m">0</span>.0718
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a><span class="w">        </span><span class="o">}</span>,
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a><span class="w">        </span><span class="s2">&quot;total&quot;</span>:<span class="w"> </span><span class="m">0</span>.2390
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a><span class="w">        </span><span class="o">}</span>,
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="w">        </span><span class="s2">&quot;positions&quot;</span>:<span class="w"> </span><span class="o">{</span>
+</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="w">        </span><span class="s2">&quot;ranks&quot;</span>:<span class="w"> </span><span class="o">{</span>
+</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="w">            </span><span class="s2">&quot;0&quot;</span>:<span class="w"> </span><span class="m">0</span>.07,
+</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a><span class="w">            </span><span class="s2">&quot;1&quot;</span>:<span class="w"> </span><span class="m">0</span>.0685,
+</span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a><span class="w">            </span><span class="s2">&quot;2&quot;</span>:<span class="w"> </span><span class="m">0</span>.0637,
+</span><span id="__span-1-28"><a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a><span class="w">            </span><span class="s2">&quot;3&quot;</span>:<span class="w"> </span><span class="m">0</span>.0133,
+</span><span id="__span-1-29"><a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a><span class="w">            </span><span class="s2">&quot;4&quot;</span>:<span class="w"> </span><span class="m">0</span>.0581
+</span><span id="__span-1-30"><a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a><span class="w">        </span><span class="o">}</span>,
+</span><span id="__span-1-31"><a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a><span class="w">        </span><span class="s2">&quot;total&quot;</span>:<span class="w"> </span><span class="m">0</span>.2736
+</span><span id="__span-1-32"><a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="w">        </span><span class="o">}</span>
+</span><span id="__span-1-33"><a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="w">    </span><span class="o">}</span>
+</span><span id="__span-1-34"><a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a><span class="o">}</span>
+</span></code></pre></div>
 
 
 
