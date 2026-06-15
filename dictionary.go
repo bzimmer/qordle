@@ -123,7 +123,7 @@ func wordlists(c *cli.Context, wordlists ...string) (Dictionary, error) {
 func CommandWordlists() *cli.Command {
 	return &cli.Command{
 		Name:     "wordlists",
-		Category: "wordle",
+		Category: categoryWordle,
 		Usage:    "List all available wordlists",
 		Action: func(c *cli.Context) error {
 			var lists []string

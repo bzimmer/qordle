@@ -30,7 +30,7 @@ func strategyFlags() []cli.Flag {
 func CommandStrategies() *cli.Command {
 	return &cli.Command{
 		Name:     "strategies",
-		Category: "wordle",
+		Category: categoryWordle,
 		Usage:    "List all available strategies",
 		Action: func(c *cli.Context) error {
 			strategies := Runtime(c).Strategies.Strategies()

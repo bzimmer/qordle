@@ -8,10 +8,11 @@ import (
 	"sync"
 	"time"
 
+	"slices"
+
 	"github.com/kelindar/bitmap"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
-	"golang.org/x/exp/slices"
 )
 
 const (

@@ -90,7 +90,7 @@ func Score(secret string, guesses ...string) ([]string, error) {
 func CommandScore() *cli.Command {
 	return &cli.Command{
 		Name:      "score",
-		Category:  "wordle",
+		Category:  categoryWordle,
 		Usage:     "Score the guesses against the secret",
 		ArgsUsage: "<secret> <guess> [, <guess>]",
 		Action: func(c *cli.Context) error {

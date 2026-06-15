@@ -4,10 +4,15 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+const (
+	ranksKey = "ranks"
+	totalKey = "total"
+)
+
 func CommandSuggest() *cli.Command {
 	return &cli.Command{
 		Name:      "suggest",
-		Category:  "wordle",
+		Category:  categoryWordle,
 		Usage:     "Suggest the next word to guess incorporating the already scored patterns",
 		ArgsUsage: "<pattern>...",
 		Flags: append(
@@ -38,7 +43,7 @@ func CommandSuggest() *cli.Command {
 func CommandValidate() *cli.Command {
 	return &cli.Command{
 		Name:      "validate",
-		Category:  "wordle",
+		Category:  categoryWordle,
 		Usage:     "Validate the word against the pattern",
 		ArgsUsage: "<guess> <secret>...",
 		Action: func(c *cli.Context) error {
@@ -59,8 +64,8 @@ func CommandValidate() *cli.Command {
 
 func CommandRanks() *cli.Command {
 	return &cli.Command{
-		Name:      "ranks",
-		Category:  "wordle",
+		Name:      ranksKey,
+		Category:  categoryWordle,
 		Usage:     "Detailed rank information from letter frequency tables",
 		ArgsUsage: "<word> ...",
 		Action: func(c *cli.Context) error {
@@ -86,9 +91,9 @@ func CommandRanks() *cli.Command {
 					}
 				}
 				words[string(w)] = map[string]any{
-					"bigrams":     map[string]any{"ranks": b, "total": bt},
-					"positions":   map[string]any{"ranks": p, "total": pt},
-					"frequencies": map[string]any{"ranks": f, "total": ft},
+					"bigrams":     map[string]any{ranksKey: b, totalKey: bt},
+					"positions":   map[string]any{ranksKey: p, totalKey: pt},
+					"frequencies": map[string]any{ranksKey: f, totalKey: ft},
 				}
 			}
 			return Runtime(c).Encoder.Encode(map[string]any{
@@ -104,7 +109,7 @@ func CommandRanks() *cli.Command {
 func CommandOrder() *cli.Command {
 	return &cli.Command{
 		Name:      "order",
-		Category:  "wordle",
+		Category:  categoryWordle,
 		Usage:     "Order the arguments per the strategy",
 		ArgsUsage: "word [, word, ...]",
 		Flags:     strategyFlags(),

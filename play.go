@@ -179,7 +179,7 @@ func play(c *cli.Context) error {
 func CommandPlay() *cli.Command {
 	return &cli.Command{
 		Name:     "play",
-		Category: "wordle",
+		Category: categoryWordle,
 		Usage:    "Play wordle automatically",
 		Flags: append(
 			[]cli.Flag{
