@@ -23,15 +23,21 @@ func TestSuggest(t *testing.T) {
 		{name: "two guesses", target: "/qordle/suggest/B.rAin%20BO.reD", status: http.StatusOK},
 		{name: "solved", target: "/qordle/suggest/BRAIN", status: http.StatusOK},
 		{name: "invalid guess", target: "/qordle/suggest/brai.", status: http.StatusBadRequest},
+		{name: "get", target: "/qordle/suggest/B.rAin", status: http.StatusOK},
+		{name: "strategy prefix", target: "/qordle/suggest/B.rAin?strategy=elim", status: http.StatusOK},
 		{name: "unknown strategy", target: "/qordle/suggest/brain?strategy=nope", status: http.StatusBadRequest},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
-			engine, err := newEngine()
+			handler, err := newHandler("")
 			require.NoError(t, err)
+			method := http.MethodPost
+			if tt.name == "get" {
+				method = http.MethodGet
+			}
 			rec := httptest.NewRecorder()
-			engine.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, tt.target, nil))
+			handler.ServeHTTP(rec, httptest.NewRequest(method, tt.target, nil))
 			a.Equal(tt.status, rec.Code)
 			if tt.status != http.StatusOK {
 				return
@@ -46,15 +52,53 @@ func TestSuggest(t *testing.T) {
 func TestStrategies(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
-	engine, err := newEngine()
+	handler, err := newHandler("")
 	require.NoError(t, err)
 	rec := httptest.NewRecorder()
-	engine.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/qordle/strategies", nil))
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/qordle/strategies", nil))
 	a.Equal(http.StatusOK, rec.Code)
 	var strategies map[string]string
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &strategies))
 	a.Len(strategies, 5)
 	for name, desc := range strategies {
 		a.NotEmpty(desc, name)
+	}
+}
+
+func TestPlay(t *testing.T) {
+	t.Parallel()
+	for _, tt := range []struct {
+		name   string
+		target string
+		status int
+	}{
+		{name: "solves", target: "/qordle/play/board", status: http.StatusOK},
+		{name: "wrong length", target: "/qordle/play/boards", status: http.StatusBadRequest},
+		{name: "post not allowed", target: "/qordle/play/board", status: http.StatusMethodNotAllowed},
+		{name: "unknown route", target: "/qordle/nope", status: http.StatusNotFound},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			handler, err := newHandler("")
+			require.NoError(t, err)
+			method := http.MethodGet
+			if tt.status == http.StatusMethodNotAllowed {
+				method = http.MethodPost
+			}
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, httptest.NewRequest(method, tt.target, nil))
+			assert.Equal(t, tt.status, rec.Code)
+			if tt.status == http.StatusOK {
+				var board struct {
+					Target string `json:"target"`
+					Rounds []struct {
+						Success bool `json:"success"`
+					} `json:"rounds"`
+				}
+				require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &board))
+				assert.Equal(t, "board", board.Target)
+				assert.True(t, board.Rounds[len(board.Rounds)-1].Success)
+			}
+		})
 	}
 }
