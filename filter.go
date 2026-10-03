@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	set "github.com/deckarep/golang-set/v2"
 	"github.com/rs/zerolog"
@@ -76,50 +77,80 @@ func Length(length int) FilterFunc {
 	}
 }
 
-func filter(criteria criteria, required map[rune]int) FilterFunc {
-	return func(word string) bool {
-		if len(word) != len(criteria) {
-			log.Debug().
-				Str("word", word).
-				Int("expected", len(criteria)).
-				Int("found", len(word)).
-				Str("reason", "length").
-				Msg("filter")
+// requirement is a letter which must appear at least count times
+type requirement struct {
+	letter rune
+	count  int
+}
+
+// positional reports whether each letter of the word satisfies the criterion
+// at its index and the word is exactly as long as the criteria
+func (c criteria) positional(word string) bool {
+	var i int
+	for _, r := range word {
+		if i >= len(c) {
+			break
+		}
+		if c[i].exact != 0 && c[i].exact != r {
+			if e := log.Debug(); e.Enabled() {
+				e.Str("word", word).Int("i", i).
+					Str("expected", string(c[i].exact)).Str("found", string(r)).
+					Str("reason", "exact").Msg("filter")
+			}
 			return false
 		}
-		ws, rs := []rune(word), make(map[rune]int)
-		for i := range ws {
-			rs[ws[i]]++
-			if criteria[i].exact != 0 && criteria[i].exact != ws[i] {
-				log.Debug().
-					Str("word", word).
-					Int("i", i).
-					Str("expected", string(criteria[i].exact)).
-					Str("found", string(ws[i])).
-					Str("reason", "exact").
-					Msg("filter")
-				return false
+		if c[i].misses.ContainsOne(r) {
+			if e := log.Debug(); e.Enabled() {
+				e.Str("word", word).Int("i", i).
+					Str("found", string(r)).
+					Str("reason", "invalid").Msg("filter")
 			}
-			if criteria[i].misses.Contains(ws[i]) {
-				log.Debug().
-					Str("word", word).
-					Int("i", i).
-					Str("found", string(ws[i])).
-					Str("reason", "invalid").
-					Msg("filter")
-				return false
-			}
+			return false
 		}
-		for key, val := range required {
-			num, ok := rs[key]
-			if !ok || num < val {
-				log.Debug().
-					Str("word", word).
-					Str("letter", string(key)).
-					Int("expected", val).
-					Int("found", num).
-					Str("reason", "required").
-					Msg("filter")
+		i++
+	}
+	if n := utf8.RuneCountInString(word); i != len(c) || n != len(c) {
+		if e := log.Debug(); e.Enabled() {
+			e.Str("word", word).
+				Int("expected", len(c)).Int("found", n).
+				Str("reason", "length").Msg("filter")
+		}
+		return false
+	}
+	return true
+}
+
+// satisfies reports whether the word holds enough of the required letter
+func (r requirement) satisfies(word string) bool {
+	var num int
+	for _, x := range word {
+		if x == r.letter {
+			num++
+		}
+	}
+	if num < r.count {
+		if e := log.Debug(); e.Enabled() {
+			e.Str("word", word).
+				Str("letter", string(r.letter)).Int("expected", r.count).Int("found", num).
+				Str("reason", "required").Msg("filter")
+		}
+		return false
+	}
+	return true
+}
+
+func filter(criteria criteria, required map[rune]int) FilterFunc {
+	// flatten the required letters once so each word avoids a map allocation
+	reqs := make([]requirement, 0, len(required))
+	for key, val := range required {
+		reqs = append(reqs, requirement{key, val})
+	}
+	return func(word string) bool {
+		if !criteria.positional(word) {
+			return false
+		}
+		for _, req := range reqs {
+			if !req.satisfies(word) {
 				return false
 			}
 		}

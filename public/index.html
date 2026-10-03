@@ -1,125 +1,686 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Qordle — Wordle Solver</title>
-  <meta name="description" content="Qordle helps you solve Wordle puzzles by suggesting the best next words.">
-  <link href="/css/qordle.css" rel="stylesheet">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>qordle</title>
+<meta name="description" content="Qordle helps you solve Wordle puzzles by suggesting the best next words.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='5' fill='%234e8ac6'/><g transform='translate(4 4) scale(.6667)' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><rect x='3' y='3' width='7' height='7' rx='1'/><rect x='14' y='3' width='7' height='7' rx='1'/><rect x='3' y='14' width='7' height='7' rx='1'/><rect x='14' y='14' width='7' height='7' rx='1'/></g></svg>">
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --border: #2a2d3a;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --accent: #4e8ac6;
+    --accent-dim: #3e6e9e;
+    --red: #ef4444;
+    --radius: 6px;
+    /* tile feedback colours; deeper than the shows status hues so white
+       letters keep their contrast */
+    --green: #16a34a;
+    --yellow: #ca8a04;
+    --tile-gap: 6px;
+    /* body gutters, card padding, the remove button and the gaps all share the row */
+    --tile-size: min(56px, calc((100vw - 32px - 30px - 40px - 4 * var(--tile-gap)) / 5));
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #f8fafc;
+      --surface: #fff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --muted: #64748b;
+    }
+  }
+  [hidden] { display: none !important; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    padding: 28px 32px;
+  }
+  main { max-width: 560px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  header h1 { font-size: 16px; font-weight: 600; }
+  header h1 strong { font-weight: 700; }
+  header p { color: var(--muted); font-size: 13px; }
+
+  select, button {
+    font-size: 13px;
+    padding: 5px 10px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    font-family: inherit;
+  }
+  button:hover { background: var(--border); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .dim { color: var(--muted); }
+
+  .section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .section-header {
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-body { padding: 12px 14px; border-top: 1px solid var(--border); }
+  summary.section-header { cursor: pointer; list-style: none; user-select: none; }
+  summary.section-header::-webkit-details-marker { display: none; }
+  summary.section-header:hover { color: var(--text); }
+  summary .chevron { margin-left: auto; width: 14px; height: 14px; transition: transform .15s; }
+  details[open] summary .chevron { transform: rotate(180deg); }
+
+  .count {
+    font-weight: 400;
+    text-transform: none;
+    letter-spacing: 0;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 0 8px;
+  }
+
+  /* help */
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 8px 0 12px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; }
+  .legend .tile { --tile-size: 26px; font-size: 13px; cursor: default; }
+  ol { padding-left: 20px; color: var(--muted); }
+
+  /* filters */
+  .control-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .control-row + .control-row { margin-top: 10px; }
+  .control-label { width: 64px; font-size: 12px; color: var(--muted); }
+  .pills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pill { border-radius: 999px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; }
+  .pill[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .pill[aria-pressed="true"]:hover { background: var(--accent-dim); border-color: var(--accent-dim); }
+  .pill.shake { animation: shake .35s ease; }
+  @keyframes shake {
+    20% { transform: translateX(-4px); }
+    40% { transform: translateX(4px); }
+    60% { transform: translateX(-3px); }
+    80% { transform: translateX(3px); }
+  }
+
+  /* guesses */
+  .guess-rows { display: flex; flex-direction: column; gap: 8px; }
+  .guess-row { display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .guess-row__tiles { display: flex; gap: var(--tile-gap); }
+  .guess-row__remove { flex-shrink: 0; width: 32px; height: 32px; padding: 0; border-radius: 50%; color: var(--muted); font-size: 16px; line-height: 1; }
+  .guess-row__remove:hover { color: var(--red); border-color: var(--red); background: var(--surface); }
+  .guess-row:only-child .guess-row__remove { visibility: hidden; }
+  .actions { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
+
+  .tile {
+    width: var(--tile-size);
+    height: var(--tile-size);
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: calc(var(--tile-size) * .42);
+    font-weight: 700;
+    text-transform: uppercase;
+    user-select: none;
+    background: var(--bg);
+    color: var(--text);
+    border: 2px solid var(--border);
+    transition: background-color .15s, border-color .15s, color .15s;
+  }
+  .tile:hover { background: var(--bg); border-color: var(--muted); }
+  .tile.filled { border-color: var(--muted); }
+  .tile.absent { background: var(--muted); border-color: var(--muted); color: #fff; }
+  .tile.present { background: var(--yellow); border-color: var(--yellow); color: #fff; }
+  .tile.correct { background: var(--green); border-color: var(--green); color: #fff; }
+  .tile.pop { animation: pop .1s ease; }
+  @keyframes pop { 50% { transform: scale(1.08); } }
+
+  /* results */
+  .status { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+  .status.error { color: var(--red); }
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .suggestion-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
+  .suggestion {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    padding: 8px 4px;
+  }
+  .suggestion:hover, .suggestion.used { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .more { display: block; margin: 10px auto 0; }
+
+  footer { text-align: center; font-size: 12px; color: var(--muted); }
+
+  /* off-screen input so phones raise their on-screen keyboard */
+  .keyboard-proxy { position: fixed; left: -10000px; top: 0; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
+
+  @media (max-width: 700px) {
+    body { padding: 16px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
 </head>
 <body>
-  <div class="app">
-    <header class="app-header">
-      <a href="/" class="title-link">
-        <h1 class="app-title">qordle</h1>
-      </a>
-      <p class="app-subtitle"><a href="https://www.nytimes.com/games/wordle/index.html" target="_blank" rel="noopener noreferrer">Wordle</a> Solver</p>
-    </header>
+<main>
+  <header>
+    <h1><strong>qordle</strong> — <a href="https://www.nytimes.com/games/wordle/index.html" target="_blank" rel="noopener noreferrer">Wordle</a> solver</h1>
+    <p>Enter each guess, mark its colours, and pick the next word.</p>
+  </header>
 
-    <main class="app-main">
-      <section class="help-section">
-        <button class="help-toggle" id="helpToggle" aria-expanded="false" aria-controls="helpContent">
-          <span>How to use</span>
-          <svg class="toggle-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
-        </button>
-        <div class="help-content" id="helpContent" hidden>
-          <p>Enter your Wordle guesses and mark each letter's result:</p>
-          <div class="legend">
-            <div class="legend-item">
-              <div class="tile tile--correct" aria-label="green tile example">A</div>
-              <span>Correct position</span>
-            </div>
-            <div class="legend-item">
-              <div class="tile tile--present" aria-label="yellow tile example">A</div>
-              <span>Wrong position</span>
-            </div>
-            <div class="legend-item">
-              <div class="tile tile--absent" aria-label="gray tile example">A</div>
-              <span>Not in word</span>
-            </div>
-          </div>
-          <ol class="instructions-list">
-            <li>Type letters into the boxes — they auto-advance to the next box</li>
-            <li>Click a filled tile to cycle: gray → yellow → green</li>
-            <li>Add more guesses with the <strong>+ Add Guess</strong> button</li>
-            <li>Suggestions appear automatically when a row is complete</li>
-            <li>Click a suggestion to use it as your next guess</li>
-          </ol>
+  <details class="section">
+    <summary class="section-header">How to use
+      <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </summary>
+    <div class="section-body">
+      <div class="legend">
+        <div class="legend-item"><span class="tile correct">A</span>Correct position</div>
+        <div class="legend-item"><span class="tile present">A</span>Wrong position</div>
+        <div class="legend-item"><span class="tile absent">A</span>Not in word</div>
+      </div>
+      <ol>
+        <li>Type letters into the boxes; focus advances on its own</li>
+        <li>Click a filled tile to cycle gray → yellow → green</li>
+        <li>Suggestions refresh whenever a row is complete</li>
+        <li>Click a suggestion to use it as your next guess</li>
+      </ol>
+    </div>
+  </details>
+
+  <details class="section">
+    <summary class="section-header">Filters
+      <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+    </summary>
+    <div class="section-body">
+      <div class="control-row">
+        <span class="control-label" id="strategyLabel">Strategy</span>
+        <div class="pills" id="strategyPills" role="group" aria-labelledby="strategyLabel"></div>
+      </div>
+      <div class="control-row">
+        <span class="control-label" id="optionsLabel">Options</span>
+        <div class="pills" role="group" aria-labelledby="optionsLabel">
+          <button type="button" id="speculatePill" class="pill" aria-pressed="false"
+            title="When candidates differ by a single letter, suggest a word from the full list to reveal more information">speculate</button>
         </div>
-      </section>
+      </div>
+      <div id="strategyLive" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+    </div>
+  </details>
 
-      <section class="help-section" aria-label="Filters">
-        <button class="help-toggle" id="filtersToggle" aria-expanded="false" aria-controls="filtersContent">
-          <span>Filters</span>
-          <svg class="toggle-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <polyline points="6 9 12 15 18 9"></polyline>
-          </svg>
-        </button>
-        <div class="help-content" id="filtersContent" hidden>
-          <div class="strategy-controls">
-            <span class="strategy-label" id="strategyLabel">Strategy:</span>
-            <div class="strategy-pills" id="strategyPills" role="group" aria-labelledby="strategyLabel">
-              <!-- Pills populated by JS -->
-            </div>
-          </div>
-          <div class="strategy-controls strategy-controls--spaced">
-            <span class="strategy-label" id="optionsLabel">Options:</span>
-            <div class="strategy-pills" role="group" aria-labelledby="optionsLabel">
-              <button type="button" id="speculatePill" class="strategy-pill" aria-pressed="false"
-                title="When candidates differ by a single letter, suggest a word from the full list to reveal more information">
-                speculate
-              </button>
-            </div>
-          </div>
-          <div id="strategyLive" class="sr-only" aria-live="polite" aria-atomic="true"></div>
-        </div>
-      </section>
+  <section class="section" aria-label="Enter your guesses">
+    <div class="section-header">Guesses</div>
+    <div class="section-body">
+      <div id="guessRows" class="guess-rows"></div>
+      <div class="actions">
+        <button type="button" id="addGuessBtn" aria-label="Add another guess row">+ Add guess</button>
+        <button type="button" id="clearBtn" aria-label="Clear all guesses and results">Clear all</button>
+      </div>
+    </div>
+  </section>
 
-      <section class="guess-section" aria-label="Enter your guesses">
-        <div id="guessRows" class="guess-rows"></div>
-        <div class="actions">
-          <button id="addGuessBtn" class="btn btn--secondary" aria-label="Add another guess row">
-            + Add Guess
-          </button>
-          <button id="clearBtn" class="btn btn--secondary" aria-label="Clear all guesses and results">
-            Clear All
-          </button>
-        </div>
-      </section>
+  <section class="section" id="resultsArea" aria-label="Word suggestions" aria-live="polite" hidden>
+    <div class="section-header">Suggestions <span id="resultsCount" class="count" hidden></span></div>
+    <div class="section-body">
+      <div id="loadingState" class="status" hidden><div class="spinner" aria-hidden="true"></div>finding suggestions…</div>
+      <div id="messageState" class="status" role="status" hidden></div>
+      <div id="suggestionGrid" class="suggestion-grid"></div>
+      <button type="button" id="moreBtn" class="more" hidden></button>
+    </div>
+  </section>
 
-      <section class="results-section" aria-label="Word suggestions" aria-live="polite">
-        <div id="loadingState" class="loading-state" hidden>
-          <div class="spinner" aria-hidden="true"></div>
-          <span>Finding suggestions…</span>
-        </div>
-        <div id="errorState" class="error-state" role="alert" hidden></div>
-        <div id="resultsArea" hidden>
-          <h2 class="results-heading">
-            Suggestions
-            <span id="resultsCount" class="results-count"></span>
-          </h2>
-          <div id="suggestionGrid" class="suggestion-grid"></div>
-        </div>
-      </section>
-    </main>
+  <footer><a href="https://github.com/bzimmer/qordle" target="_blank" rel="noopener noreferrer">github.com/bzimmer/qordle</a></footer>
+</main>
 
-    <footer class="app-footer">
-    </footer>
-  </div>
+<input id="keyboardProxy" class="keyboard-proxy" type="text" inputmode="text" autocomplete="off"
+  autocorrect="off" autocapitalize="none" spellcheck="false" aria-hidden="true" tabindex="-1">
 
-  <input
-    id="keyboardProxy"
-    class="keyboard-proxy"
-    type="text"
-    inputmode="text"
-    autocomplete="off"
-    autocorrect="off"
-    autocapitalize="none"
-    spellcheck="false"
-    aria-hidden="true"
-  />
-  <script src="/js/qordle.js"></script>
+<script>
+'use strict';
+
+const WORD_LENGTH = 5;
+// Rendering thousands of buttons is slow on phones; show this many first.
+const PAGE_SIZE = 60;
+const DEBOUNCE_MS = 250;
+
+const STATES = { EMPTY: 'empty', ABSENT: 'absent', PRESENT: 'present', CORRECT: 'correct' };
+// Clicking a filled tile cycles through these states
+const STATE_CYCLE = {
+  [STATES.ABSENT]: STATES.PRESENT,
+  [STATES.PRESENT]: STATES.CORRECT,
+  [STATES.CORRECT]: STATES.ABSENT,
+};
+
+const $ = (id) => document.getElementById(id);
+const els = {
+  rows: $('guessRows'),
+  addGuess: $('addGuessBtn'),
+  clear: $('clearBtn'),
+  results: $('resultsArea'),
+  count: $('resultsCount'),
+  loading: $('loadingState'),
+  message: $('messageState'),
+  grid: $('suggestionGrid'),
+  more: $('moreBtn'),
+  pills: $('strategyPills'),
+  speculate: $('speculatePill'),
+  live: $('strategyLive'),
+  proxy: $('keyboardProxy'),
+};
+
+// Server default chain; replaced once /qordle/strategies answers.
+let selectedStrategies = ['frequency', 'position'];
+let useSpeculate = false;
+let activeRow = null;
+let activeCol = 0;
+let fetchTimer = 0;
+let inflight = null;
+// URL of the suggestions on screen; typing into a new row leaves it unchanged
+let lastUrl = '';
+let suggestions = [];
+let shown = 0;
+
+/* ---------- row helpers ---------- */
+
+const rowsOf = () => [...els.rows.children];
+const tilesOf = (row) => [...row.querySelector('.guess-row__tiles').children];
+const isComplete = (row) => tilesOf(row).every((t) => t.dataset.letter);
+const isBlank = (row) => tilesOf(row).every((t) => !t.dataset.letter);
+const isSolved = (row) => tilesOf(row).every((t) => t.dataset.state === STATES.CORRECT);
+
+function syncRows() {
+  const rows = rowsOf();
+  rows.forEach((row, i) => row.firstChild.setAttribute('aria-label', `Guess ${i + 1}`));
+  els.addGuess.disabled = rows.some((row) => !isComplete(row));
+}
+
+function labelTile(tile) {
+  const pos = Number(tile.dataset.col) + 1;
+  const letter = tile.dataset.letter;
+  tile.setAttribute('aria-label', letter
+    ? `${letter.toUpperCase()}, ${tile.dataset.state}, position ${pos}`
+    : `Empty, position ${pos}`);
+}
+
+function paintTile(tile) {
+  const { letter, state } = tile.dataset;
+  tile.textContent = letter.toUpperCase();
+  tile.className = letter ? `tile filled ${state}` : 'tile';
+  labelTile(tile);
+}
+
+function setTileLetter(tile, letter) {
+  tile.dataset.letter = letter;
+  if (!letter) {
+    tile.dataset.state = STATES.EMPTY;
+  } else if (tile.dataset.state === STATES.EMPTY) {
+    tile.dataset.state = STATES.ABSENT;
+  }
+  paintTile(tile);
+  if (letter) {
+    // restart the pop animation on every keystroke
+    void tile.offsetWidth;
+    tile.classList.add('pop');
+  }
+}
+
+function setTileState(tile, state) {
+  tile.dataset.state = state;
+  paintTile(tile);
+}
+
+function focusTile(row, col, moveFocus = true) {
+  activeRow = row;
+  activeCol = col;
+  tilesOf(row).forEach((t, i) => t.setAttribute('tabindex', i === col ? '0' : '-1'));
+  if (moveFocus) tilesOf(row)[col].focus();
+}
+
+function newRow() {
+  const row = document.createElement('div');
+  row.className = 'guess-row';
+  const tiles = document.createElement('div');
+  tiles.className = 'guess-row__tiles';
+  tiles.setAttribute('role', 'group');
+  for (let col = 0; col < WORD_LENGTH; col++) {
+    const tile = document.createElement('button');
+    tile.type = 'button';
+    tile.className = 'tile';
+    tile.dataset.col = col;
+    tile.dataset.state = STATES.EMPTY;
+    tile.dataset.letter = '';
+    tile.tabIndex = col === 0 ? 0 : -1;
+    labelTile(tile);
+    tiles.appendChild(tile);
+  }
+  const remove = document.createElement('button');
+  remove.type = 'button';
+  remove.className = 'guess-row__remove';
+  remove.setAttribute('aria-label', 'Remove this guess');
+  remove.textContent = '×';
+  row.append(tiles, remove);
+  els.rows.appendChild(row);
+  syncRows();
+  return row;
+}
+
+function addGuessRow() {
+  const row = newRow();
+  focusTile(row, 0);
+  return row;
+}
+
+/** Fill `row` with `word`, marking letters already known to be correct in place. */
+function fillRow(row, word) {
+  const correct = {};
+  for (const r of rowsOf()) {
+    if (r === row) continue;
+    for (const t of tilesOf(r)) {
+      if (t.dataset.state === STATES.CORRECT) correct[t.dataset.col] = t.dataset.letter;
+    }
+  }
+  tilesOf(row).forEach((tile, i) => {
+    const ch = word[i].toLowerCase();
+    tile.dataset.state = correct[i] === ch ? STATES.CORRECT : STATES.ABSENT;
+    setTileLetter(tile, ch);
+  });
+  focusTile(row, 0);
+  rowChanged();
+}
+
+/* ---------- input ---------- */
+
+function typeLetter(row, col, letter) {
+  setTileLetter(tilesOf(row)[col], letter);
+  rowChanged();
+  return Math.min(col + 1, WORD_LENGTH - 1);
+}
+
+function backspace(row, col) {
+  const tiles = tilesOf(row);
+  if (tiles[col].dataset.letter) {
+    setTileLetter(tiles[col], '');
+  } else if (col > 0) {
+    col -= 1;
+    setTileLetter(tiles[col], '');
+  }
+  rowChanged();
+  return col;
+}
+
+/** Shared key handling for tiles and the keyboard proxy; returns true when handled. */
+function handleKey(key, moveFocus) {
+  if (!activeRow) return false;
+  let col = activeCol;
+  if (key === 'Backspace' || key === 'Delete') {
+    col = backspace(activeRow, col);
+  } else if (key === 'ArrowLeft') {
+    col = Math.max(col - 1, 0);
+  } else if (key === 'ArrowRight') {
+    col = Math.min(col + 1, WORD_LENGTH - 1);
+  } else if (/^[a-z]$/i.test(key)) {
+    col = typeLetter(activeRow, col, key.toLowerCase());
+  } else {
+    return false;
+  }
+  focusTile(activeRow, col, moveFocus);
+  return true;
+}
+
+els.rows.addEventListener('keydown', (e) => {
+  const tile = e.target.closest('.tile');
+  if (!tile || e.metaKey || e.ctrlKey || e.altKey) return;
+  activeRow = tile.closest('.guess-row');
+  activeCol = Number(tile.dataset.col);
+  if (handleKey(e.key, true)) e.preventDefault();
+});
+
+els.rows.addEventListener('click', (e) => {
+  const row = e.target.closest('.guess-row');
+  if (!row) return;
+  if (e.target.closest('.guess-row__remove')) {
+    if (activeRow === row) activeRow = null;
+    row.remove();
+    syncRows();
+    scheduleFetch(0);
+    return;
+  }
+  const tile = e.target.closest('.tile');
+  if (!tile) return;
+  focusTile(row, Number(tile.dataset.col));
+  if (tile.dataset.letter) {
+    setTileState(tile, STATE_CYCLE[tile.dataset.state] || STATES.ABSENT);
+    rowChanged();
+  }
+  // Pointer taps hand focus to the proxy so phones raise their keyboard.
+  if (e.detail > 0 && matchMedia('(pointer: coarse)').matches) els.proxy.focus();
+});
+
+els.proxy.addEventListener('keydown', (e) => {
+  if (handleKey(e.key, false)) {
+    e.preventDefault();
+    els.proxy.value = '';
+  }
+});
+
+// Virtual keyboards often skip keydown and only commit text via input.
+els.proxy.addEventListener('input', () => {
+  const ch = els.proxy.value.slice(-1);
+  els.proxy.value = '';
+  if (ch) handleKey(ch, false);
+});
+
+/* ---------- suggestions ---------- */
+
+function rowChanged() {
+  syncRows();
+  scheduleFetch(DEBOUNCE_MS);
+}
+
+function scheduleFetch(delay) {
+  clearTimeout(fetchTimer);
+  fetchTimer = setTimeout(refresh, delay);
+}
+
+/** Encode a complete row: CORRECT → "A", PRESENT → ".a", ABSENT → "a". */
+function encodeRow(row) {
+  return tilesOf(row).map((t) => {
+    const letter = t.dataset.letter;
+    if (t.dataset.state === STATES.CORRECT) return letter.toUpperCase();
+    if (t.dataset.state === STATES.PRESENT) return '.' + letter;
+    return letter;
+  }).join('');
+}
+
+function showStatus({ loading = false, message = '', error = false } = {}) {
+  els.loading.hidden = !loading;
+  els.message.hidden = !message;
+  els.message.textContent = message;
+  els.message.classList.toggle('error', error);
+}
+
+async function refresh() {
+  if (inflight) inflight.abort();
+  inflight = null;
+
+  const complete = rowsOf().filter(isComplete);
+  if (!complete.length) {
+    lastUrl = '';
+    els.results.hidden = true;
+    return;
+  }
+  els.results.hidden = false;
+  if (complete.some(isSolved)) {
+    lastUrl = '';
+    renderSuggestions([]);
+    showStatus({ message: 'Solved!' });
+    return;
+  }
+
+  const path = complete.map((row) => encodeURIComponent(encodeRow(row))).join('%20');
+  const params = new URLSearchParams();
+  selectedStrategies.forEach((s) => params.append('strategy', s));
+  if (useSpeculate) params.set('speculate', 'true');
+  const url = `/qordle/suggest/${path}?${params}`;
+  if (url === lastUrl) return;
+
+  const controller = new AbortController();
+  inflight = controller;
+  showStatus({ loading: true });
+  try {
+    const res = await fetch(url, { method: 'POST', signal: controller.signal });
+    if (!res.ok) throw new Error(`server returned ${res.status}`);
+    const words = await res.json();
+    if (controller.signal.aborted) return;
+    lastUrl = url;
+    renderSuggestions(words || []);
+    showStatus(words && words.length ? {} : { message: 'No suggestions found; check your guess colours.' });
+  } catch (err) {
+    if (err.name === 'AbortError') return;
+    lastUrl = '';
+    renderSuggestions([]);
+    showStatus({ message: `Could not fetch suggestions: ${err.message}`, error: true });
+  } finally {
+    if (inflight === controller) inflight = null;
+  }
+}
+
+function renderSuggestions(words) {
+  suggestions = words;
+  shown = 0;
+  els.grid.replaceChildren();
+  els.count.hidden = !words.length;
+  els.count.textContent = words.length;
+  showMore();
+}
+
+function showMore() {
+  const frag = document.createDocumentFragment();
+  for (const word of suggestions.slice(shown, shown + PAGE_SIZE)) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'suggestion';
+    btn.textContent = word;
+    btn.dataset.word = word;
+    btn.setAttribute('aria-label', `Use ${word} as next guess`);
+    frag.appendChild(btn);
+  }
+  els.grid.appendChild(frag);
+  shown = Math.min(suggestions.length, shown + PAGE_SIZE);
+  const rest = suggestions.length - shown;
+  els.more.hidden = rest <= 0;
+  els.more.textContent = `show ${Math.min(rest, PAGE_SIZE)} more of ${rest}`;
+}
+
+els.more.addEventListener('click', showMore);
+
+els.grid.addEventListener('click', (e) => {
+  const btn = e.target.closest('.suggestion');
+  if (!btn) return;
+  const row = rowsOf().find(isBlank) || newRow();
+  fillRow(row, btn.dataset.word);
+  row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  btn.classList.add('used');
+});
+
+/* ---------- strategies ---------- */
+
+function toggleStrategy(btn) {
+  const name = btn.dataset.strategy;
+  const idx = selectedStrategies.indexOf(name);
+  if (idx === -1) {
+    selectedStrategies.push(name);
+  } else if (selectedStrategies.length === 1) {
+    // at least one strategy must stay selected
+    btn.classList.add('shake');
+    btn.addEventListener('animationend', () => btn.classList.remove('shake'), { once: true });
+    els.live.textContent = 'At least one strategy must be selected.';
+    return;
+  } else {
+    selectedStrategies.splice(idx, 1);
+  }
+  btn.setAttribute('aria-pressed', String(idx === -1));
+  els.live.textContent = '';
+  scheduleFetch(0);
+}
+
+async function initStrategies() {
+  try {
+    const res = await fetch('/qordle/strategies');
+    if (!res.ok) throw new Error(`server returned ${res.status}`);
+    const data = await res.json();
+    const frag = document.createDocumentFragment();
+    for (const [name, definition] of Object.entries(data).sort(([a], [b]) => a.localeCompare(b))) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'pill';
+      btn.textContent = name;
+      btn.dataset.strategy = name;
+      btn.setAttribute('aria-pressed', String(selectedStrategies.includes(name)));
+      if (definition) btn.title = definition;
+      frag.appendChild(btn);
+    }
+    els.pills.appendChild(frag);
+  } catch (err) {
+    // fall back to the server default chain
+    console.warn('failed to load strategies:', err);
+  }
+}
+
+els.pills.addEventListener('click', (e) => {
+  const btn = e.target.closest('.pill');
+  if (btn) toggleStrategy(btn);
+});
+
+els.speculate.addEventListener('click', () => {
+  useSpeculate = !useSpeculate;
+  els.speculate.setAttribute('aria-pressed', String(useSpeculate));
+  scheduleFetch(0);
+});
+
+/* ---------- init ---------- */
+
+els.addGuess.addEventListener('click', addGuessRow);
+els.clear.addEventListener('click', () => {
+  clearTimeout(fetchTimer);
+  if (inflight) inflight.abort();
+  els.rows.replaceChildren();
+  lastUrl = '';
+  els.results.hidden = true;
+  renderSuggestions([]);
+  addGuessRow();
+});
+
+initStrategies();
+addGuessRow();
+</script>
 </body>
 </html>

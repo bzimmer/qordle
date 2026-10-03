@@ -2,6 +2,7 @@ package qordle
 
 import (
 	"fmt"
+	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -87,23 +88,23 @@ func mkdictf(scores map[string]float64, less func(i, j float64) bool) Dictionary
 	type tuple struct {
 		word string
 		rank float64
+		freq float64
 	}
 	tuples := make([]tuple, 0, len(scores))
 	for word, rank := range scores {
-		tuples = append(tuples, tuple{word, rank})
+		// letter frequency breaks ties so compute it once per word
+		var freq float64
+		for _, v := range word {
+			freq += frequencies[v]
+		}
+		tuples = append(tuples, tuple{word, rank, freq})
 	}
 	sort.Slice(tuples, func(i, j int) bool {
 		xi, xj := tuples[i].rank, tuples[j].rank
 		// ensure output stability
 		if xi == xj {
 			// start with frequency ordering
-			yi, yj := 0.0, 0.0
-			for _, v := range tuples[i].word {
-				yi += frequencies[v]
-			}
-			for _, v := range tuples[j].word {
-				yj += frequencies[v]
-			}
+			yi, yj := tuples[i].freq, tuples[j].freq
 			// revert to alphabetical ordering if necessary
 			if yi == yj {
 				return tuples[i].word < tuples[j].word
@@ -224,14 +225,14 @@ func (s *Elimination) String() string {
 	return "elimination"
 }
 
-func (s *Elimination) score(words Dictionary, i int) map[string]float64 {
+func (s *Elimination) score(words Dictionary, i int) []float64 {
 	secret := words[i]
 	marks, err := Check(secret, words...)
 	if err != nil {
 		log.Error().Err(err).Str("secret", secret).Msg("elimination")
 		return nil
 	}
-	scores := make(map[string]float64)
+	scores := make([]float64, len(words))
 	for j := range marks {
 		if i != j {
 			// skip the identity
@@ -246,7 +247,7 @@ func (s *Elimination) score(words Dictionary, i int) map[string]float64 {
 					score += (2 * positions[rune(secret[k])][k])
 				}
 			}
-			scores[words[j]] = score
+			scores[j] = score
 		}
 	}
 	return scores
@@ -258,28 +259,46 @@ func (s *Elimination) Apply(words Dictionary) Dictionary {
 		return words
 	}
 
+	// score each word as the secret using a bounded pool of workers; every
+	// result is drained so no worker blocks forever on an early exit
+	indices := make(chan int)
+	scoresc := make(chan []float64)
 	var wg sync.WaitGroup
-	scoresc := make(chan map[string]float64, len(words)/2)
-	for i := range words {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			scoresc <- s.score(words, i)
-		}(i)
+	for range min(runtime.GOMAXPROCS(0), len(words)) {
+		wg.Go(func() {
+			for i := range indices {
+				scoresc <- s.score(words, i)
+			}
+		})
 	}
 	go func() {
-		defer close(scoresc)
+		for i := range words {
+			indices <- i
+		}
+		close(indices)
 		wg.Wait()
+		close(scoresc)
 	}()
 
-	res := make(map[string]float64)
+	var failed bool
+	totals := make([]float64, len(words))
 	for scores := range scoresc {
 		if scores == nil {
-			return nil
+			failed = true
 		}
-		for key, val := range scores {
-			res[key] += val
+		if failed {
+			continue
 		}
+		for j, val := range scores {
+			totals[j] += val
+		}
+	}
+	if failed {
+		return nil
+	}
+	res := make(map[string]float64, len(words))
+	for j := range words {
+		res[words[j]] += totals[j]
 	}
 	return mkdictf(res, func(i, j float64) bool {
 		return i > j
