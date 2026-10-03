@@ -34,33 +34,65 @@ var strategies = []struct { //nolint:gochecknoglobals // read-only table
 // server holds state shared across requests; the word lists are read-only
 // and every strategy is stateless, so one instance serves concurrent requests.
 type server struct {
-	// solutions holds the original answer list, ranked ahead of other words
-	solutions qordle.Dictionary
-	// words holds every accepted guess so answers outside solutions stay reachable
-	words    qordle.Dictionary
-	registry *qordle.Trie[qordle.Strategy]
+	// words holds every word a suggestion may come from
+	words qordle.Dictionary
+	// preferred holds the likely answers, ranked ahead of the other words;
+	// empty ranks every word together
+	preferred qordle.Dictionary
+	registry  *qordle.Trie[qordle.Strategy]
 }
 
-func newServer() (*server, error) {
-	solutions, err := qordle.Read("solutions")
+// read returns the distinct words across the named embedded word lists.
+func read(names []string) (qordle.Dictionary, error) {
+	seen := make(map[string]struct{})
+	var res qordle.Dictionary
+	for _, name := range names {
+		if name == "" {
+			continue
+		}
+		words, err := qordle.Read(name)
+		if err != nil {
+			return nil, err
+		}
+		for _, word := range words {
+			if _, ok := seen[word]; !ok {
+				seen[word] = struct{}{}
+				res = append(res, word)
+			}
+		}
+	}
+	return res, nil
+}
+
+func newServer(wordlists, prefer []string) (*server, error) {
+	words, err := read(wordlists)
 	if err != nil {
 		return nil, err
 	}
-	possible, err := qordle.Read("possible")
+	if len(words) == 0 {
+		return nil, errors.New("no words in the selected word lists")
+	}
+	preferred, err := read(prefer)
 	if err != nil {
 		return nil, err
 	}
-	words := make(qordle.Dictionary, 0, len(solutions)+len(possible))
-	words = append(append(words, solutions...), possible...)
 	registry := &qordle.Trie[qordle.Strategy]{}
 	for _, s := range strategies {
 		registry.Add(s.strategy.String(), s.strategy)
 	}
-	return &server{solutions: solutions, words: words, registry: registry}, nil
+	return &server{words: words, preferred: preferred, registry: registry}, nil
+}
+
+// speculation returns the words a speculator may draw its probe from.
+func (s *server) speculation() qordle.Dictionary {
+	if len(s.preferred) > 0 {
+		return s.preferred
+	}
+	return s.words
 }
 
 // strategy constructs a strategy from the given names, chaining them when
-// more than one is provided, and ranks the solutions ahead of other words.
+// more than one is provided, and ranks the preferred words ahead of the rest.
 // Falls back to frequency+position when no names are supplied.
 func (s *server) strategy(names []string) (qordle.Strategy, error) {
 	if len(names) == 0 {
@@ -78,7 +110,10 @@ func (s *server) strategy(names []string) (qordle.Strategy, error) {
 	if len(chain) > 1 {
 		strategy = qordle.NewChain(chain...)
 	}
-	return qordle.NewTiered(s.solutions, strategy), nil
+	if len(s.preferred) == 0 {
+		return strategy, nil
+	}
+	return qordle.NewTiered(s.preferred, strategy), nil
 }
 
 func (*server) strategies(w http.ResponseWriter, _ *http.Request) {
@@ -98,7 +133,7 @@ func (s *server) play(w http.ResponseWriter, r *http.Request) {
 	game := qordle.NewGame(
 		qordle.WithDictionary(s.words),
 		qordle.WithStart(r.URL.Query().Get("start")),
-		qordle.WithStrategy(qordle.NewSpeculator(s.solutions, strategy)))
+		qordle.WithStrategy(qordle.NewSpeculator(s.speculation(), strategy)))
 	scoreboard, err := game.Play(r.PathValue("secret"))
 	if err != nil {
 		badRequest(w, err)
@@ -115,7 +150,7 @@ func (s *server) suggest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if query.Get("speculate") == "true" {
-		strategy = qordle.NewSpeculator(s.solutions, strategy)
+		strategy = qordle.NewSpeculator(s.speculation(), strategy)
 	}
 	// Fields rather than Split so an empty path yields no guesses instead of
 	// a single empty guess matching nothing
@@ -170,8 +205,8 @@ func logged(next http.Handler) http.Handler {
 
 // newHandler routes the API under /qordle and, when public is set, serves
 // the static site from that directory.
-func newHandler(public string) (http.Handler, error) {
-	srv, err := newServer()
+func newHandler(public string, wordlists, prefer []string) (http.Handler, error) {
+	srv, err := newServer(wordlists, prefer)
 	if err != nil {
 		return nil, err
 	}
@@ -189,7 +224,7 @@ func newHandler(public string) (http.Handler, error) {
 }
 
 func serve(c *cli.Context) error {
-	handler, err := newHandler("public")
+	handler, err := newHandler("public", c.StringSlice("wordlist"), c.StringSlice("prefer"))
 	if err != nil {
 		return err
 	}
@@ -228,6 +263,18 @@ func main() {
 				Name:  "port",
 				Value: 0,
 				Usage: "port on which to run",
+			},
+			&cli.StringSliceFlag{
+				Name:    "wordlist",
+				Aliases: []string{"w"},
+				Usage:   "embedded word lists suggestions are drawn from",
+				Value:   cli.NewStringSlice("solutions", "possible"),
+			},
+			&cli.StringSliceFlag{
+				Name:    "prefer",
+				Aliases: []string{"p"},
+				Usage:   "embedded word lists ranked ahead of the rest; pass an empty value to rank every word together",
+				Value:   cli.NewStringSlice("solutions"),
 			},
 			&cli.BoolFlag{
 				Name:  "debug",

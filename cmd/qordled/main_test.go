@@ -12,6 +12,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+//nolint:gochecknoglobals // shared read-only test defaults
+var (
+	defaultWordlists = []string{"solutions", "possible"}
+	defaultPrefer    = []string{"solutions"}
+)
+
 func TestSuggest(t *testing.T) {
 	t.Parallel()
 	for _, tt := range []struct {
@@ -32,7 +38,7 @@ func TestSuggest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			a := assert.New(t)
-			handler, err := newHandler("")
+			handler, err := newHandler("", defaultWordlists, defaultPrefer)
 			require.NoError(t, err)
 			method := http.MethodPost
 			if tt.name == "get" {
@@ -54,7 +60,7 @@ func TestSuggest(t *testing.T) {
 func TestStrategies(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
-	handler, err := newHandler("")
+	handler, err := newHandler("", defaultWordlists, defaultPrefer)
 	require.NoError(t, err)
 	rec := httptest.NewRecorder()
 	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/qordle/strategies", nil))
@@ -82,7 +88,7 @@ func TestPlay(t *testing.T) {
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			handler, err := newHandler("")
+			handler, err := newHandler("", defaultWordlists, defaultPrefer)
 			require.NoError(t, err)
 			method := http.MethodGet
 			if tt.status == http.StatusMethodNotAllowed {
@@ -109,7 +115,7 @@ func TestPlay(t *testing.T) {
 func TestSuggestTiered(t *testing.T) {
 	t.Parallel()
 	a := assert.New(t)
-	handler, err := newHandler("")
+	handler, err := newHandler("", defaultWordlists, defaultPrefer)
 	require.NoError(t, err)
 	// crane then slime scored against peeve, which is outside solutions.txt
 	rec := httptest.NewRecorder()
@@ -121,4 +127,40 @@ func TestSuggestTiered(t *testing.T) {
 	// solutions-list candidates come first
 	a.Equal("budge", words[0])
 	a.Less(slices.Index(words, "judge"), slices.Index(words, "peeve"))
+}
+
+func TestWordlistFlags(t *testing.T) {
+	t.Parallel()
+	// crane then slime scored against peeve, which is outside solutions.txt
+	const target = "/qordle/suggest/cranE%20slimE"
+	for _, tt := range []struct {
+		name            string
+		wordlists       []string
+		prefer          []string
+		peeve, ordering bool
+	}{
+		{name: "defaults", wordlists: defaultWordlists, prefer: defaultPrefer, peeve: true, ordering: true},
+		{name: "solutions only", wordlists: []string{"solutions"}, prefer: defaultPrefer},
+		{name: "flat", wordlists: defaultWordlists, prefer: []string{""}, peeve: true},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			a := assert.New(t)
+			handler, err := newHandler("", tt.wordlists, tt.prefer)
+			require.NoError(t, err)
+			rec := httptest.NewRecorder()
+			handler.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, target, nil))
+			a.Equal(http.StatusOK, rec.Code)
+			var words []string
+			require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &words))
+			a.Equal(tt.peeve, slices.Contains(words, "peeve"))
+			if tt.ordering {
+				a.Less(slices.Index(words, "judge"), slices.Index(words, "peeve"))
+			}
+		})
+	}
+	_, err := newHandler("", []string{"nope"}, defaultPrefer)
+	require.Error(t, err)
+	_, err = newHandler("", []string{""}, defaultPrefer)
+	require.Error(t, err)
 }

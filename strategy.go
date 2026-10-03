@@ -25,6 +25,11 @@ func strategyFlags() []cli.Flag {
 			Usage:   "speculate if necessary",
 			Value:   false,
 		},
+		&cli.StringSliceFlag{
+			Name:    "prefer",
+			Aliases: []string{"p"},
+			Usage:   "rank words from the specified embedded word list ahead of the rest",
+		},
 	}
 }
 
