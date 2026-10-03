@@ -27,6 +27,7 @@ var strategies = []struct { //nolint:gochecknoglobals // read-only table
 	{new(qordle.Alpha), "Sort the word list alphabetically"},
 	{new(qordle.Bigram), "Rank words by bigram frequency of their letters"},
 	{new(qordle.Elimination), "Rank words by how many candidates each guess eliminates"},
+	{new(qordle.Entropy), "Rank words by how evenly their feedback splits the remaining candidates"},
 	{new(qordle.Frequency), "Rank words by the frequency of their letters in the remaining list"},
 	{new(qordle.Position), "Rank words by how often each letter appears in its position"},
 }
@@ -151,6 +152,9 @@ func (s *server) suggest(w http.ResponseWriter, r *http.Request) {
 	}
 	if query.Get("speculate") == "true" {
 		strategy = qordle.NewSpeculator(s.speculation(), strategy)
+	}
+	if query.Get("probe") == "true" {
+		strategy = qordle.NewProbe(s.words, s.preferred, strategy)
 	}
 	// Fields rather than Split so an empty path yields no guesses instead of
 	// a single empty guess matching nothing

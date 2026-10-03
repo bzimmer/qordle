@@ -28,6 +28,14 @@ for sorting.
 * the table value for a *Misplaced* position
 * two times the table value for an *Exact* position
 
+### entropy
+The entropy strategy scores each word by the expected information its feedback reveals,
+treating every remaining word as equally likely to be the secret. A word splitting the
+remaining words into many small groups of identical feedback ranks above one leaving a few
+large groups. Like [elimination](#elimination) it compares every word with every other, but
+encodes feedback as one of 3<sup>5</sup> patterns without allocating, so it stays fast on
+filtered lists.
+
 ### frequency
 The frequency strategy iterates the word list accumulating the letter frequency for all
 remaining words in the list. Each word is then scored by summing its letter frequencies.
@@ -42,6 +50,26 @@ The speculation strategy is used for solving "guessing games", those situation w
 remaining words differ by only a single letter. The strategy iterates the word list
 accumulating the differing letter and then generates a word list from those words composed
 of the unknown letters.
+
+### probe
+The probe option (`--probe` on the CLI, the **probe** pill in the web solver) wraps any
+strategy. It considers every accepted word as the next guess, including words already ruled
+out, and leads with one when its [entropy](#entropy) beats guessing a remaining word. Each
+remaining word earns a bonus for the chance of being the secret, so with only a few words left
+a candidate wins. When preferred words are set (see `--prefer`) it plans against those while
+any remain. It generalises [speculation](#speculation), which only probes once the remaining
+words differ by a single letter.
+
+Simulated games with `slate` as the opener, the solutions ranked first, and the 63 answers
+since 2022 missing from the solutions list held out as unseen answers:
+
+| strategy | solved in six (1000 original / 63 newer) | average guesses |
+|---|---|---|
+| frequency, position | 99.6% / 96.8% | 3.60 / 4.48 |
+| frequency, position + speculate | 99.8% / 96.8% | 3.62 / 4.51 |
+| entropy | 99.8% / 95.2% | 3.54 / 4.44 |
+| frequency, position + probe | 100% / 100% | 3.47 / 4.33 |
+| entropy + probe | 100% / 98.4% | 3.47 / 4.43 |
 
 ## Chaining
 All strategies are composable via chaining. The chaining strategy, itself a strategy, executes

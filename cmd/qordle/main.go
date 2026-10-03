@@ -73,6 +73,7 @@ func main() {
 				new(qordle.Alpha),
 				new(qordle.Bigram),
 				new(qordle.Elimination),
+				new(qordle.Entropy),
 				new(qordle.Frequency),
 				new(qordle.Position),
 			} {

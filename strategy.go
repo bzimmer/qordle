@@ -25,6 +25,12 @@ func strategyFlags() []cli.Flag {
 			Usage:   "speculate if necessary",
 			Value:   false,
 		},
+		&cli.BoolFlag{
+			Name:    "probe",
+			Aliases: []string{"P"},
+			Usage:   "lead with any word expected to reveal more than guessing a remaining word",
+			Value:   false,
+		},
 		&cli.StringSliceFlag{
 			Name:    "prefer",
 			Aliases: []string{"p"},

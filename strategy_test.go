@@ -453,3 +453,80 @@ func TestTiered(t *testing.T) {
 		})
 	}
 }
+
+func TestEntropy(t *testing.T) {
+	t.Parallel()
+	for _, tt := range []struct {
+		name          string
+		words, result qordle.Dictionary
+	}{
+		{
+			// shore separates the others best; equal scores fall back to
+			// letter frequency
+			name:   "splits best first",
+			words:  qordle.Dictionary{"found", "hound", "mound", "sound", "shore"},
+			result: qordle.Dictionary{"shore", "sound", "mound", "hound", "found"},
+		},
+		{
+			name:   "empty",
+			words:  qordle.Dictionary{},
+			result: qordle.Dictionary{},
+		},
+		{
+			name:   "one word",
+			words:  qordle.Dictionary{"qordle"},
+			result: qordle.Dictionary{"qordle"},
+		},
+		{
+			name:   "different length words",
+			words:  qordle.Dictionary{"abcde", "abcdef"},
+			result: qordle.Dictionary(nil),
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			a := assert.New(t)
+			s := new(qordle.Entropy)
+			a.Equal(tt.result, s.Apply(tt.words))
+			a.Equal("entropy", s.String())
+		})
+	}
+}
+
+func BenchmarkEntropy(b *testing.B) {
+	solutions, err := qordle.Read("solutions")
+	if err != nil {
+		b.Fatal(err)
+	}
+	guess, err := qordle.Guess("b.rAin")
+	if err != nil {
+		b.Fatal(err)
+	}
+	words := qordle.Filter(solutions, guess)
+	s := new(qordle.Entropy)
+	for b.Loop() {
+		s.Apply(words)
+	}
+}
+
+func TestProbe(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+	candidates := qordle.Dictionary{"found", "hound", "mound", "pound", "sound", "wound"}
+	guesses := qordle.Dictionary{"whomp", "fight", "zzzzz"}
+	s := qordle.NewProbe(guesses, nil, new(qordle.Alpha))
+	a.Equal("probe{alpha}", s.String())
+
+	// whomp tests four of the six first letters at once
+	res := s.Apply(candidates)
+	a.Equal(append(qordle.Dictionary{"whomp"}, candidates...), res)
+
+	// with two candidates guessing one of them is better than any probe
+	a.Equal(qordle.Dictionary{"found", "hound"}, s.Apply(qordle.Dictionary{"hound", "found"}))
+
+	// preferred words are planned against while any remain
+	s = qordle.NewProbe(guesses, qordle.Dictionary{"found", "hound"}, new(qordle.Alpha))
+	a.Equal(candidates, s.Apply(candidates))
+
+	a.Equal(qordle.Dictionary{}, s.Apply(qordle.Dictionary{}))
+}

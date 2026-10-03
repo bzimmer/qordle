@@ -67,7 +67,7 @@ func TestStrategies(t *testing.T) {
 	a.Equal(http.StatusOK, rec.Code)
 	var strategies map[string]string
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &strategies))
-	a.Len(strategies, 5)
+	a.Len(strategies, 6)
 	for name, desc := range strategies {
 		a.NotEmpty(desc, name)
 	}
@@ -163,4 +163,25 @@ func TestWordlistFlags(t *testing.T) {
 	require.Error(t, err)
 	_, err = newHandler("", []string{""}, defaultPrefer)
 	require.Error(t, err)
+}
+
+func TestSuggestProbe(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+	handler, err := newHandler("", defaultWordlists, defaultPrefer)
+	require.NoError(t, err)
+	suggest := func(target string) []string {
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, target, nil))
+		a.Equal(http.StatusOK, rec.Code)
+		var words []string
+		require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &words))
+		return words
+	}
+	plain := suggest("/qordle/suggest/cranE%20slimE")
+	probed := suggest("/qordle/suggest/cranE%20slimE?probe=true")
+	// the probe leads and cannot be a remaining candidate
+	a.Len(probed, len(plain)+1)
+	a.NotContains(plain, probed[0])
+	a.Equal(plain, probed[1:])
 }

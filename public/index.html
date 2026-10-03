@@ -230,6 +230,8 @@
         <div class="pills" role="group" aria-labelledby="optionsLabel">
           <button type="button" id="speculatePill" class="pill" aria-pressed="false"
             title="When candidates differ by a single letter, suggest a word from the full list to reveal more information">speculate</button>
+          <button type="button" id="probePill" class="pill" aria-pressed="false"
+            title="Lead with any accepted word expected to reveal more than guessing a remaining candidate">probe</button>
         </div>
       </div>
       <div id="strategyLive" class="sr-only" aria-live="polite" aria-atomic="true"></div>
@@ -292,6 +294,7 @@ const els = {
   more: $('moreBtn'),
   pills: $('strategyPills'),
   speculate: $('speculatePill'),
+  probe: $('probePill'),
   live: $('strategyLive'),
   proxy: $('keyboardProxy'),
 };
@@ -299,6 +302,7 @@ const els = {
 // Server default chain; replaced once /qordle/strategies answers.
 let selectedStrategies = ['frequency', 'position'];
 let useSpeculate = false;
+let useProbe = false;
 let activeRow = null;
 let activeCol = 0;
 let fetchTimer = 0;
@@ -549,6 +553,7 @@ async function refresh() {
   const params = new URLSearchParams();
   selectedStrategies.forEach((s) => params.append('strategy', s));
   if (useSpeculate) params.set('speculate', 'true');
+  if (useProbe) params.set('probe', 'true');
   const url = `/qordle/suggest/${path}?${params}`;
   if (url === lastUrl) return;
 
@@ -663,6 +668,12 @@ els.pills.addEventListener('click', (e) => {
 els.speculate.addEventListener('click', () => {
   useSpeculate = !useSpeculate;
   els.speculate.setAttribute('aria-pressed', String(useSpeculate));
+  scheduleFetch(0);
+});
+
+els.probe.addEventListener('click', () => {
+  useProbe = !useProbe;
+  els.probe.setAttribute('aria-pressed', String(useProbe));
   scheduleFetch(0);
 });
 
