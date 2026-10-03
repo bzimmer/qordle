@@ -27,7 +27,6 @@ var strategies = []struct { //nolint:gochecknoglobals // read-only table
 	{new(qordle.Alpha), "Sort the word list alphabetically"},
 	{new(qordle.Bigram), "Rank words by bigram frequency of their letters"},
 	{new(qordle.Elimination), "Rank words by how many candidates each guess eliminates"},
-	{new(qordle.Entropy), "Rank words by how evenly their feedback splits the remaining candidates"},
 	{new(qordle.Frequency), "Rank words by the frequency of their letters in the remaining list"},
 	{new(qordle.Position), "Rank words by how often each letter appears in its position"},
 }

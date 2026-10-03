@@ -67,7 +67,7 @@ func TestStrategies(t *testing.T) {
 	a.Equal(http.StatusOK, rec.Code)
 	var strategies map[string]string
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &strategies))
-	a.Len(strategies, 6)
+	a.Len(strategies, 5)
 	for name, desc := range strategies {
 		a.NotEmpty(desc, name)
 	}

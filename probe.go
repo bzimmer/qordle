@@ -7,16 +7,6 @@ import (
 	"sync"
 )
 
-// Entropy ranks each word by the expected information its feedback reveals
-// when every remaining word is equally likely to be the secret. A guess
-// splitting the remaining words into many small groups of identical feedback
-// ranks above one leaving a few large groups.
-type Entropy struct{}
-
-func (s *Entropy) String() string {
-	return "entropy"
-}
-
 // feedback encodes the marks for guess against secret as a base-3 number,
 // matching Check without allocating. Both words must be ASCII and of equal
 // length.
@@ -44,9 +34,10 @@ func feedback(secret, guess string) int {
 	return code
 }
 
-// score returns the entropy, in bits, of the feedback distribution for guess
-// across words, reusing counts as scratch space.
-func (s *Entropy) score(words Dictionary, guess string, counts []int) float64 {
+// entropy returns the expected information, in bits, revealed by guess when
+// each of words is equally likely to be the secret, reusing counts as
+// scratch space sized for every feedback code.
+func entropy(words Dictionary, guess string, counts []int) float64 {
 	clear(counts)
 	for _, secret := range words {
 		counts[feedback(secret, guess)]++
@@ -61,48 +52,11 @@ func (s *Entropy) score(words Dictionary, guess string, counts []int) float64 {
 	return math.Log2(n) - sum/n
 }
 
-func (s *Entropy) Apply(words Dictionary) Dictionary {
-	if len(words) <= 1 {
-		return words
-	}
-	length := len(words[0])
-	for _, word := range words {
-		// the fixed-size scratch arrays in feedback cap the word length and
-		// every word must share it
-		if len(word) != length || length > 10 {
-			return nil
-		}
-	}
-	buckets := int(math.Pow(3, float64(length)))
-
-	scores := make([]float64, len(words))
-	indices := make(chan int)
-	var wg sync.WaitGroup
-	for range min(runtime.GOMAXPROCS(0), len(words)) {
-		wg.Go(func() {
-			counts := make([]int, buckets)
-			for i := range indices {
-				scores[i] = s.score(words, words[i], counts)
-			}
-		})
-	}
-	for i := range words {
-		indices <- i
-	}
-	close(indices)
-	wg.Wait()
-
-	res := make(map[string]float64, len(words))
-	for i, word := range words {
-		res[word] = scores[i]
-	}
-	return mkdictf(res, func(i, j float64) bool {
-		return i > j
-	})
-}
-
 // Probe puts a guess ahead of the ranked words when it is expected to reveal
 // more than guessing a remaining word, even though it may not be a candidate.
+// A guess scores the entropy of its feedback across the remaining words: one
+// splitting them into many small groups of identical feedback beats one
+// leaving a few large groups.
 // Each remaining word earns a bonus for the chance of being the secret, so
 // with only a few words left a candidate wins over a pure probe.
 type Probe struct {
@@ -150,12 +104,11 @@ func (s *Probe) best(candidates Dictionary) string {
 	scores := make([]float64, len(pool))
 	indices := make(chan int)
 	var wg sync.WaitGroup
-	var e Entropy
 	for range min(runtime.GOMAXPROCS(0), len(pool)) {
 		wg.Go(func() {
 			counts := make([]int, buckets)
 			for i := range indices {
-				scores[i] = e.score(candidates, pool[i], counts)
+				scores[i] = entropy(candidates, pool[i], counts)
 				if i < len(candidates) {
 					scores[i] += bonus
 				}

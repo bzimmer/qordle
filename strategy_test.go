@@ -454,46 +454,7 @@ func TestTiered(t *testing.T) {
 	}
 }
 
-func TestEntropy(t *testing.T) {
-	t.Parallel()
-	for _, tt := range []struct {
-		name          string
-		words, result qordle.Dictionary
-	}{
-		{
-			// shore separates the others best; equal scores fall back to
-			// letter frequency
-			name:   "splits best first",
-			words:  qordle.Dictionary{"found", "hound", "mound", "sound", "shore"},
-			result: qordle.Dictionary{"shore", "sound", "mound", "hound", "found"},
-		},
-		{
-			name:   "empty",
-			words:  qordle.Dictionary{},
-			result: qordle.Dictionary{},
-		},
-		{
-			name:   "one word",
-			words:  qordle.Dictionary{"qordle"},
-			result: qordle.Dictionary{"qordle"},
-		},
-		{
-			name:   "different length words",
-			words:  qordle.Dictionary{"abcde", "abcdef"},
-			result: qordle.Dictionary(nil),
-		},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			a := assert.New(t)
-			s := new(qordle.Entropy)
-			a.Equal(tt.result, s.Apply(tt.words))
-			a.Equal("entropy", s.String())
-		})
-	}
-}
-
-func BenchmarkEntropy(b *testing.B) {
+func BenchmarkProbe(b *testing.B) {
 	solutions, err := qordle.Read("solutions")
 	if err != nil {
 		b.Fatal(err)
@@ -503,7 +464,7 @@ func BenchmarkEntropy(b *testing.B) {
 		b.Fatal(err)
 	}
 	words := qordle.Filter(solutions, guess)
-	s := new(qordle.Entropy)
+	s := qordle.NewProbe(solutions, nil, new(qordle.Frequency))
 	for b.Loop() {
 		s.Apply(words)
 	}
