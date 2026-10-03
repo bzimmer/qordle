@@ -42,7 +42,7 @@ func TestLetterboxedCommand(t *testing.T) {
 			name: "letterboxed with 1 argument",
 			args: []string{"letterboxed", "-w", "solutions", "--max", "4", "rul-eya-gdh-opb"},
 			after: func(c *cli.Context) error {
-				a.Equal(88, len(decode(c)))
+				a.Equal(57, len(decode(c)))
 				return nil
 			},
 		},
@@ -50,7 +50,7 @@ func TestLetterboxedCommand(t *testing.T) {
 			name: "letterboxed with 4 arguments",
 			args: []string{"letterboxed", "-w", "solutions", "--max", "4", "rul", "eya", "gdh", "opb"},
 			after: func(c *cli.Context) error {
-				a.Equal(88, len(decode(c)))
+				a.Equal(57, len(decode(c)))
 				return nil
 			},
 		},
