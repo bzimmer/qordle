@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -73,6 +75,7 @@ func TestPlay(t *testing.T) {
 		status int
 	}{
 		{name: "solves", target: "/qordle/play/board", status: http.StatusOK},
+		{name: "solves outside solutions", target: "/qordle/play/peeve", status: http.StatusOK},
 		{name: "wrong length", target: "/qordle/play/boards", status: http.StatusBadRequest},
 		{name: "post not allowed", target: "/qordle/play/board", status: http.StatusMethodNotAllowed},
 		{name: "unknown route", target: "/qordle/nope", status: http.StatusNotFound},
@@ -96,9 +99,26 @@ func TestPlay(t *testing.T) {
 					} `json:"rounds"`
 				}
 				require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &board))
-				assert.Equal(t, "board", board.Target)
+				assert.Equal(t, strings.TrimPrefix(tt.target, "/qordle/play/"), board.Target)
 				assert.True(t, board.Rounds[len(board.Rounds)-1].Success)
 			}
 		})
 	}
+}
+
+func TestSuggestTiered(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+	handler, err := newHandler("")
+	require.NoError(t, err)
+	// crane then slime scored against peeve, which is outside solutions.txt
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodPost, "/qordle/suggest/cranE%20slimE", nil))
+	a.Equal(http.StatusOK, rec.Code)
+	var words []string
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &words))
+	a.Contains(words, "peeve")
+	// solutions-list candidates come first
+	a.Equal("budge", words[0])
+	a.Less(slices.Index(words, "judge"), slices.Index(words, "peeve"))
 }

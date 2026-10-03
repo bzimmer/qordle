@@ -31,28 +31,37 @@ var strategies = []struct { //nolint:gochecknoglobals // read-only table
 	{new(qordle.Position), "Rank words by how often each letter appears in its position"},
 }
 
-// server holds state shared across requests; the dictionary is read-only
+// server holds state shared across requests; the word lists are read-only
 // and every strategy is stateless, so one instance serves concurrent requests.
 type server struct {
-	dictionary qordle.Dictionary
-	registry   *qordle.Trie[qordle.Strategy]
+	// solutions holds the original answer list, ranked ahead of other words
+	solutions qordle.Dictionary
+	// words holds every accepted guess so answers outside solutions stay reachable
+	words    qordle.Dictionary
+	registry *qordle.Trie[qordle.Strategy]
 }
 
 func newServer() (*server, error) {
-	dictionary, err := qordle.Read("solutions")
+	solutions, err := qordle.Read("solutions")
 	if err != nil {
 		return nil, err
 	}
+	possible, err := qordle.Read("possible")
+	if err != nil {
+		return nil, err
+	}
+	words := make(qordle.Dictionary, 0, len(solutions)+len(possible))
+	words = append(append(words, solutions...), possible...)
 	registry := &qordle.Trie[qordle.Strategy]{}
 	for _, s := range strategies {
 		registry.Add(s.strategy.String(), s.strategy)
 	}
-	return &server{dictionary: dictionary, registry: registry}, nil
+	return &server{solutions: solutions, words: words, registry: registry}, nil
 }
 
 // strategy constructs a strategy from the given names, chaining them when
-// more than one is provided. Falls back to frequency+position when no names
-// are supplied.
+// more than one is provided, and ranks the solutions ahead of other words.
+// Falls back to frequency+position when no names are supplied.
 func (s *server) strategy(names []string) (qordle.Strategy, error) {
 	if len(names) == 0 {
 		names = []string{"frequency", "position"}
@@ -65,10 +74,11 @@ func (s *server) strategy(names []string) (qordle.Strategy, error) {
 		}
 		chain = append(chain, strategy)
 	}
-	if len(chain) == 1 {
-		return chain[0], nil
+	strategy := chain[0]
+	if len(chain) > 1 {
+		strategy = qordle.NewChain(chain...)
 	}
-	return qordle.NewChain(chain...), nil
+	return qordle.NewTiered(s.solutions, strategy), nil
 }
 
 func (*server) strategies(w http.ResponseWriter, _ *http.Request) {
@@ -86,9 +96,9 @@ func (s *server) play(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	game := qordle.NewGame(
-		qordle.WithDictionary(s.dictionary),
+		qordle.WithDictionary(s.words),
 		qordle.WithStart(r.URL.Query().Get("start")),
-		qordle.WithStrategy(qordle.NewSpeculator(s.dictionary, strategy)))
+		qordle.WithStrategy(qordle.NewSpeculator(s.solutions, strategy)))
 	scoreboard, err := game.Play(r.PathValue("secret"))
 	if err != nil {
 		badRequest(w, err)
@@ -105,7 +115,7 @@ func (s *server) suggest(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if query.Get("speculate") == "true" {
-		strategy = qordle.NewSpeculator(s.dictionary, strategy)
+		strategy = qordle.NewSpeculator(s.solutions, strategy)
 	}
 	// Fields rather than Split so an empty path yields no guesses instead of
 	// a single empty guess matching nothing
@@ -114,8 +124,8 @@ func (s *server) suggest(w http.ResponseWriter, r *http.Request) {
 		badRequest(w, err)
 		return
 	}
-	// Filter returns a fresh slice so the shared dictionary stays untouched
-	encode(w, http.StatusOK, strategy.Apply(qordle.Filter(s.dictionary, guesser)))
+	// Filter returns a fresh slice so the shared word list stays untouched
+	encode(w, http.StatusOK, strategy.Apply(qordle.Filter(s.words, guesser)))
 }
 
 func encode(w http.ResponseWriter, status int, v any) {

@@ -2,6 +2,7 @@ package qordle_test
 
 import (
 	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -395,6 +396,60 @@ func TestStrategies(t *testing.T) {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			run(t, &tt, qordle.CommandStrategies)
+		})
+	}
+}
+
+// reverse orders words in reverse alphabetical order
+type reverse struct{}
+
+func (reverse) String() string { return "reverse" }
+
+func (reverse) Apply(words qordle.Dictionary) qordle.Dictionary {
+	res := slices.Clone(words)
+	slices.Sort(res)
+	slices.Reverse(res)
+	return res
+}
+
+func TestTiered(t *testing.T) {
+	t.Parallel()
+	for _, tt := range []struct {
+		name             string
+		preferred, words qordle.Dictionary
+		result           qordle.Dictionary
+	}{
+		{
+			name:      "preferred first, rest alphabetical",
+			preferred: qordle.Dictionary{"haste", "false"},
+			words:     qordle.Dictionary{"easle", "fause", "false", "haste", "halse"},
+			result:    qordle.Dictionary{"haste", "false", "easle", "fause", "halse"},
+		},
+		{
+			name:      "no preferred words ranks the rest",
+			preferred: qordle.Dictionary{"crane"},
+			words:     qordle.Dictionary{"easle", "haste", "fause"},
+			result:    qordle.Dictionary{"haste", "fause", "easle"},
+		},
+		{
+			name:      "only preferred words",
+			preferred: qordle.Dictionary{"haste", "easle"},
+			words:     qordle.Dictionary{"easle", "haste"},
+			result:    qordle.Dictionary{"haste", "easle"},
+		},
+		{
+			name:      "empty",
+			preferred: qordle.Dictionary{"haste"},
+			words:     qordle.Dictionary{},
+			result:    qordle.Dictionary{},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			a := assert.New(t)
+			s := qordle.NewTiered(tt.preferred, reverse{})
+			a.Equal(tt.result, s.Apply(tt.words))
+			a.Equal("tiered{reverse}", s.String())
 		})
 	}
 }

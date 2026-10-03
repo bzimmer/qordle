@@ -356,6 +356,47 @@ func NewChain(strategies ...Strategy) Strategy {
 	return &Chain{strategies: strategies}
 }
 
+// Tiered ranks the preferred words ahead of the rest, ordering them with the
+// wrapped strategy. The rest stay reachable but are only ranked by the
+// strategy once no preferred words remain; until then they follow in
+// alphabetical order, sparing quadratic strategies such as elimination
+// from scoring thousands of unlikely words.
+type Tiered struct {
+	preferred map[string]struct{}
+	strategy  Strategy
+}
+
+func (s *Tiered) String() string {
+	return fmt.Sprintf("tiered{%s}", s.strategy.String())
+}
+
+func (s *Tiered) Apply(words Dictionary) Dictionary {
+	if len(words) == 0 {
+		return words
+	}
+	var first, rest Dictionary
+	for _, word := range words {
+		if _, ok := s.preferred[word]; ok {
+			first = append(first, word)
+		} else {
+			rest = append(rest, word)
+		}
+	}
+	if len(first) == 0 {
+		return s.strategy.Apply(rest)
+	}
+	sort.Strings(rest)
+	return append(s.strategy.Apply(first), rest...)
+}
+
+func NewTiered(preferred Dictionary, strategy Strategy) Strategy {
+	set := make(map[string]struct{}, len(preferred))
+	for _, word := range preferred {
+		set[word] = struct{}{}
+	}
+	return &Tiered{preferred: set, strategy: strategy}
+}
+
 // Speculate attempts to find a word which eliminates the most letters
 type Speculate struct {
 	words       Dictionary
