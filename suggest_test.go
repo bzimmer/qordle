@@ -65,7 +65,7 @@ func TestSuggestCommand(t *testing.T) {
 				dec := json.NewDecoder(c.App.Writer.(io.Reader))
 				err := dec.Decode(&res)
 				a.NoError(err)
-				a.Equal([]string{"smash", "found", "hound", "mound", "pound", "sound", "wound"}, res)
+				a.Equal([]string{"pshaw", "found", "hound", "mound", "pound", "sound", "wound"}, res)
 				return nil
 			},
 		},
