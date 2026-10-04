@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -27,7 +27,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -561,6 +561,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#probe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        probe
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -698,6 +709,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#probe" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        probe
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -781,6 +803,46 @@ summing its letter position.</p>
 remaining words differ by only a single letter. The strategy iterates the word list
 accumulating the differing letter and then generates a word list from those words composed
 of the unknown letters.</p>
+<h3 id="probe">probe</h3>
+<p>The probe option (<code>--probe</code> on the CLI, the <strong>probe</strong> pill in the web solver) wraps any
+strategy. It considers every accepted word as the next guess, including words already ruled
+out, and leads with one when it is expected to reveal more than guessing a remaining word.
+Each guess is scored by the entropy of its feedback across the remaining words: a guess
+splitting them into many small groups of identical feedback beats one leaving a few large
+groups. Each remaining word earns a bonus for the chance of being the secret, so with only a
+few words left a candidate wins. When preferred words are set (see <code>--prefer</code>) it plans
+against those while any remain. It generalises <a href="#speculation">speculation</a>, which only probes
+once the remaining words differ by a single letter.</p>
+<p>Because a probe may be a word which cannot be the answer, it is off by default: hard mode
+only accepts guesses consistent with every revealed hint and will reject it.</p>
+<p>Simulated games with <code>slate</code> as the opener, the solutions ranked first, and the 63 answers
+since 2022 missing from the solutions list held out as unseen answers:</p>
+<table>
+<thead>
+<tr>
+<th>strategy</th>
+<th>solved in six (1000 original / 63 newer)</th>
+<th>average guesses</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>frequency, position</td>
+<td>99.6% / 96.8%</td>
+<td>3.60 / 4.48</td>
+</tr>
+<tr>
+<td>frequency, position + speculate</td>
+<td>99.8% / 96.8%</td>
+<td>3.62 / 4.51</td>
+</tr>
+<tr>
+<td>frequency, position + probe</td>
+<td>100% / 100%</td>
+<td>3.47 / 4.33</td>
+</tr>
+</tbody>
+</table>
 <h2 id="chaining">Chaining</h2>
 <p>All strategies are composable via chaining. The chaining strategy, itself a strategy, executes
 all child strategies <strong>concurrently</strong> on the same word list and combines the results by accumulating
@@ -885,7 +947,7 @@ using different strategies.</p>
     <span class="md-icon" title="Last update">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21 13.1c-.1 0-.3.1-.4.2l-1 1 2.1 2.1 1-1c.2-.2.2-.6 0-.8l-1.3-1.3c-.1-.1-.2-.2-.4-.2m-1.9 1.8-6.1 6V23h2.1l6.1-6.1zM12.5 7v5.2l4 2.4-1 1L11 13V7zM11 21.9c-5.1-.5-9-4.8-9-9.9C2 6.5 6.5 2 12 2c5.3 0 9.6 4.1 10 9.3-.3-.1-.6-.2-1-.2s-.7.1-1 .2C19.6 7.2 16.2 4 12 4c-4.4 0-8 3.6-8 8 0 4.1 3.1 7.5 7.1 7.9l-.1.2z"/></svg>
     </span>
-    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="April 22, 2026 09:36:16 UTC">April 22, 2026</span>
+    <span class="git-revision-date-localized-plugin git-revision-date-localized-plugin-date" title="October 4, 2026 05:01:00 UTC">October 4, 2026</span>
   </span>
 
     
@@ -944,7 +1006,7 @@ using different strategies.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.annotate", "content.code.copy", "content.code.select", "navigation.top", "navigation.instant", "navigation.expand", "navigation.sections", "navigation.tabs", "navigation.tabs.sticky"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
       
         <script src="https://unpkg.com/tablesort@5.3.0/dist/tablesort.min.js"></script>
       
