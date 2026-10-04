@@ -54,6 +54,9 @@ few words left a candidate wins. When preferred words are set (see `--prefer`) i
 against those while any remain. It generalises [speculation](#speculation), which only probes
 once the remaining words differ by a single letter.
 
+Because a probe may be a word which cannot be the answer, it is off by default: hard mode
+only accepts guesses consistent with every revealed hint and will reject it.
+
 Simulated games with `slate` as the opener, the solutions ranked first, and the 63 answers
 since 2022 missing from the solutions list held out as unseen answers:
 

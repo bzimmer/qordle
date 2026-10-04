@@ -112,6 +112,7 @@
   .pill[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
   .pill[aria-pressed="true"]:hover { background: var(--accent-dim); border-color: var(--accent-dim); }
   .pill.shake { animation: shake .35s ease; }
+  .note { margin-top: 10px; font-size: 12px; color: var(--muted); }
   @keyframes shake {
     20% { transform: translateX(-4px); }
     40% { transform: translateX(4px); }
@@ -231,9 +232,10 @@
           <button type="button" id="speculatePill" class="pill" aria-pressed="false"
             title="When candidates differ by a single letter, suggest a word from the full list to reveal more information">speculate</button>
           <button type="button" id="probePill" class="pill" aria-pressed="false"
-            title="Lead with any accepted word expected to reveal more than guessing a remaining candidate">probe</button>
+            title="Lead with any accepted word expected to reveal more than guessing a remaining candidate; it may not be a possible answer, which hard mode rejects">probe</button>
         </div>
       </div>
+      <p id="probeNote" class="note" hidden>Probe may lead with a word which cannot be the answer; hard mode will not accept it.</p>
       <div id="strategyLive" class="sr-only" aria-live="polite" aria-atomic="true"></div>
     </div>
   </details>
@@ -295,14 +297,43 @@ const els = {
   pills: $('strategyPills'),
   speculate: $('speculatePill'),
   probe: $('probePill'),
+  probeNote: $('probeNote'),
   live: $('strategyLive'),
   proxy: $('keyboardProxy'),
 };
 
-// Server default chain; replaced once /qordle/strategies answers.
-let selectedStrategies = ['frequency', 'position'];
-let useSpeculate = false;
-let useProbe = false;
+// Server default chain, used until the viewer picks their own.
+const DEFAULT_STRATEGIES = ['frequency', 'position'];
+const PREFS_KEY = 'qordle.prefs';
+
+/** Saved strategy selection; storage can be missing or blocked, so fall back quietly. */
+function loadPrefs() {
+  try {
+    const prefs = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}');
+    return prefs && typeof prefs === 'object' ? prefs : {};
+  } catch {
+    return {};
+  }
+}
+
+function savePrefs() {
+  try {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({
+      strategies: selectedStrategies,
+      speculate: useSpeculate,
+      probe: useProbe,
+    }));
+  } catch {
+    // remembering the selection is a convenience only
+  }
+}
+
+const prefs = loadPrefs();
+let selectedStrategies = Array.isArray(prefs.strategies) && prefs.strategies.length
+  ? prefs.strategies.filter((s) => typeof s === 'string')
+  : [...DEFAULT_STRATEGIES];
+let useSpeculate = prefs.speculate === true;
+let useProbe = prefs.probe === true;
 let activeRow = null;
 let activeCol = 0;
 let fetchTimer = 0;
@@ -634,6 +665,7 @@ function toggleStrategy(btn) {
   }
   btn.setAttribute('aria-pressed', String(idx === -1));
   els.live.textContent = '';
+  savePrefs();
   scheduleFetch(0);
 }
 
@@ -642,6 +674,9 @@ async function initStrategies() {
     const res = await fetch('/qordle/strategies');
     if (!res.ok) throw new Error(`server returned ${res.status}`);
     const data = await res.json();
+    // drop saved strategies the server no longer offers
+    selectedStrategies = selectedStrategies.filter((s) => s in data);
+    if (!selectedStrategies.length) selectedStrategies = DEFAULT_STRATEGIES.filter((s) => s in data);
     const frag = document.createDocumentFragment();
     for (const [name, definition] of Object.entries(data).sort(([a], [b]) => a.localeCompare(b))) {
       const btn = document.createElement('button');
@@ -665,15 +700,23 @@ els.pills.addEventListener('click', (e) => {
   if (btn) toggleStrategy(btn);
 });
 
+function syncOptions() {
+  els.speculate.setAttribute('aria-pressed', String(useSpeculate));
+  els.probe.setAttribute('aria-pressed', String(useProbe));
+  els.probeNote.hidden = !useProbe;
+}
+
 els.speculate.addEventListener('click', () => {
   useSpeculate = !useSpeculate;
-  els.speculate.setAttribute('aria-pressed', String(useSpeculate));
+  syncOptions();
+  savePrefs();
   scheduleFetch(0);
 });
 
 els.probe.addEventListener('click', () => {
   useProbe = !useProbe;
-  els.probe.setAttribute('aria-pressed', String(useProbe));
+  syncOptions();
+  savePrefs();
   scheduleFetch(0);
 });
 
@@ -690,6 +733,7 @@ els.clear.addEventListener('click', () => {
   addGuessRow();
 });
 
+syncOptions();
 initStrategies();
 addGuessRow();
 </script>
