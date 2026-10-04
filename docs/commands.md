@@ -116,6 +116,8 @@ $ qordle order [flags] word [, word, ...]
 |-|-|-|-|
 |strategy|s||use the specified strategy|
 |speculate|S||speculate if necessary|
+|probe|P||lead with any word expected to reveal more than guessing a remaining word|
+|prefer|p||rank words from the specified embedded word list ahead of the rest|
 
 
 ### *play*
@@ -143,6 +145,8 @@ $ qordle play [flags]
 |wordlist|w||use the specified embedded word list|
 |strategy|s||use the specified strategy|
 |speculate|S||speculate if necessary|
+|probe|P||lead with any word expected to reveal more than guessing a remaining word|
+|prefer|p||rank words from the specified embedded word list ahead of the rest|
 
 
 ### *ranks*
@@ -264,6 +268,8 @@ $ qordle suggest [flags] <pattern>...
 |wordlist|w||use the specified embedded word list|
 |strategy|s||use the specified strategy|
 |speculate|S||speculate if necessary|
+|probe|P||lead with any word expected to reveal more than guessing a remaining word|
+|prefer|p||rank words from the specified embedded word list ahead of the rest|
 
 **Example**
 

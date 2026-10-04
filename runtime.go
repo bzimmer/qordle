@@ -62,8 +62,22 @@ func prepare(c *cli.Context, wordlist ...string) (Dictionary, Strategy, error) {
 		}
 		strategy = NewChain(s...)
 	}
+	var preferred Dictionary
+	if c.IsSet("prefer") {
+		for _, name := range c.StringSlice("prefer") {
+			words, rerr := Read(name)
+			if rerr != nil {
+				return nil, nil, rerr
+			}
+			preferred = preferred.union(words)
+		}
+		strategy = NewTiered(preferred, strategy)
+	}
 	if c.Bool("speculate") {
 		strategy = NewSpeculator(dictionary, strategy)
+	}
+	if c.Bool("probe") {
+		strategy = NewProbe(dictionary, preferred, strategy)
 	}
 	return dictionary, strategy, nil
 }

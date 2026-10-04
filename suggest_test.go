@@ -3,6 +3,7 @@ package qordle_test
 import (
 	"encoding/json"
 	"io"
+	"slices"
 	"testing"
 
 	"github.com/rs/zerolog"
@@ -68,6 +69,24 @@ func TestSuggestCommand(t *testing.T) {
 				a.Equal([]string{"smash", "found", "hound", "mound", "pound", "sound", "wound"}, res)
 				return nil
 			},
+		},
+		{
+			name: "prefer solutions",
+			args: []string{"suggest", "--prefer", "solutions", "cranE", "slimE"},
+			after: func(c *cli.Context) error {
+				var res []string
+				dec := json.NewDecoder(c.App.Writer.(io.Reader))
+				a.NoError(dec.Decode(&res))
+				a.Contains(res, "peeve")
+				a.Less(slices.Index(res, "judge"), slices.Index(res, "peeve"))
+				a.Equal("budge", res[0])
+				return nil
+			},
+		},
+		{
+			name: "prefer bad wordlist",
+			args: []string{"suggest", "--prefer", "foobar", "raise"},
+			err:  "invalid wordlist `foobar`",
 		},
 	} {
 		tt := tt

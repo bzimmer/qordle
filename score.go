@@ -35,7 +35,8 @@ func Check(secret string, guesses ...string) ([]Marks, error) {
 		}
 		guess = strings.ToLower(guess)
 		score := make(Marks, len(secret))
-		round := make(map[byte]int, len(secret))
+		// a fixed array indexed by byte avoids a map allocation per guess
+		var round [256]int
 		// first pass checks for exact matches
 		for i := range guess {
 			if secret[i] == guess[i] {

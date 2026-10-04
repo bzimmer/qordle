@@ -2,6 +2,7 @@ package qordle_test
 
 import (
 	"fmt"
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -397,4 +398,96 @@ func TestStrategies(t *testing.T) {
 			run(t, &tt, qordle.CommandStrategies)
 		})
 	}
+}
+
+// reverse orders words in reverse alphabetical order
+type reverse struct{}
+
+func (reverse) String() string { return "reverse" }
+
+func (reverse) Apply(words qordle.Dictionary) qordle.Dictionary {
+	res := slices.Clone(words)
+	slices.Sort(res)
+	slices.Reverse(res)
+	return res
+}
+
+func TestTiered(t *testing.T) {
+	t.Parallel()
+	for _, tt := range []struct {
+		name             string
+		preferred, words qordle.Dictionary
+		result           qordle.Dictionary
+	}{
+		{
+			name:      "preferred first, rest alphabetical",
+			preferred: qordle.Dictionary{"haste", "false"},
+			words:     qordle.Dictionary{"easle", "fause", "false", "haste", "halse"},
+			result:    qordle.Dictionary{"haste", "false", "easle", "fause", "halse"},
+		},
+		{
+			name:      "no preferred words ranks the rest",
+			preferred: qordle.Dictionary{"crane"},
+			words:     qordle.Dictionary{"easle", "haste", "fause"},
+			result:    qordle.Dictionary{"haste", "fause", "easle"},
+		},
+		{
+			name:      "only preferred words",
+			preferred: qordle.Dictionary{"haste", "easle"},
+			words:     qordle.Dictionary{"easle", "haste"},
+			result:    qordle.Dictionary{"haste", "easle"},
+		},
+		{
+			name:      "empty",
+			preferred: qordle.Dictionary{"haste"},
+			words:     qordle.Dictionary{},
+			result:    qordle.Dictionary{},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			a := assert.New(t)
+			s := qordle.NewTiered(tt.preferred, reverse{})
+			a.Equal(tt.result, s.Apply(tt.words))
+			a.Equal("tiered{reverse}", s.String())
+		})
+	}
+}
+
+func BenchmarkProbe(b *testing.B) {
+	solutions, err := qordle.Read("solutions")
+	if err != nil {
+		b.Fatal(err)
+	}
+	guess, err := qordle.Guess("b.rAin")
+	if err != nil {
+		b.Fatal(err)
+	}
+	words := qordle.Filter(solutions, guess)
+	s := qordle.NewProbe(solutions, nil, new(qordle.Frequency))
+	for b.Loop() {
+		s.Apply(words)
+	}
+}
+
+func TestProbe(t *testing.T) {
+	t.Parallel()
+	a := assert.New(t)
+	candidates := qordle.Dictionary{"found", "hound", "mound", "pound", "sound", "wound"}
+	guesses := qordle.Dictionary{"whomp", "fight", "zzzzz"}
+	s := qordle.NewProbe(guesses, nil, new(qordle.Alpha))
+	a.Equal("probe{alpha}", s.String())
+
+	// whomp tests four of the six first letters at once
+	res := s.Apply(candidates)
+	a.Equal(append(qordle.Dictionary{"whomp"}, candidates...), res)
+
+	// with two candidates guessing one of them is better than any probe
+	a.Equal(qordle.Dictionary{"found", "hound"}, s.Apply(qordle.Dictionary{"hound", "found"}))
+
+	// preferred words are planned against while any remain
+	s = qordle.NewProbe(guesses, qordle.Dictionary{"found", "hound"}, new(qordle.Alpha))
+	a.Equal(candidates, s.Apply(candidates))
+
+	a.Equal(qordle.Dictionary{}, s.Apply(qordle.Dictionary{}))
 }

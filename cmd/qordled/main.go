@@ -2,15 +2,16 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
-	"sort"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
-	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 	"github.com/urfave/cli/v2"
@@ -18,153 +19,240 @@ import (
 	"github.com/bzimmer/qordle"
 )
 
-// strategyDescriptions returns a map of each strategy name to a human-readable description.
-func strategyDescriptions() map[string]string {
-	return map[string]string{
-		"alpha":       "Sort the word list alphabetically",
-		"bigram":      "Rank words by bigram frequency of their letters",
-		"elimination": "Rank words by how many candidates each guess eliminates",
-		"frequency":   "Rank words by the frequency of their letters in the remaining list",
-		"position":    "Rank words by how often each letter appears in its position",
+// strategies lists every available strategy with a human-readable description.
+var strategies = []struct { //nolint:gochecknoglobals // read-only table
+	strategy    qordle.Strategy
+	description string
+}{
+	{new(qordle.Alpha), "Sort the word list alphabetically"},
+	{new(qordle.Bigram), "Rank words by bigram frequency of their letters"},
+	{new(qordle.Elimination), "Rank words by how many candidates each guess eliminates"},
+	{new(qordle.Frequency), "Rank words by the frequency of their letters in the remaining list"},
+	{new(qordle.Position), "Rank words by how often each letter appears in its position"},
+}
+
+// server holds state shared across requests; the word lists are read-only
+// and every strategy is stateless, so one instance serves concurrent requests.
+type server struct {
+	// words holds every word a suggestion may come from
+	words qordle.Dictionary
+	// preferred holds the likely answers, ranked ahead of the other words;
+	// empty ranks every word together
+	preferred qordle.Dictionary
+	registry  *qordle.Trie[qordle.Strategy]
+}
+
+// read returns the distinct words across the named embedded word lists.
+func read(names []string) (qordle.Dictionary, error) {
+	seen := make(map[string]struct{})
+	var res qordle.Dictionary
+	for _, name := range names {
+		if name == "" {
+			continue
+		}
+		words, err := qordle.Read(name)
+		if err != nil {
+			return nil, err
+		}
+		for _, word := range words {
+			if _, ok := seen[word]; !ok {
+				seen[word] = struct{}{}
+				res = append(res, word)
+			}
+		}
 	}
+	return res, nil
 }
 
-// registry returns a Trie holding all available strategies keyed by name.
-func registry() *qordle.Trie[qordle.Strategy] {
-	t := &qordle.Trie[qordle.Strategy]{}
-	for _, s := range []qordle.Strategy{
-		new(qordle.Alpha),
-		new(qordle.Bigram),
-		new(qordle.Elimination),
-		new(qordle.Frequency),
-		new(qordle.Position),
-	} {
-		t.Add(s.String(), s)
+func newServer(wordlists, prefer []string) (*server, error) {
+	words, err := read(wordlists)
+	if err != nil {
+		return nil, err
 	}
-	return t
+	if len(words) == 0 {
+		return nil, errors.New("no words in the selected word lists")
+	}
+	preferred, err := read(prefer)
+	if err != nil {
+		return nil, err
+	}
+	registry := &qordle.Trie[qordle.Strategy]{}
+	for _, s := range strategies {
+		registry.Add(s.strategy.String(), s.strategy)
+	}
+	return &server{words: words, preferred: preferred, registry: registry}, nil
 }
 
-// strategyNames returns the sorted list of available strategy names.
-func strategyNames() []string {
-	names := registry().Strings()
-	sort.Strings(names)
-	return names
+// speculation returns the words a speculator may draw its probe from.
+func (s *server) speculation() qordle.Dictionary {
+	if len(s.preferred) > 0 {
+		return s.preferred
+	}
+	return s.words
 }
 
-// buildStrategy constructs a strategy from the given names, chaining them
-// when more than one is provided. Falls back to frequency+position when
-// no names are supplied.
-func buildStrategy(names []string) (qordle.Strategy, error) {
+// strategy constructs a strategy from the given names, chaining them when
+// more than one is provided, and ranks the preferred words ahead of the rest.
+// Falls back to frequency+position when no names are supplied.
+func (s *server) strategy(names []string) (qordle.Strategy, error) {
 	if len(names) == 0 {
 		names = []string{"frequency", "position"}
 	}
-	reg := registry()
-	strategies := make([]qordle.Strategy, 0, len(names))
+	chain := make([]qordle.Strategy, 0, len(names))
 	for _, name := range names {
-		s := reg.Value(name)
-		if s == nil {
+		strategy := s.registry.Value(name)
+		if strategy == nil {
 			return nil, fmt.Errorf("unknown strategy %q", name)
 		}
-		strategies = append(strategies, s)
+		chain = append(chain, strategy)
 	}
-	if len(strategies) == 1 {
-		return strategies[0], nil
+	strategy := chain[0]
+	if len(chain) > 1 {
+		strategy = qordle.NewChain(chain...)
 	}
-	return qordle.NewChain(strategies...), nil
+	if len(s.preferred) == 0 {
+		return strategy, nil
+	}
+	return qordle.NewTiered(s.preferred, strategy), nil
 }
 
-func strategies(c echo.Context) error {
-	names := strategyNames()
-	descs := strategyDescriptions()
-	result := make(map[string]string, len(names))
-	for _, name := range names {
-		result[name] = descs[name]
+func (*server) strategies(w http.ResponseWriter, _ *http.Request) {
+	result := make(map[string]string, len(strategies))
+	for _, s := range strategies {
+		result[s.strategy.String()] = s.description
 	}
-	return c.JSONPretty(http.StatusOK, result, " ")
+	encode(w, http.StatusOK, result)
 }
 
-func play(c echo.Context) error {
-	dictionary, err := qordle.Read("solutions")
+func (s *server) play(w http.ResponseWriter, r *http.Request) {
+	strategy, err := s.strategy(r.URL.Query()["strategy"])
 	if err != nil {
-		return err
+		badRequest(w, err)
+		return
 	}
-	strategy, err := buildStrategy(c.QueryParams()["strategy"])
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
-	}
-	strategy = qordle.NewSpeculator(dictionary, strategy)
-	secret := c.Param("secret")
 	game := qordle.NewGame(
-		qordle.WithDictionary(dictionary),
-		qordle.WithStart(c.QueryParam("start")),
-		qordle.WithStrategy(strategy))
-	scoreboard, err := game.Play(secret)
+		qordle.WithDictionary(s.words),
+		qordle.WithStart(r.URL.Query().Get("start")),
+		qordle.WithStrategy(qordle.NewSpeculator(s.speculation(), strategy)))
+	scoreboard, err := game.Play(r.PathValue("secret"))
 	if err != nil {
-		return err
+		badRequest(w, err)
+		return
 	}
-	return c.JSONPretty(http.StatusOK, scoreboard, " ")
+	encode(w, http.StatusOK, scoreboard)
 }
 
-func suggest(c echo.Context) error {
-	dictionary, err := qordle.Read("solutions")
+func (s *server) suggest(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query()
+	strategy, err := s.strategy(query["strategy"])
 	if err != nil {
-		return err
+		badRequest(w, err)
+		return
 	}
-	strategy, err := buildStrategy(c.QueryParams()["strategy"])
+	if query.Get("speculate") == "true" {
+		strategy = qordle.NewSpeculator(s.speculation(), strategy)
+	}
+	if query.Get("probe") == "true" {
+		strategy = qordle.NewProbe(s.words, s.preferred, strategy)
+	}
+	// Fields rather than Split so an empty path yields no guesses instead of
+	// a single empty guess matching nothing
+	guesser, err := qordle.Guess(strings.Fields(r.PathValue("guesses"))...)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		badRequest(w, err)
+		return
 	}
-	if c.QueryParam("speculate") == "true" {
-		strategy = qordle.NewSpeculator(dictionary, strategy)
-	}
-	guesser, err := qordle.Guess(strings.Split(c.Param("guesses"), " ")...)
-	if err != nil {
-		return err
-	}
-	dictionary = strategy.Apply(qordle.Filter(dictionary, guesser))
-	return c.JSONPretty(http.StatusOK, dictionary, " ")
+	// Filter returns a fresh slice so the shared word list stays untouched
+	encode(w, http.StatusOK, strategy.Apply(qordle.Filter(s.words, guesser)))
 }
 
-func newEngine() *echo.Echo {
-	engine := echo.New()
-	engine.Pre(middleware.Rewrite(map[string]string{"/qordle/*": "/$1"}))
-	engine.Pre(middleware.RemoveTrailingSlash())
-	engine.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
-		LogStatus: true,
-		LogURI:    true,
-		LogError:  true,
-		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
-			fmt.Printf("time=%s method=%s uri=%s path=%s status=%d\n", //nolint:forbidigo // log
-				time.Now().Format(time.RFC3339),
-				v.Method,
-				v.URI,
-				c.Path(),
-				v.Status,
-			)
-			return nil
-		},
-	}))
-	engine.HTTPErrorHandler = func(err error, c echo.Context) {
-		engine.DefaultHTTPErrorHandler(err, c)
-		log.Error().Err(err).Msg("error")
+func encode(w http.ResponseWriter, status int, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", " ")
+	if err := enc.Encode(v); err != nil {
+		log.Error().Err(err).Msg("encode")
 	}
+}
 
-	base := engine.Group("")
-	methods := []string{http.MethodGet, http.MethodPost}
-	base.GET("/strategies", strategies)
-	base.GET("/play/:secret", play)
-	group := base.Group("/suggest")
-	group.Match(methods, "", suggest)
-	group.Match(methods, "/:guesses", suggest)
-	return engine
+func badRequest(w http.ResponseWriter, err error) {
+	log.Error().Err(err).Msg("bad request")
+	encode(w, http.StatusBadRequest, map[string]string{"message": err.Error()})
+}
+
+// statusWriter records the response status for the request log.
+type statusWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (w *statusWriter) WriteHeader(status int) {
+	w.status = status
+	w.ResponseWriter.WriteHeader(status)
+}
+
+func logged(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		sw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
+		next.ServeHTTP(sw, r)
+		log.Info().
+			Str("method", r.Method).
+			Str("uri", r.RequestURI).
+			Int("status", sw.status).
+			Dur("elapsed", time.Since(start)).
+			Msg("request")
+	})
+}
+
+// newHandler routes the API under /qordle and, when public is set, serves
+// the static site from that directory.
+func newHandler(public string, wordlists, prefer []string) (http.Handler, error) {
+	srv, err := newServer(wordlists, prefer)
+	if err != nil {
+		return nil, err
+	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("GET /qordle/strategies", srv.strategies)
+	mux.HandleFunc("GET /qordle/play/{secret}", srv.play)
+	for _, method := range []string{http.MethodGet, http.MethodPost} {
+		mux.HandleFunc(method+" /qordle/suggest", srv.suggest)
+		mux.HandleFunc(method+" /qordle/suggest/{guesses...}", srv.suggest)
+	}
+	if public != "" {
+		mux.Handle("GET /", http.FileServer(http.Dir(public)))
+	}
+	return logged(mux), nil
 }
 
 func serve(c *cli.Context) error {
-	engine := newEngine()
-	engine.Static("/", "public")
-	address := fmt.Sprintf(":%d", c.Int("port"))
-	log.Info().Str("address", "http://localhost"+address).Msg("http server")
-	return engine.Start(address)
+	handler, err := newHandler("public", c.StringSlice("wordlist"), c.StringSlice("prefer"))
+	if err != nil {
+		return err
+	}
+	ctx, stop := signal.NotifyContext(c.Context, os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	server := &http.Server{
+		Addr:              fmt.Sprintf(":%d", c.Int("port")),
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+	go func() {
+		<-ctx.Done()
+		shutdown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if serr := server.Shutdown(shutdown); serr != nil { //nolint:contextcheck // parent is already done
+			log.Error().Err(serr).Msg("shutdown")
+		}
+	}()
+
+	log.Info().Str("address", "http://localhost"+server.Addr).Msg("http server")
+	if err = server.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+	return nil
 }
 
 func main() {
@@ -179,11 +267,17 @@ func main() {
 				Value: 0,
 				Usage: "port on which to run",
 			},
-			&cli.StringFlag{
-				Name:    "base-url",
-				Value:   "http://localhost",
-				Usage:   "Base URL",
-				EnvVars: []string{"BASE_URL"},
+			&cli.StringSliceFlag{
+				Name:    "wordlist",
+				Aliases: []string{"w"},
+				Usage:   "embedded word lists suggestions are drawn from",
+				Value:   cli.NewStringSlice("solutions", "possible"),
+			},
+			&cli.StringSliceFlag{
+				Name:    "prefer",
+				Aliases: []string{"p"},
+				Usage:   "embedded word lists ranked ahead of the rest; pass an empty value to rank every word together",
+				Value:   cli.NewStringSlice("solutions"),
 			},
 			&cli.BoolFlag{
 				Name:  "debug",
@@ -219,5 +313,4 @@ func main() {
 	if err := app.RunContext(context.Background(), os.Args); err != nil {
 		os.Exit(1)
 	}
-	os.Exit(0)
 }

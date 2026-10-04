@@ -43,6 +43,29 @@ remaining words differ by only a single letter. The strategy iterates the word l
 accumulating the differing letter and then generates a word list from those words composed
 of the unknown letters.
 
+### probe
+The probe option (`--probe` on the CLI, the **probe** pill in the web solver) wraps any
+strategy. It considers every accepted word as the next guess, including words already ruled
+out, and leads with one when it is expected to reveal more than guessing a remaining word.
+Each guess is scored by the entropy of its feedback across the remaining words: a guess
+splitting them into many small groups of identical feedback beats one leaving a few large
+groups. Each remaining word earns a bonus for the chance of being the secret, so with only a
+few words left a candidate wins. When preferred words are set (see `--prefer`) it plans
+against those while any remain. It generalises [speculation](#speculation), which only probes
+once the remaining words differ by a single letter.
+
+Because a probe may be a word which cannot be the answer, it is off by default: hard mode
+only accepts guesses consistent with every revealed hint and will reject it.
+
+Simulated games with `slate` as the opener, the solutions ranked first, and the 63 answers
+since 2022 missing from the solutions list held out as unseen answers:
+
+| strategy | solved in six (1000 original / 63 newer) | average guesses |
+|---|---|---|
+| frequency, position | 99.6% / 96.8% | 3.60 / 4.48 |
+| frequency, position + speculate | 99.8% / 96.8% | 3.62 / 4.51 |
+| frequency, position + probe | 100% / 100% | 3.47 / 4.33 |
+
 ## Chaining
 All strategies are composable via chaining. The chaining strategy, itself a strategy, executes
 all child strategies **concurrently** on the same word list and combines the results by accumulating
