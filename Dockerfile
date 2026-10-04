@@ -1,5 +1,5 @@
 ARG GO_VERSION=1.27
-FROM golang:${GO_VERSION}-trixie AS builder
+FROM --platform=$BUILDPLATFORM golang:${GO_VERSION}-trixie AS builder
 
 WORKDIR /app
 
@@ -8,7 +8,8 @@ RUN go mod download
 
 COPY . /app/
 
-RUN GOOS=linux GOARCH=amd64 go build -o qordled ./cmd/qordled/main.go
+ARG TARGETOS TARGETARCH
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o qordled ./cmd/qordled/main.go
 
 FROM ubuntu:24.04
 
