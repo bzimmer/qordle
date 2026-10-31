@@ -35,6 +35,10 @@ announce:
 
 homebrew_casks:
   - name: qordle
+    # One cask for both: the archive holds qordle and qordled.
+    binaries:
+      - qordle
+      - qordled
     homepage: https://github.com/bzimmer/qordle
     description: Wordle problem solver
     license: MIT
@@ -52,23 +56,5 @@ homebrew_casks:
         install_steps: |
           on_macos do
             run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ "{{" }}staged_path{{ "}}" }}/qordle"]
-          end
-  - name: qordled
-    homepage: https://github.com/bzimmer/qordle
-    description: Wordle problem solver daemon
-    license: MIT
-    commit_author:
-      name: bzimmer
-      email: bzimmer@ziclix.com
-    repository:
-      owner: bzimmer
-      name: homebrew-tap
-    skip_upload: auto
-    hooks:
-      post:
-        # Becomes postflight_steps (postflight is deprecated); staged_path is
-        # Homebrew's token, escaped from GoReleaser's own templating.
-        install_steps: |
-          on_macos do
             run "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "{{ "{{" }}staged_path{{ "}}" }}/qordled"]
           end

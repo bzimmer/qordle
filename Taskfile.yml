@@ -47,11 +47,16 @@ tasks:
       - hyperfine -N -w 3 --runs=100 -L binary {{.binaries}} "{binary} play {{.options}} {{.secrets}}"
 
   regression:
-    desc: Run regression test
+    desc: Run regression test and analyze the results (analysis needs duckdb)
+    cmds:
+      - task: regression:run
+      - "{{.ROOT_DIR}}/bin/analyze.zsh"
+
+  regression:run:
+    desc: Play every strategy against N words (default 2000) into dist/regression.csv; fails if any game errors
     deps: [build]
     cmds:
       - "{{.ROOT_DIR}}/bin/regression.zsh {{.CLI_ARGS}}"
-      - "{{.ROOT_DIR}}/bin/analyze.zsh"
 
   qordled:
     desc: Build and run qordle container

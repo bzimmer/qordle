@@ -33,9 +33,6 @@ jobs:
       - name: install task
         uses: arduino/setup-task@v1
 
-      - name: install duckdb
-        uses: opt-nc/setup-duckdb-action@v1.2.2
-
       - name: install dependencies
         run: |
           sudo apt-get update
@@ -45,5 +42,7 @@ jobs:
           ln -s "$(which fdfind)" "${HOME}/.local/bin/fd"
           echo "${HOME}/.local/bin" >> "$GITHUB_PATH"
 
+      # Plays only: the duckdb analysis is reporting, read locally, and
+      # can't fail the build.
       - name: run regression
-        run: task regression -- 20
+        run: task regression:run -- 20
